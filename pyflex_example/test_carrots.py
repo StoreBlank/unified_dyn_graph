@@ -145,17 +145,17 @@ elif args.cam_view == 3: # upper left corner
 elif args.cam_view == 4: # lower left corner
     des_dir = '../test_carrots/cam_view_4'
     os.system('mkdir -p ' + des_dir)
-    # cam_height = 6.0 * global_scale / 9.0
+    cam_height = 6.0 * global_scale / 9.0
+    camPos = np.array([-cam_height/4, cam_height, cam_height/4])
+    camAngle = np.array([-np.deg2rad(45.), -np.deg2rad(70.), np.deg2rad(45.)])
+    
+    # cam_idx = 45+3*90
+    # cam_height = 6.0 * global_scale / 8.0
+    # rad = np.deg2rad(cam_idx)
+    # cam_dis = 0.0 * global_scale / 8.0
+    
     # camPos = np.array([-cam_height/4, cam_height, cam_height/4])
-    # camAngle = np.array([-np.deg2rad(45.), -np.deg2rad(70.), np.deg2rad(45.)])
-    
-    cam_idx = 45+3*90
-    cam_height = 6.0 * global_scale / 8.0
-    rad = np.deg2rad(cam_idx)
-    cam_dis = 0.0 * global_scale / 8.0
-    
-    camPos = np.array([np.sin(rad) * cam_dis, cam_height, np.cos(rad) * cam_dis])
-    camAngle = np.array([rad, -np.deg2rad(90.), 0.])
+    # camAngle = np.array([rad, -np.deg2rad(90.), 0.])
 
 pyflex.set_camPos(camPos)
 pyflex.set_camAngle(camAngle)

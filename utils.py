@@ -488,6 +488,33 @@ def opengl2cam(pcd, cam_extrinsic, global_scale):
     # print()
     return cam
 
+def depth2fgpcd2(depth, intr, extr):
+    h, w = depth.shape
+    fx, fy, cx, cy = intr
+    rot = extr[:3, :3]
+    trans = extr[:3, 3]
+    
+    # get inverse transformation
+    inv_rot = np.linalg.inv(rot)
+    inv_extr = np.eye(4)
+    inv_extr[:3, :3] = inv_rot
+    inv_extr[:3, 3] = - inv_rot @ trans
+    
+    pos_x, pos_y = np.meshgrid(np.arange(w), np.arange(h))
+    fgpcd = np.zeros((depth.shape[0], depth.shape[1], 3))
+    fgpcd[:, :, 0] = (pos_x - cx) * depth / fx
+    fgpcd[:, :, 1] = (pos_y - cy) * depth / fy
+    fgpcd[:, :, 2] = depth
+    
+    fgpcd_world = np.matmul(inv_extr, np.concatenate([fgpcd.reshape(-1, 3), np.ones((fgpcd.reshape(-1, 3).shape[0], 1))], axis=1).T).T[:, :3]
+    mask = fgpcd_world[..., 1] < (fgpcd_world[..., 1].max() - 0.001)
+    
+    fgpcd_world = fgpcd_world[mask]
+    return fgpcd_world
+    # import ipdb; ipdb.set_trace()
+    # print('fgpcd_world', fgpcd_world[..., 2].min(), fgpcd_world[..., 2].max(), fgpcd_world[..., 2].mean())
+    # raise Exception
+
 def depth2fgpcd(depth, mask, cam_params):
     # depth: (h, w)
     # fgpcd: (n, 3)
