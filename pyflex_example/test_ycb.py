@@ -5,75 +5,30 @@ import time
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--time_step', type=int, default=200)
+parser.add_argument('--time_step', type=int, default=300)
 parser.add_argument('--view', type=int, default=0)
 parser.add_argument('--screenWidth', type=int, default=720)
 parser.add_argument('--screenHeight', type=int, default=720)
 args = parser.parse_args()
 
+np.random.seed(0)
+
 screenWidth = args.screenWidth
 screenHeight = args.screenHeight
 time_step = args.time_step # 120
-
-folder_dir = '../ptcl_data/carrots'
+folder_dir = '../ptcl_data/mustar_bottle'
 os.system('mkdir -p ' + folder_dir)
 
 pyflex.init(False)
 
-# scene_params = np.array([])
+x = -0.5
+y = 1.
+z = 0.
+size = 1.
 
-global_scale = 24 # default 24
+scene_params = np.array([x, y, z, size])
 
-np.random.seed(0)
-rand_scale = np.random.uniform(0.09, 0.12) * global_scale / 8.0
-max_scale = rand_scale
-min_scale = rand_scale
-blob_r = np.random.uniform(0.7, 1.0)
-x = - blob_r * global_scale / 8.0
-y = 0.5
-z = - blob_r * global_scale / 8.0
-inter_space = 1.5 * max_scale
-num_x = int(abs(x/1.5) / max_scale + 1) * 2
-num_y = 10
-num_z = int(abs(z/1.5) / max_scale + 1) * 2
-x_off = global_scale * np.random.uniform(-1./24., 1./24.)
-z_off = global_scale * np.random.uniform(-1./24., 1./24.)
-x += x_off
-z += z_off
-num_carrots = (num_x * num_z - 1) * 3
-add_singular = 0.0
-add_sing_x = -1
-add_sing_y = -1
-add_sing_z = -1
-add_noise = 0.0
-
-staticFriction = 1.0
-dynamicFriction = 0.9
-draw_skin = 1.0
-min_dist = 10.0
-max_dist = 20.0
-
-scene_params = np.array([max_scale,
-                        min_scale,
-                        x,
-                        y,
-                        z,
-                        staticFriction,
-                        dynamicFriction,
-                        draw_skin,
-                        num_carrots,
-                        min_dist,
-                        max_dist,
-                        num_x,
-                        num_y,
-                        num_z,
-                        inter_space,
-                        add_singular,
-                        add_sing_x,
-                        add_sing_y,
-                        add_sing_z,
-                        add_noise,])
-pyflex.set_scene(22, scene_params, 0)
+pyflex.set_scene(25, scene_params, 0) 
 
 ## Light setting
 pyflex.set_screenWidth(screenWidth)
@@ -87,7 +42,7 @@ if args.view == 0: # top view
     os.system('mkdir -p ' + des_dir)
     
     cam_idx = 0
-    cam_height = 6.0 * global_scale / 9.0
+    cam_height = 5.
     rad = np.deg2rad(cam_idx)
     cam_dis = 0
     
@@ -97,28 +52,28 @@ if args.view == 0: # top view
 elif args.view == 1: # lower right corner
     des_dir = folder_dir + '/view_1'
     os.system('mkdir -p ' + des_dir)
-    cam_height = 6.0 * global_scale / 9.0
+    cam_height = 5.
     camPos = np.array([cam_height/4, cam_height, cam_height/4])
     camAngle = np.array([np.deg2rad(45.), -np.deg2rad(70.), np.deg2rad(45.)])
     
 elif args.view == 2: # upper right corner
     des_dir = folder_dir + '/view_2'
     os.system('mkdir -p ' + des_dir)
-    cam_height = 6.0 * global_scale / 9.0
+    cam_height = 5.
     camPos = np.array([cam_height/4, cam_height, -cam_height/4])
     camAngle = np.array([np.deg2rad(130.), -np.deg2rad(70.), np.deg2rad(45.)])
     
 elif args.view == 3: # upper left corner
     des_dir = folder_dir + '/view_3'
     os.system('mkdir -p ' + des_dir)
-    cam_height = 6.0 * global_scale / 9.0
+    cam_height = 5.
     camPos = np.array([-cam_height/4, cam_height, -cam_height/4])
     camAngle = np.array([-np.deg2rad(130.), -np.deg2rad(70.), np.deg2rad(45.)])
     
 elif args.view == 4: # lower left corner
     des_dir = folder_dir + '/view_4'
     os.system('mkdir -p ' + des_dir)
-    cam_height = 6.0 * global_scale / 9.0
+    cam_height = 5.
     camPos = np.array([-cam_height/4, cam_height, cam_height/4])
     camAngle = np.array([-np.deg2rad(45.), -np.deg2rad(70.), np.deg2rad(45.)])
 

@@ -488,7 +488,7 @@ def opengl2cam(pcd, cam_extrinsic, global_scale):
     # print()
     return cam
 
-def depth2fgpcd2(depth, intr, extr):
+def depth2fgpcd(depth, intr, extr):
     h, w = depth.shape
     fx, fy, cx, cy = intr
     rot = extr[:3, :3]
@@ -507,7 +507,10 @@ def depth2fgpcd2(depth, intr, extr):
     fgpcd[:, :, 2] = depth
     
     fgpcd_world = np.matmul(inv_extr, np.concatenate([fgpcd.reshape(-1, 3), np.ones((fgpcd.reshape(-1, 3).shape[0], 1))], axis=1).T).T[:, :3]
-    mask = fgpcd_world[..., 1] < (fgpcd_world[..., 1].max() - 0.001)
+    # print('inv_extr\n', inv_extr)
+    # print('matrix\n', np.concatenate([fgpcd.reshape(-1, 3), np.ones((fgpcd.reshape(-1, 3).shape[0], 1))], axis=1))
+    # mask = fgpcd_world[..., 1] < (fgpcd_world[..., 1].max() - 0.001)
+    mask = fgpcd_world[..., 1] < (fgpcd_world[..., 1].max() - 0.01)
     
     fgpcd_world = fgpcd_world[mask]
     return fgpcd_world
@@ -515,7 +518,7 @@ def depth2fgpcd2(depth, intr, extr):
     # print('fgpcd_world', fgpcd_world[..., 2].min(), fgpcd_world[..., 2].max(), fgpcd_world[..., 2].mean())
     # raise Exception
 
-def depth2fgpcd(depth, mask, cam_params):
+def depth2fgpcd_top(depth, mask, cam_params):
     # depth: (h, w)
     # fgpcd: (n, 3)
     # mask: (h, w)
