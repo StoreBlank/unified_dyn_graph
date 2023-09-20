@@ -514,7 +514,6 @@ def depth2fgpcd(depth, intr, extr):
     
     fgpcd_world = fgpcd_world[mask]
     return fgpcd_world
-    # import ipdb; ipdb.set_trace()
     # print('fgpcd_world', fgpcd_world[..., 2].min(), fgpcd_world[..., 2].max(), fgpcd_world[..., 2].mean())
     # raise Exception
 
