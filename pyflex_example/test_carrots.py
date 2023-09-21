@@ -78,7 +78,7 @@ pyflex.set_scene(22, scene_params, 0)
 ## Light setting
 pyflex.set_screenWidth(screenWidth)
 pyflex.set_screenHeight(screenHeight)
-pyflex.set_light_dir(np.array([0.1, 2.0, 0.1]))
+pyflex.set_light_dir(np.array([0.1, 5.0, 0.1]))
 pyflex.set_light_fov(70.)
 
 
