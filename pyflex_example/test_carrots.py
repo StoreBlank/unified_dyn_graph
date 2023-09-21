@@ -18,7 +18,7 @@ time_step = args.time_step # 120
 folder_dir = '../ptcl_data/carrots'
 os.system('mkdir -p ' + folder_dir)
 
-pyflex.init(False)
+pyflex.init(True)
 
 # scene_params = np.array([])
 
@@ -163,6 +163,7 @@ for i in range(time_step):
 # render
 obs = pyflex.render(render_depth=True).reshape(screenHeight, screenWidth, 5)
 print('obs.shape', obs.shape)
+import ipdb; ipdb.set_trace()
 
 # save obs and camera_params
 np.save(os.path.join(des_dir, 'obs.npy'), obs)
