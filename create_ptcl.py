@@ -10,7 +10,8 @@ import open3d as o3d
 from utils import depth2fgpcd, depth2fgpcd_top, opengl2cam
 
 env = 'carrots'
-views = [1,2,3,4]
+views = [1, 2, 3, 4]
+
 for view in views:
     dir_path = f'ptcl_data/{env}/view_{str(view)}'
 
@@ -38,22 +39,27 @@ for view in views:
         
         pos_x, pos_y = np.meshgrid(np.arange(w), np.arange(h))
         fgpcd = np.zeros((depth.shape[0], depth.shape[1], 3))
+
+        # transform depth (in image coordinates) to fgpcd (in camera coordinates)
         fgpcd[:, :, 0] = (pos_x - cx) * depth / fx
         fgpcd[:, :, 1] = (pos_y - cy) * depth / fy
         fgpcd[:, :, 2] = depth
-        
+
+        # transform fgpcd (in camera coordinates) to world coordinates
         fgpcd_world = np.matmul(inv_extr, np.concatenate([fgpcd.reshape(-1, 3), np.ones((fgpcd.reshape(-1, 3).shape[0], 1))], axis=1).T).T[:, :3]
-        # print('inv_extr\n', inv_extr)
-        # print('matrix\n', np.concatenate([fgpcd.reshape(-1, 3), np.ones((fgpcd.reshape(-1, 3).shape[0], 1))], axis=1))
-        # mask = fgpcd_world[..., 1] < (fgpcd_world[..., 1].max() - 0.001)
-        # mask = fgpcd_world[..., 1] < (fgpcd_world[..., 1].max() - 0.01)
+
+        # the up direction is +Y axis, so to filter out the table we need to filter out small Y values
         mask = fgpcd_world[..., 1] > (fgpcd_world[..., 1].min() + 0.01)
-        # print(fgpcd_world[..., 1].min(), fgpcd_world[..., 1].max(), fgpcd_world[..., 1].mean())
-        # raise Exception
         
         fgpcd_world = fgpcd_world[mask]
         return inv_extr, fgpcd_world
 
+    # as stated in test_carrots.py, 
+    # although pyflex uses OpenGL convention (in which -Z is pointing away from the camera),
+    # it actually uses the Open3D version of the extrinsic matrix for projection.
+    # In other words, the larger the depth values are, the further the points are from the camera.
+    # Therefore, we need to use the Open3D version of the extrinsic matrix to transform the points 
+    # from camera coordinates back to world coordinates.
     ogl_to_o3d = np.array([
         [1, 0, 0, 0],
         [0, -1, 0, 0],
@@ -63,23 +69,14 @@ for view in views:
     camera_ext_matrix_o3d = ogl_to_o3d @ camera_ext_matrix
     inv_extr, fgpcd = depth2fgpcd_new(depth, camera_intrinsic_params, camera_ext_matrix_o3d)
     print(inv_extr)
-    # fgpcd = downsample_pcd(fgpcd, 0.01)
-    # fgpcd = depth2fgpcd_top(depth, depth<0.599/0.8, camera_intrinsic_params)
-    print(depth.shape)
-    print(color.shape)
-    print(fgpcd.shape)
 
     pcd = o3d.geometry.PointCloud()
-
-    # fgpcd = fgpcd[..., [0, 2, 1]]
-    # fgpcd[..., 1] = -fgpcd[..., 1]
-    # fgpcd[..., 2] = -fgpcd[..., 2]
 
     print(fgpcd.mean(0))
     print(fgpcd.min(0))
     print(fgpcd.max(0))
 
     pcd.points = o3d.utility.Vector3dVector(fgpcd)
-    # o3d.visualization.draw_geometries([pcd])
+    o3d.visualization.draw_geometries([pcd])
 
     o3d.io.write_point_cloud(os.path.join(dir_path, 'fgpcd.pcd'), pcd)
