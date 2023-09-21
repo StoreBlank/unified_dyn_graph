@@ -18,7 +18,7 @@ time_step = args.time_step # 120
 folder_dir = '../ptcl_data/carrots'
 os.system('mkdir -p ' + folder_dir)
 
-pyflex.init(False)
+pyflex.init(True)
 
 # scene_params = np.array([])
 
@@ -83,59 +83,43 @@ pyflex.set_light_fov(70.)
 
 
 r = global_scale * 3/4
+cam_height = np.sqrt(2)/2 * r
+cam_dis = np.sqrt(2)/2 * r
+
 ## Camera setting
 if args.view == 0: # top view
     des_dir = folder_dir + '/view_0'
     os.system('mkdir -p ' + des_dir)
     
-    cam_height = np.sqrt(2)/2 * r
-    cam_dis = np.sqrt(2)/2 * r
-    
     camPos = np.array([0., cam_height, 0.])
     camAngle = np.array([0., -np.deg2rad(90.), 0.])
-    
-elif args.view == 1: # lower right corner
+
+elif args.view == 1: # positioned on positive x-axis, looking at the origin
     des_dir = folder_dir + '/view_1'
     os.system('mkdir -p ' + des_dir)
     
-    cam_height = np.sqrt(2)/2 * r
-    cam_dis = np.sqrt(2)/2 * r
-    
     camPos = np.array([cam_dis, cam_height, 0.])
-    # camAngle = np.array([np.deg2rad(45.), -np.deg2rad(70.), np.deg2rad(45.)])
     camAngle = np.array([np.deg2rad(90.), -np.deg2rad(45.), 0.])
     
-elif args.view == 2: # upper right corner
+elif args.view == 2: # positioned on positive z-axis, looking at the origin
     des_dir = folder_dir + '/view_2'
     os.system('mkdir -p ' + des_dir)
     
-    cam_height = np.sqrt(2)/2 * r
-    cam_dis = np.sqrt(2)/2 * r
-    
     camPos = np.array([0., cam_height, cam_dis])
-    # camAngle = np.array([np.deg2rad(130.), -np.deg2rad(70.), np.deg2rad(45.)])
-    camAngle = np.array([0., -np.deg2rad(45.), 0.])
+    camAngle = np.array([np.deg2rad(0.), -np.deg2rad(45.), 0.])
     
-elif args.view == 3: # upper left corner
+elif args.view == 3: # positioned on negative x-axis, looking at the origin
     des_dir = folder_dir + '/view_3'
     os.system('mkdir -p ' + des_dir)
     
-    cam_height = np.sqrt(2)/2 * r
-    cam_dis = -np.sqrt(2)/2 * r
-    
-    camPos = np.array([cam_dis, cam_height, 0.])
-    # camAngle = np.array([-np.deg2rad(130.), -np.deg2rad(70.), np.deg2rad(45.)])
+    camPos = np.array([-cam_dis, cam_height, 0.])
     camAngle = np.array([np.deg2rad(270.), -np.deg2rad(45.), 0.])
     
-elif args.view == 4: # lower left corner
+elif args.view == 4: # positioned on negative z-axis, looking at the origin
     des_dir = folder_dir + '/view_4'
     os.system('mkdir -p ' + des_dir)
-    
-    cam_height = np.sqrt(2)/2 * r
-    cam_dis = -np.sqrt(2)/2 * r
-    
-    camPos = np.array([0., cam_height, cam_dis])
-    # camAngle = np.array([-np.deg2rad(45.), -np.deg2rad(70.), np.deg2rad(45.)])
+
+    camPos = np.array([0., cam_height, -cam_dis])
     camAngle = np.array([np.deg2rad(180.), -np.deg2rad(45.), 0.])
 
 print('camPos', camPos)
@@ -154,6 +138,9 @@ print('camera_params', camera_intrinsic_params)
 print('projMat: \n', projMat)
 
 # camera extrinsic parameters
+# by viewMat @ point, transforms the point in world coordinates to the point in camera coordinates
+# the camera coordinates follow OpenGL convention, +X right, +Y up, +Z points to the camera (look-at direction)
+# In contrast, OpenCV and Open3D convention is +X right, +Y down, +Z points away from the camera
 viewMat = pyflex.get_viewMatrix().reshape(4, 4).T
 print('viewMat: \n', viewMat)
 
@@ -161,6 +148,8 @@ for i in range(time_step):
     pyflex.step()
 
 # render
+# The render function gives positive depth values for points in front of the camera
+# In other words, it actually uses the Open3D version of the viewMat for projection to get the depth values
 obs = pyflex.render(render_depth=True).reshape(screenHeight, screenWidth, 5)
 print('obs.shape', obs.shape)
 
