@@ -16,19 +16,22 @@ np.random.seed(0)
 screenWidth = args.screenWidth
 screenHeight = args.screenHeight
 time_step = args.time_step # 120
-folder_dir = '../ptcl_data/mustar_bottle'
+folder_dir = '../ptcl_data/mustard_bottle'
 os.system('mkdir -p ' + folder_dir)
 
 pyflex.init(False)
 
-x = -0.5
+x = 0. # -0/5
 y = 1.
-z = 0.
+z = -0.5
 size = 1.
+type = 6 # 4: sugar box; 6: mustard bottle
 
-scene_params = np.array([x, y, z, size])
+scene_params = np.array([x, y, z, size, type])
 
 pyflex.set_scene(25, scene_params, 0) 
+
+print('n_particles', pyflex.get_n_particles())
 
 ## Light setting
 pyflex.set_screenWidth(screenWidth)
@@ -36,7 +39,7 @@ pyflex.set_screenHeight(screenHeight)
 pyflex.set_light_dir(np.array([0.1, 5.0, 0.1]))
 pyflex.set_light_fov(70.)
 
-r = 5.
+r = 3.
 ## Camera setting
 if args.view == 0: # top view
     des_dir = folder_dir + '/view_0'
@@ -102,19 +105,19 @@ cy = screenHeight / 2.0
 fx = projMat[0, 0] * cx
 fy = projMat[1, 1] * cy
 camera_intrinsic_params = np.array([fx, fy, cx, cy])
-print('camera_params', camera_intrinsic_params)
-print('projMat: \n', projMat)
+# print('camera_params', camera_intrinsic_params)
+# print('projMat: \n', projMat)
 
 # camera extrinsic parameters
 viewMat = pyflex.get_viewMatrix().reshape(4, 4).T
-print('viewMat: \n', viewMat)
+# print('viewMat: \n', viewMat)
 
 for i in range(time_step):
     pyflex.step()
 
 # render
 obs = pyflex.render(render_depth=True).reshape(screenHeight, screenWidth, 5)
-print('obs.shape', obs.shape)
+# print('obs.shape', obs.shape)
 
 # save obs and camera_params
 np.save(os.path.join(des_dir, 'obs.npy'), obs)
