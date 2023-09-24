@@ -5,18 +5,17 @@ import time
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--time_step', type=int, default=300)
+parser.add_argument('--time_step', type=int, default=600)
 parser.add_argument('--view', type=int, default=0)
 parser.add_argument('--screenWidth', type=int, default=720)
 parser.add_argument('--screenHeight', type=int, default=720)
-parser.add_argument('--type', type=int, default=6)
 args = parser.parse_args()
 
 np.random.seed(0)
 
 screenWidth = args.screenWidth
 screenHeight = args.screenHeight
-time_step = args.time_step # 120
+time_step = args.time_step 
 
 pyflex.init(False)
 
@@ -46,60 +45,16 @@ ycb types:
 """
 
 x = -0.5 # -0/5
-y = 1.
+y = 0.
 z = -0.5
 size = 1.
-obj_type = args.type
 
-# if obj_type == 3:
-#     folder_dir = '../ptcl_data/cracker_box'
-# elif obj_typee == 4:
-#     folder_dir = '../ptcl_data/sugar_box'
-# elif obj_type == 5:
-#     folder_dir = '../ptcl_data/tomato_soup_can'
-# elif obj_type == 6:
-#     folder_dir = '../ptcl_data/mustard_bottle'
-# elif obj_type == 7:
-#     folder_dir = '../ptcl_data/tuna_fish_can'
-# elif obj_type == 8:
-#     folder_dir = '../ptcl_data/pudding_box'
-# elif obj_type == 9:
-#     folder_dir = '../ptcl_data/gelatin_box'
-# elif obj_type == 10:
-#     folder_dir = '../ptcl_data/potted_meat_can'
-# elif obj_type == 12:
-#     folder_dir = '../ptcl_data/strawberry'
-# elif obj_type == 13:
-#     folder_dir = '../ptcl_data/apple'
-# elif obj_type == 14:
-#     folder_dir = '../ptcl_data/lemon'
-# elif obj_type == 15:
-#     folder_dir = '../ptcl_data/peach'
-# elif obj_type == 16:
-#     folder_dir = '../ptcl_data/pear'
-# elif obj_type == 17:
-#     folder_dir = '../ptcl_data/orange'
-# elif obj_type == 19:
-#     folder_dir = '../ptcl_data/pitcher_base'
-# elif obj_type == 21:
-#     folder_dir = '../ptcl_data/bleach_cleanser'
-# elif obj_type == 24:
-#     folder_dir = '../ptcl_data/bowl'
-# elif obj_type == 25:
-#     folder_dir = '../ptcl_data/mug'
-# elif obj_type == 35:
-#     folder_dir = '../ptcl_data/power_drill'
-# elif obj_type == 36:
-#     folder_dir = '../ptcl_data/wood_block'
-# elif obj_type == 37:
-#     folder_dir = '../ptcl_data/scissors'
-
-folder_dir = '../ptcl_data/single_ycb' 
+folder_dir = '../ptcl_data/multi_ycb' 
 os.system('mkdir -p ' + folder_dir)
 
-scene_params = np.array([x, y, z, size, obj_type])
+scene_params = np.array([x, y, z, size])
 
-pyflex.set_scene(25, scene_params, 0) 
+pyflex.set_scene(28, scene_params, 0) 
 
 print('n_particles', pyflex.get_n_particles())
 
@@ -109,7 +64,7 @@ pyflex.set_screenHeight(screenHeight)
 pyflex.set_light_dir(np.array([0.1, 5.0, 0.1]))
 pyflex.set_light_fov(70.)
 
-r = 5.
+r = 8.
 ## Camera setting
 if args.view == 0: # top view
     des_dir = folder_dir + '/view_0'
