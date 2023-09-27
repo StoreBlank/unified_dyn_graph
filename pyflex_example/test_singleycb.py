@@ -94,12 +94,14 @@ obj_type = args.type
 # elif obj_type == 37:
 #     folder_dir = '../ptcl_data/scissors'
 
-folder_dir = '../ptcl_data/single_ycb' 
+# folder_dir = '../ptcl_data/single_ycb' 
+folder_dir = '../ptcl_data/mustard_bottle'
 os.system('mkdir -p ' + folder_dir)
 
 scene_params = np.array([x, y, z, size, obj_type])
 
-pyflex.set_scene(25, scene_params, 0) 
+temp = np.array([0])
+pyflex.set_scene(25, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
 
 print('n_particles', pyflex.get_n_particles())
 

@@ -163,3 +163,4 @@ cython_debug/
 *.npy
 *.pcd
 ptcl_data
+cloth3d

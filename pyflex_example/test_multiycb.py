@@ -54,7 +54,8 @@ os.system('mkdir -p ' + folder_dir)
 
 scene_params = np.array([x, y, z, size])
 
-pyflex.set_scene(28, scene_params, 0) 
+temp = np.array([0])
+pyflex.set_scene(28, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
 
 print('n_particles', pyflex.get_n_particles())
 
