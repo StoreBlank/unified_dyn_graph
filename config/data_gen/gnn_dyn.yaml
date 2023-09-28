@@ -1,8 +1,8 @@
 dataset:
   folder: "data/gnn_dyn_data" # gen_data
-  n_episode: 1 # 2000
-  n_timestep: 1 # 10
-  global_scale: 5
+  n_episode: 1 #2000
+  n_timestep: 1 #10
+  global_scale: 3
   obj: "cloth"
   wkspc_w: 5.0
   headless: False # pyflex visualization 

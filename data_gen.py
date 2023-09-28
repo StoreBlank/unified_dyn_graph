@@ -41,22 +41,25 @@ def gen_data(info):
         actions = np.zeros((n_timestep, action_dim))
 
         img = env.render()
-        cv2.imwrite(os.path.join(epi_dir, "0_color.png"), img[..., :3] / 255)
-        cv2.imwrite(os.path.join(epi_dir, "0_depth.png"), img[:, :, -1].astype(np.uint16)) #TODO: check if this is correct
+        cv2.imwrite(os.path.join(epi_dir, "0_color.png"), img[..., :3][..., ::-1])
+        cv2.imwrite(os.path.join(epi_dir, "0_depth.png"), (img[:, :, -1]*1000).astype(np.uint16)) #TODO: check if this is correct
         with open(os.path.join(epi_dir, '0_particles.npy'), 'wb') as f:
             np.save(f, env.get_positions())
         
-        # last_img = img.copy()
-        # valid = True
-        # for idx_timestep in range(n_timestep):
-        #     color_diff = 0
-        #     while color_diff < 0.001:
-        #         u = None
-        #         u = env.sample_action(1)
-        #         u = u[0, 0] # starting and ending positions of actions
+        last_img = img.copy()
+        valid = True
+        for idx_timestep in range(n_timestep):
+            print('timestep:', idx_timestep)
+            color_diff = 0
+            # while color_diff < 0.001:
+            for i in range(5):
+                u = None
+                # u = env.sample_action(1)
+                # u = u[0, 0] # starting and ending positions of actions
+                u = [1, 0, -1, 0]
 
-        #         # step
-        #         img = env.step(u)
+                # step
+                img = env.step(u)
 
 
         idx_episode += 1

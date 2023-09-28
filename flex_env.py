@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pyflex
 import gym
+import math
 
 # robot
 import pybullet as p
@@ -148,7 +149,7 @@ class FlexEnv(gym.Env):
         self.headless = config['dataset']['headless']
         self.obj = config['dataset']['obj']
 
-        self.global_scale = 1.0 #TODO
+        self.global_scale = config['dataset']['global_scale']
 
         pyflex.set_screenWidth(self.screenWidth)
         pyflex.set_screenHeight(self.screenHeight)
@@ -232,7 +233,7 @@ class FlexEnv(gym.Env):
         self.init_scene()
         self.set_camera()
 
-        for i in range(100):
+        for i in range(200):
             pyflex.step()
         
         # add wall
@@ -280,7 +281,61 @@ class FlexEnv(gym.Env):
         self.reset_robot()
     
     def step(self, action):
-        pass
+        # h = self.global_scale / 8.0 #TODO
+        h = 0
+        s_2d = np.concatenate([action[:2], [h]])
+        e_2d = np.concatenate([action[2:], [h]])
+        print('start action:', s_2d)
+        print('end action:', e_2d)
+
+        # pusher angle depending on x-axis
+        if (s_2d - e_2d)[0] == 0:
+            pusher_angle = np.pi/2
+        else:
+            pusher_angle = np.arctan((s_2d - e_2d)[1] / (s_2d - e_2d)[0])
+        
+        # robot orientation
+        orn = np.array([0.0, np.pi, pusher_angle + np.pi/2])
+
+        # create way points
+        # way_points = [s_2d + np.array([0., 0., self.global_scale / 24.0]), s_2d, e_2d, e_2d + np.array([0., 0., self.global_scale / 24.0])]
+        way_points = [s_2d + np.array([0., 0., 1.]), s_2d, e_2d, e_2d + np.array([0., 0., 1.])]
+        self.reset_robot(self.rest_joints)
+        
+        # steps from waypoints
+        speed = 1.0/50.
+        for i_p in range(len(way_points)-1):
+            s = way_points[i_p]
+            e = way_points[i_p+1]
+            steps = int(np.linalg.norm(e-s)/speed) + 1
+
+            for i in range(steps):
+                end_effector_pos = s + (e-s) * i / steps
+                end_effector_orn = p.getQuaternionFromEuler(orn)
+                jointPoses = p.calculateInverseKinematics(self.robotId, 
+                                                        self.end_idx, 
+                                                        end_effector_pos, 
+                                                        end_effector_orn, 
+                                                        self.joints_lower.tolist(), 
+                                                        self.joints_upper.tolist(),
+                                                        (self.joints_upper - self.joints_lower).tolist(),
+                                                        self.rest_joints)
+                self.reset_robot(jointPoses)
+                pyflex.step()
+                self.reset_robot()
+
+                if math.isnan(self.get_positions().reshape(-1, 4)[:, 0].max()):
+                    print('simulator exploded when action is', action)
+                    return None
+        
+            self.last_ee = end_effector_pos.copy()
+        
+        self.reset_robot()
+        for i in range(200):
+            pyflex.step()
+        
+        obs = self.render()
+        return obs
     
     def render(self, no_return=False):
         pyflex.step()
