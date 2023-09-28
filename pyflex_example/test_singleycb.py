@@ -47,56 +47,56 @@ ycb types:
 
 x = -0.5 # -0/5
 y = 1.
-z = -0.5
+z = 0.5
 size = 1.
 obj_type = args.type
 
-# if obj_type == 3:
-#     folder_dir = '../ptcl_data/cracker_box'
-# elif obj_typee == 4:
-#     folder_dir = '../ptcl_data/sugar_box'
-# elif obj_type == 5:
-#     folder_dir = '../ptcl_data/tomato_soup_can'
-# elif obj_type == 6:
-#     folder_dir = '../ptcl_data/mustard_bottle'
-# elif obj_type == 7:
-#     folder_dir = '../ptcl_data/tuna_fish_can'
-# elif obj_type == 8:
-#     folder_dir = '../ptcl_data/pudding_box'
-# elif obj_type == 9:
-#     folder_dir = '../ptcl_data/gelatin_box'
-# elif obj_type == 10:
-#     folder_dir = '../ptcl_data/potted_meat_can'
-# elif obj_type == 12:
-#     folder_dir = '../ptcl_data/strawberry'
-# elif obj_type == 13:
-#     folder_dir = '../ptcl_data/apple'
-# elif obj_type == 14:
-#     folder_dir = '../ptcl_data/lemon'
-# elif obj_type == 15:
-#     folder_dir = '../ptcl_data/peach'
-# elif obj_type == 16:
-#     folder_dir = '../ptcl_data/pear'
-# elif obj_type == 17:
-#     folder_dir = '../ptcl_data/orange'
-# elif obj_type == 19:
-#     folder_dir = '../ptcl_data/pitcher_base'
-# elif obj_type == 21:
-#     folder_dir = '../ptcl_data/bleach_cleanser'
-# elif obj_type == 24:
-#     folder_dir = '../ptcl_data/bowl'
-# elif obj_type == 25:
-#     folder_dir = '../ptcl_data/mug'
-# elif obj_type == 35:
-#     folder_dir = '../ptcl_data/power_drill'
-# elif obj_type == 36:
-#     folder_dir = '../ptcl_data/wood_block'
-# elif obj_type == 37:
-#     folder_dir = '../ptcl_data/scissors'
+if obj_type == 3:
+    folder_dir = '../ptcl_data/cracker_box'
+elif obj_type == 4:
+    folder_dir = '../ptcl_data/sugar_box'
+elif obj_type == 5:
+    folder_dir = '../ptcl_data/tomato_soup_can'
+elif obj_type == 6:
+    folder_dir = '../ptcl_data/mustard_bottle'
+elif obj_type == 7:
+    folder_dir = '../ptcl_data/tuna_fish_can'
+elif obj_type == 8:
+    folder_dir = '../ptcl_data/pudding_box'
+elif obj_type == 9:
+    folder_dir = '../ptcl_data/gelatin_box'
+elif obj_type == 10:
+    folder_dir = '../ptcl_data/potted_meat_can'
+elif obj_type == 12:
+    folder_dir = '../ptcl_data/strawberry'
+elif obj_type == 13:
+    folder_dir = '../ptcl_data/apple'
+elif obj_type == 14:
+    folder_dir = '../ptcl_data/lemon'
+elif obj_type == 15:
+    folder_dir = '../ptcl_data/peach'
+elif obj_type == 16:
+    folder_dir = '../ptcl_data/pear'
+elif obj_type == 17:
+    folder_dir = '../ptcl_data/orange'
+elif obj_type == 19:
+    folder_dir = '../ptcl_data/pitcher_base'
+elif obj_type == 21:
+    folder_dir = '../ptcl_data/bleach_cleanser'
+elif obj_type == 24:
+    folder_dir = '../ptcl_data/bowl'
+elif obj_type == 25:
+    folder_dir = '../ptcl_data/mug'
+elif obj_type == 35:
+    folder_dir = '../ptcl_data/power_drill'
+elif obj_type == 36:
+    folder_dir = '../ptcl_data/wood_block'
+elif obj_type == 37:
+    folder_dir = '../ptcl_data/scissors'
 
 # folder_dir = '../ptcl_data/single_ycb' 
-folder_dir = '../ptcl_data/mustard_bottle'
-os.system('mkdir -p ' + folder_dir)
+# folder_dir = '../ptcl_data/mustard_bottle'
+# os.system('mkdir -p ' + folder_dir)
 
 scene_params = np.array([x, y, z, size, obj_type])
 
@@ -111,7 +111,9 @@ pyflex.set_screenHeight(screenHeight)
 pyflex.set_light_dir(np.array([0.1, 5.0, 0.1]))
 pyflex.set_light_fov(70.)
 
-r = 5.
+r = 3.
+move_x = -0.5
+move_z = 1.
 ## Camera setting
 if args.view == 0: # top view
     des_dir = folder_dir + '/view_0'
@@ -130,8 +132,7 @@ elif args.view == 1: # lower right corner
     cam_height = np.sqrt(2)/2 * r
     cam_dis = np.sqrt(2)/2 * r
     
-    camPos = np.array([cam_dis, cam_height, 0.])
-    # camAngle = np.array([np.deg2rad(45.), -np.deg2rad(70.), np.deg2rad(45.)])
+    camPos = np.array([cam_dis+move_x, cam_height, 0.+move_z])
     camAngle = np.array([np.deg2rad(90.), -np.deg2rad(45.), 0.])
     
 elif args.view == 2: # upper right corner
@@ -141,8 +142,7 @@ elif args.view == 2: # upper right corner
     cam_height = np.sqrt(2)/2 * r
     cam_dis = np.sqrt(2)/2 * r
     
-    camPos = np.array([0., cam_height, cam_dis])
-    # camAngle = np.array([np.deg2rad(130.), -np.deg2rad(70.), np.deg2rad(45.)])
+    camPos = np.array([0.+move_x, cam_height, cam_dis+move_z])
     camAngle = np.array([0., -np.deg2rad(45.), 0.])
     
 elif args.view == 3: # upper left corner
@@ -152,8 +152,7 @@ elif args.view == 3: # upper left corner
     cam_height = np.sqrt(2)/2 * r
     cam_dis = -np.sqrt(2)/2 * r
     
-    camPos = np.array([cam_dis, cam_height, 0.])
-    # camAngle = np.array([-np.deg2rad(130.), -np.deg2rad(70.), np.deg2rad(45.)])
+    camPos = np.array([cam_dis+move_x, cam_height, 0.+move_z])
     camAngle = np.array([np.deg2rad(270.), -np.deg2rad(45.), 0.])
     
 elif args.view == 4: # lower left corner
@@ -163,8 +162,7 @@ elif args.view == 4: # lower left corner
     cam_height = np.sqrt(2)/2 * r
     cam_dis = -np.sqrt(2)/2 * r
     
-    camPos = np.array([0., cam_height, cam_dis])
-    # camAngle = np.array([-np.deg2rad(45.), -np.deg2rad(70.), np.deg2rad(45.)])
+    camPos = np.array([0.+move_x, cam_height, cam_dis+move_z])
     camAngle = np.array([np.deg2rad(180.), -np.deg2rad(45.), 0.])
 
 pyflex.set_camPos(camPos)

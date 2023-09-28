@@ -73,7 +73,9 @@ scene_params = np.array([max_scale,
                         add_sing_y,
                         add_sing_z,
                         add_noise,])
-pyflex.set_scene(22, scene_params, 0)
+
+temp = np.array([0])
+pyflex.set_scene(22, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
 
 ## Light setting
 pyflex.set_screenWidth(screenWidth)

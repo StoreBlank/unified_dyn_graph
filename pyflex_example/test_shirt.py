@@ -4,6 +4,18 @@ import pyflex
 import trimesh
 import argparse
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--time_step', type=int, default=300)
+parser.add_argument('--view', type=int, default=0)
+parser.add_argument('--screenWidth', type=int, default=720)
+parser.add_argument('--screenHeight', type=int, default=720)
+parser.add_argument('--type', type=int, default=6)
+args = parser.parse_args()
+
+screenWidth = args.screenWidth
+screenHeight = args.screenHeight
+time_step = args.time_step # 120
+
 def load_cloth(path):
     """Load .obj of cloth mesh. Only quad-mesh is acceptable!
     Return:
@@ -69,41 +81,34 @@ def load_cloth(path):
         np.array(list(stretch_edges)), np.array(
             list(bend_edges)), np.array(list(shear_edges))
 
-path = "/home/baoyu/2023/unified_dyn_graph/cloth3d/Tshirt3.obj"
+# convert mesh to vertices
+path = "/home/baoyu/2023/unified_dyn_graph/cloth3d/Tshirt2.obj"
 retval = load_cloth(path)
 mesh_verts = retval[0]
 mesh_faces = retval[1]
 mesh_stretch_edges, mesh_bend_edges, mesh_shear_edges = retval[2:]
 
 num_particle = mesh_verts.shape[0]//3
-flattened_area = trimesh.load(path).area/2
+# flattened_area = trimesh.load(path).area/2
 
+## scene parameters
+# cloth_pos [X, Y, Z] 0, 1, 2
+# cloth_pos = [0, 0, 0] # tshirt
+cloth_pos = [-0.6, 0, -0.7] # cloth
+
+# cloth_size [dimx, dimz] 3, 4 # have not been applied to shirt 
+cloth_size = [100, 100] # [100, 100] + r=0.01 one grid
+
+# stiffness [stretch, bend, shear] 5, 6, 7
+# mass 8; particle_r 9
 np.random.seed(0)
 stiffness = np.random.uniform(0.85, 0.95, 3)
 cloth_mass = np.random.uniform(0.2, 2.0)
+particle_r = 0.01 # default 0.00625
 
-cloth_pos = [0, 0, 0]
-cloth_size = [50, 50] #[104, 104]
-
-render_mode = 0 # 0: points, 1: mesh, 2: mesh + points
+# render mode 10; flip_mesh 11
+render_mode = 1 # 0: points, 1: mesh, 2: mesh + points
 flip_mesh = 0
-
-camera_pos = [0, 1.5, 0]
-camera_angle = [np.pi*0.5, -np.pi*0.5, 0]
-camera_width = 720
-camera_height = 720
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--time_step', type=int, default=300)
-parser.add_argument('--view', type=int, default=0)
-parser.add_argument('--screenWidth', type=int, default=720)
-parser.add_argument('--screenHeight', type=int, default=720)
-parser.add_argument('--type', type=int, default=6)
-args = parser.parse_args()
-
-screenWidth = args.screenWidth
-screenHeight = args.screenHeight
-time_step = args.time_step # 120
 
 pyflex.init(False)
 
@@ -111,41 +116,25 @@ scene_params = np.array([
     *cloth_pos,
     *cloth_size, 
     *stiffness,
-    1, 
-    *camera_pos,
-    *camera_angle,
-    camera_width,
-    camera_height,
     cloth_mass,
-    flip_mesh,
-    0.01])
+    particle_r,
+    render_mode,
+    flip_mesh])
 
-# scene_params = scene_params.astype(np.float32)
-# mesh_verts = mesh_verts.astype(np.float32)
-# mesh_stretch_edges = mesh_stretch_edges.astype(np.int32)
-# mesh_bend_edges = mesh_bend_edges.astype(np.int32)
-# mesh_shear_edges = mesh_shear_edges.astype(np.int32)
-# mesh_faces = mesh_faces.astype(np.int32)
-
-pyflex.set_scene(
-    29,
-    scene_params.reshape(-1),
-    mesh_verts.reshape(-1),
-    mesh_stretch_edges.reshape(-1),
-    mesh_bend_edges.reshape(-1),
-    mesh_shear_edges.reshape(-1),
-    mesh_faces.reshape(-1),
-    0)
-
+# Tshirt
 # pyflex.set_scene(
 #     29,
-#     scene_params.reshape(-1),
-#     np.array([0.]),
+#     scene_params,
+#     mesh_verts.reshape(-1),
 #     mesh_stretch_edges.reshape(-1),
 #     mesh_bend_edges.reshape(-1),
 #     mesh_shear_edges.reshape(-1),
 #     mesh_faces.reshape(-1),
 #     0)
+
+# Simple Cloth
+temp = np.array([0])
+pyflex.set_scene(29, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0)
 
 print('n_particles', pyflex.get_n_particles())
 
@@ -158,7 +147,9 @@ pyflex.set_light_fov(70.)
 folder_dir = '../ptcl_data/shirt'
 os.system('mkdir -p ' + folder_dir)
 
-r = 2.
+r = 5.
+move_x = 0 
+move_z = 0 
 ## Camera setting
 if args.view == 0: # top view
     des_dir = folder_dir + '/view_0'
@@ -167,10 +158,8 @@ if args.view == 0: # top view
     cam_height = np.sqrt(2)/2 * r
     cam_dis = np.sqrt(2)/2 * r
     
-    camPos = np.array([0., cam_height, 0.])
+    camPos = np.array([0.+move_x, cam_height, 0.+move_z])
     camAngle = np.array([0., -np.deg2rad(90.), 0.])
-    # camPos = np.array([0.1, 1.25, 3.])
-    # camAngle = np.array([0., -0.2617994, 0.])
     
 elif args.view == 1: # lower right corner
     des_dir = folder_dir + '/view_1'
@@ -179,8 +168,7 @@ elif args.view == 1: # lower right corner
     cam_height = np.sqrt(2)/2 * r
     cam_dis = np.sqrt(2)/2 * r
     
-    camPos = np.array([cam_dis, cam_height, 0.])
-    # camAngle = np.array([np.deg2rad(45.), -np.deg2rad(70.), np.deg2rad(45.)])
+    camPos = np.array([cam_dis+move_x, cam_height, 0.+move_z])
     camAngle = np.array([np.deg2rad(90.), -np.deg2rad(45.), 0.])
     
 elif args.view == 2: # upper right corner
@@ -190,8 +178,7 @@ elif args.view == 2: # upper right corner
     cam_height = np.sqrt(2)/2 * r
     cam_dis = np.sqrt(2)/2 * r
     
-    camPos = np.array([0., cam_height, cam_dis])
-    # camAngle = np.array([np.deg2rad(130.), -np.deg2rad(70.), np.deg2rad(45.)])
+    camPos = np.array([0.+move_x, cam_height, cam_dis+move_z])
     camAngle = np.array([0., -np.deg2rad(45.), 0.])
     
 elif args.view == 3: # upper left corner
@@ -201,8 +188,7 @@ elif args.view == 3: # upper left corner
     cam_height = np.sqrt(2)/2 * r
     cam_dis = -np.sqrt(2)/2 * r
     
-    camPos = np.array([cam_dis, cam_height, 0.])
-    # camAngle = np.array([-np.deg2rad(130.), -np.deg2rad(70.), np.deg2rad(45.)])
+    camPos = np.array([cam_dis+move_x, cam_height, 0.+move_z])
     camAngle = np.array([np.deg2rad(270.), -np.deg2rad(45.), 0.])
     
 elif args.view == 4: # lower left corner
@@ -212,8 +198,7 @@ elif args.view == 4: # lower left corner
     cam_height = np.sqrt(2)/2 * r
     cam_dis = -np.sqrt(2)/2 * r
     
-    camPos = np.array([0., cam_height, cam_dis])
-    # camAngle = np.array([-np.deg2rad(45.), -np.deg2rad(70.), np.deg2rad(45.)])
+    camPos = np.array([0.+move_x, cam_height, cam_dis+move_z])
     camAngle = np.array([np.deg2rad(180.), -np.deg2rad(45.), 0.])
 
 

@@ -10,7 +10,7 @@ time_step = 500 # 120
 
 pyflex.init(False)
 
-global_scale = 12
+global_scale = 15
 
 scale = 0.2 * global_scale / 8.0
 x = -0.9 * global_scale / 8.0
@@ -19,12 +19,13 @@ z = -0.9 * global_scale / 8.0
 staticFriction = 0.0
 dynamicFriction = 1.0
 draw_skin = 1.0
-num_coffee = 1000 # [200, 1000]
-scene_params = np.array([
-    scale, x, y, z, staticFriction, dynamicFriction, draw_skin, num_coffee])
+num_capsule = 500 # [200, 1000]
+slices = 10
+segments = 20
+scene_params = np.array([scale, x, y, z, staticFriction, dynamicFriction, draw_skin, num_capsule, slices, segments])
 
 temp = np.array([0])
-pyflex.set_scene(20, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+pyflex.set_scene(21, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
 
 ## Light setting
 pyflex.set_screenWidth(720)
@@ -32,13 +33,13 @@ pyflex.set_screenHeight(720)
 pyflex.set_light_dir(np.array([0.1, 5.0, 0.1]))
 pyflex.set_light_fov(70.)
 
-folder_dir = '../ptcl_data/coffee'
+folder_dir = '../ptcl_data/capsule'
 os.system('mkdir -p ' + folder_dir)
 
 des_dir = folder_dir + '/view_0'
 os.system('mkdir -p ' + des_dir)
 
-r = global_scale * 3/4 + 5.
+r = global_scale * 3/4 + 3.
 cam_height = np.sqrt(2)/2 * r
 cam_dis = np.sqrt(2)/2 * r
 
