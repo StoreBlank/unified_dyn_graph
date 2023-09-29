@@ -3,7 +3,7 @@ dataset:
   n_episode: 1 #2000
   n_timestep: 1 #10
   global_scale: 5 # cloth, shirt: 3
-  obj: "cloth" # "mustard_bottle"
+  obj: "rope" # "mustard_bottle"
   wkspc_w: 5.0
   headless: False # pyflex visualization 
   robot_type: 'xarm6' # kinova; franka; xarm6

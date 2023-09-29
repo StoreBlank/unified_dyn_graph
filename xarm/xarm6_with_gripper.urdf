@@ -322,7 +322,8 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="xarm_gripper/meshes/finger_v2.obj"/>
+        <!-- <mesh filename="xarm_gripper/meshes/finger_v2.obj"/> -->
+        <mesh filename="xarm_gripper/meshes/stick.obj"/>
       </geometry>
       <!-- <material
         name="">
@@ -336,7 +337,8 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="xarm_gripper/meshes/finger_v2.obj"/>
+        <!-- <mesh filename="xarm_gripper/meshes/finger_v2.obj"/> -->
+        <mesh filename="xarm_gripper/meshes/stick.obj"/>
       </geometry>
     </collision>
   </link>

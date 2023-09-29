@@ -56,7 +56,9 @@ def gen_data(info):
                 u = None
                 # u = env.sample_action(1)
                 # u = u[0, 0] # starting and ending positions of actions
-                u = [4, 0, -1, 0]
+                # u = [2, 2, -2, -2]
+                u = [2, 0, -1, 0]
+                # u = [0, 2, 0, -2]
 
                 # step
                 img = env.step(u)

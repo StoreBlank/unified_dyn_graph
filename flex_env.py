@@ -262,6 +262,15 @@ class FlexEnv(gym.Env):
                     mesh_shear_edges.reshape(-1),
                     mesh_faces.reshape(-1),
                     0)
+        elif self.obj == 'rope':
+            scale = [30., 30., 30.]       # x, y, z
+            trans = [0., 0.1, 0.]       # x, y, z
+            # stiffness = 0.03 + (y - 4) * 0.04
+            cluster = [1.5, 0., 0.55]    # spacing, radius, stiffness
+            draw_mesh = 1
+            scene_params = np.array(scale + trans + cluster + [draw_mesh])
+            temp = np.array([0])
+            pyflex.set_scene(26, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
         elif self.obj == 'mustard_bottle':
             x = 0.
             y = 1. 
@@ -294,7 +303,7 @@ class FlexEnv(gym.Env):
 
         # add robot
         # robot_base_pos = [-6.0 * self.global_scale / 8.0, 0., 0.]
-        robot_base_pos = [-3.5, 0., 0.]
+        robot_base_pos = [-3., 0., 0.5]
         robot_base_orn = [0, 0, 0, 1]
         self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'xarm/xarm6_with_gripper.urdf', robot_base_pos, robot_base_orn, globalScaling=self.global_scale) 
         self.rest_joints = np.zeros(8) 
@@ -324,8 +333,9 @@ class FlexEnv(gym.Env):
         self.reset_robot()
     
     def step(self, action):
-        h = 0.5 + self.global_scale / 8.0 #TODO
+        # h = 0.5 + self.global_scale / 8.0 #TODO
         # h = 0
+        h = 1.0 
         s_2d = np.concatenate([action[:2], [h]])
         e_2d = np.concatenate([action[2:], [h]])
         # print('start action:', s_2d)
@@ -342,11 +352,13 @@ class FlexEnv(gym.Env):
 
         # create way points
         # way_points = [s_2d + np.array([0., 0., self.global_scale / 24.0]), s_2d, e_2d, e_2d + np.array([0., 0., self.global_scale / 24.0])]
-        way_points = [s_2d + np.array([0., 0., 1.]), s_2d, e_2d, e_2d + np.array([0., 0., 1.])]
+        # way_points = [s_2d + np.array([0., 0., 1.]), s_2d, e_2d, e_2d + np.array([0., 0., 1.])]
+        way_points = [s_2d + np.array([0., 0., 0.]), s_2d, e_2d, e_2d + np.array([0., 0., 0.])]
+
         self.reset_robot(self.rest_joints)
         
         # steps from waypoints
-        speed = 1.0/50.
+        speed = 1.0/60.
         for i_p in range(len(way_points)-1):
             s = way_points[i_p]
             e = way_points[i_p+1]
