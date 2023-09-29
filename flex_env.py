@@ -186,20 +186,22 @@ class FlexEnv(gym.Env):
         self.move_z = 0.
         cam_height = np.sqrt(2)/2 * self.camera_radius
         cam_dis = np.sqrt(2)/2 * self.camera_radius
+        cam_dis = 2.5
         if self.camera_view == 0:
-            self.camPos = np.array([self.move_x, cam_height, self.move_z])
+            self.camPos = np.array([self.move_x, cam_height+5., self.move_z])
             self.camAngle = np.array([0., -np.deg2rad(90.), 0.])
         elif self.camera_view == 1:
-            self.camPos = np.array([2.5 + self.move_x, cam_height, -1. + cam_dis+self.move_z])
+            # self.camPos = np.array([2. + self.move_x, cam_height, 0. + cam_dis + self.move_z])
+            self.camPos = np.array([cam_dis + self.move_x, cam_height, cam_dis + self.move_z])
             self.camAngle = np.array([np.deg2rad(45.), -np.deg2rad(45.), 0.])
         elif self.camera_view == 2:
-            self.camPos = np.array([-1. + cam_dis+self.move_x, cam_height, -2.5+self.move_z])
+            self.camPos = np.array([cam_dis + self.move_x, cam_height, -cam_dis + self.move_z])
             self.camAngle = np.array([np.deg2rad(45.+90.), -np.deg2rad(45.), 0.])
         elif self.camera_view == 3:
-            self.camPos = np.array([-2.5+self.move_x, cam_height, 1.-cam_dis+self.move_z])
+            self.camPos = np.array([-cam_dis + self.move_x, cam_height, -cam_dis + self.move_z])
             self.camAngle = np.array([np.deg2rad(45.+180.), -np.deg2rad(45.), 0.])
         elif self.camera_view == 4:
-            self.camPos = np.array([1.-cam_dis+self.move_x, cam_height, 2.5+self.move_z])
+            self.camPos = np.array([-cam_dis + self.move_x, cam_height, cam_dis + self.move_z])
             self.camAngle = np.array([np.deg2rad(45.+270.), -np.deg2rad(45.), 0.])
         else:
             raise ValueError('camera_view not defined')
@@ -211,7 +213,8 @@ class FlexEnv(gym.Env):
         if self.obj == 'cloth':
             cloth_pos = [-0.6, 0, -0.6]
             cloth_size = [100, 100]
-            stiffness = [0.85, 0.90, 0.90] # [stretch, bend, shear]
+            # [0.85, 0.90, 0.90]
+            stiffness = [1.5, 1.5, 1.5] # [stretch, bend, shear]
             cloth_mass = 1.5
             particle_r = 0.01
             render_mode = 1
@@ -262,7 +265,7 @@ class FlexEnv(gym.Env):
         elif self.obj == 'mustard_bottle':
             x = 0.
             y = 1. 
-            z = 0.
+            z = -0.5
             size = 1.
             obj_type = 6
             self.scene_params = np.array([x, y, z, size, obj_type])
@@ -278,9 +281,10 @@ class FlexEnv(gym.Env):
         self.set_camera()
         
         # add "table"
-        wall_height = 0.1
-        halfEdge = np.array([10., wall_height, 10.])
-        center = np.array([self.global_scale/2.0, wall_height, 0.0])
+        wall_height = 0.5
+        halfEdge = np.array([2., wall_height, 2.])
+        # center = np.array([self.global_scale/2.0-3., 0.0, 0.0])
+        center = np.array([0.0, 0.0, 0.0])
         quats = quatFromAxisAngle(axis=np.array([0., 1., 0.]), angle=0.)
         hideShape = 0
         color = np.ones(3) * (160. / 255.)
@@ -289,7 +293,8 @@ class FlexEnv(gym.Env):
         self.wall_shape_states[0] = np.concatenate([center, center, quats, quats])
 
         # add robot
-        robot_base_pos = [-5.0 * self.global_scale / 8.0, 0, 0.2]
+        # robot_base_pos = [-6.0 * self.global_scale / 8.0, 0., 0.]
+        robot_base_pos = [-3.5, 0., 0.]
         robot_base_orn = [0, 0, 0, 1]
         self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'xarm/xarm6_with_gripper.urdf', robot_base_pos, robot_base_orn, globalScaling=self.global_scale) 
         self.rest_joints = np.zeros(8) 
@@ -319,7 +324,7 @@ class FlexEnv(gym.Env):
         self.reset_robot()
     
     def step(self, action):
-        h = 0.2 + self.global_scale / 8.0 #TODO
+        h = 0.5 + self.global_scale / 8.0 #TODO
         # h = 0
         s_2d = np.concatenate([action[:2], [h]])
         e_2d = np.concatenate([action[2:], [h]])
