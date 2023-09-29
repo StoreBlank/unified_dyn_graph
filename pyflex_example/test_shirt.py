@@ -122,19 +122,19 @@ scene_params = np.array([
     flip_mesh])
 
 # Tshirt
-# pyflex.set_scene(
-#     29,
-#     scene_params,
-#     mesh_verts.reshape(-1),
-#     mesh_stretch_edges.reshape(-1),
-#     mesh_bend_edges.reshape(-1),
-#     mesh_shear_edges.reshape(-1),
-#     mesh_faces.reshape(-1),
-#     0)
+pyflex.set_scene(
+    29,
+    scene_params,
+    mesh_verts.reshape(-1),
+    mesh_stretch_edges.reshape(-1),
+    mesh_bend_edges.reshape(-1),
+    mesh_shear_edges.reshape(-1),
+    mesh_faces.reshape(-1),
+    0)
 
 # Simple Cloth
-temp = np.array([0])
-pyflex.set_scene(29, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0)
+# temp = np.array([0])
+# pyflex.set_scene(29, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0)
 
 print('n_particles', pyflex.get_n_particles())
 

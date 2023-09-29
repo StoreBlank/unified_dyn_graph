@@ -131,6 +131,7 @@ class FlexEnv(gym.Env):
 
         # set up pybullet
         physicsClient = p.connect(p.DIRECT)
+        # physicsClient = p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0, 0, -10)
         self.planeId = p.loadURDF("plane.urdf")
@@ -165,7 +166,6 @@ class FlexEnv(gym.Env):
         self.action_dim = 4
 
     def robot_to_shape_states(self, robot_states):
-        # ? self.wall_shape_states
         return np.concatenate([self.wall_shape_states, robot_states], axis=0)
 
     def reset_robot(self, jointPositions = np.zeros(6).tolist()):
@@ -182,25 +182,25 @@ class FlexEnv(gym.Env):
         pyflex.set_shape_states(self.robot_to_shape_states(pyflex.getRobotShapeStates(self.flex_robot_helper)))
     
     def set_camera(self):
-        self.move_x = 0
-        self.move_z = 0
+        self.move_x = 0.
+        self.move_z = 0.
         cam_height = np.sqrt(2)/2 * self.camera_radius
         cam_dis = np.sqrt(2)/2 * self.camera_radius
         if self.camera_view == 0:
-            self.camPos = np.array([0.+self.move_x, cam_height, 0.+self.move_z])
+            self.camPos = np.array([self.move_x, cam_height, self.move_z])
             self.camAngle = np.array([0., -np.deg2rad(90.), 0.])
         elif self.camera_view == 1:
-            self.camPos = np.array([0.+self.move_x, cam_height, cam_dis+self.move_z])
-            self.camAngle = np.array([0., -np.deg2rad(45.), 0.])
+            self.camPos = np.array([2.5 + self.move_x, cam_height, -1. + cam_dis+self.move_z])
+            self.camAngle = np.array([np.deg2rad(45.), -np.deg2rad(45.), 0.])
         elif self.camera_view == 2:
-            self.camPos = np.array([cam_dis+self.move_x, cam_height, 0.+self.move_z])
-            self.camAngle = np.array([np.deg2rad(90.), -np.deg2rad(45.), 0.])
+            self.camPos = np.array([-1. + cam_dis+self.move_x, cam_height, -2.5+self.move_z])
+            self.camAngle = np.array([np.deg2rad(45.+90.), -np.deg2rad(45.), 0.])
         elif self.camera_view == 3:
-            self.camPos = np.array([0.+self.move_x, cam_height, -cam_dis+self.move_z])
-            self.camAngle = np.array([np.deg2rad(180.), -np.deg2rad(45.), 0.])
+            self.camPos = np.array([-2.5+self.move_x, cam_height, 1.-cam_dis+self.move_z])
+            self.camAngle = np.array([np.deg2rad(45.+180.), -np.deg2rad(45.), 0.])
         elif self.camera_view == 4:
-            self.camPos = np.array([-cam_dis+self.move_x, cam_height, 0.+self.move_z])
-            self.camAngle = np.array([np.deg2rad(270.), -np.deg2rad(45.), 0.])
+            self.camPos = np.array([1.-cam_dis+self.move_x, cam_height, 2.5+self.move_z])
+            self.camAngle = np.array([np.deg2rad(45.+270.), -np.deg2rad(45.), 0.])
         else:
             raise ValueError('camera_view not defined')
         
@@ -226,42 +226,80 @@ class FlexEnv(gym.Env):
                 flip_mesh])
             zeros = np.array([0])
             pyflex.set_scene(29, self.scene_params, zeros.astype(np.float64), zeros, zeros, zeros, zeros, 0)
+        elif self.obj == 'shirt':
+            path = "cloth3d/Tshirt2.obj"
+            retval = load_cloth(path)
+            mesh_verts = retval[0]
+            mesh_faces = retval[1]
+            mesh_stretch_edges, mesh_bend_edges, mesh_shear_edges = retval[2:]
+            num_particle = mesh_verts.shape[0]//3
+            
+            cloth_pos = [0, 0, 0]
+            cloth_size = [100, 100]
+            stiffness = [0.85, 0.90, 0.90] # [stretch, bend, shear]
+            cloth_mass = 1.5
+            particle_r = 0.01
+            render_mode = 1
+            flip_mesh = 0
+            self.scene_params = np.array([
+                *cloth_pos,
+                *cloth_size,
+                *stiffness,
+                cloth_mass,
+                particle_r,
+                render_mode,
+                flip_mesh])
+            
+            pyflex.set_scene(
+                    29,
+                    self.scene_params,
+                    mesh_verts.reshape(-1),
+                    mesh_stretch_edges.reshape(-1),
+                    mesh_bend_edges.reshape(-1),
+                    mesh_shear_edges.reshape(-1),
+                    mesh_faces.reshape(-1),
+                    0)
+        elif self.obj == 'mustard_bottle':
+            x = 0.
+            y = 1. 
+            z = 0.
+            size = 1.
+            obj_type = 6
+            self.scene_params = np.array([x, y, z, size, obj_type])
+            temp = np.array([0])
+            pyflex.set_scene(25, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+
+
         else:
             raise ValueError('obj not defined')
     
     def reset(self):
         self.init_scene()
         self.set_camera()
-
-        for i in range(200):
-            pyflex.step()
         
-        # add wall
-        halfEdge = np.array([0.05, 1.0, self.global_scale/2.0])
-        centers = [np.array([self.global_scale/2.0, 1.0, 0.0]),
-                   np.array([0.0, 1.0, -self.global_scale/2.0]),
-                   np.array([-self.global_scale/2.0, 1.0, 0.0]),
-                   np.array([0.0, 1.0, self.global_scale/2.0])]
-        quats = [quatFromAxisAngle(axis=np.array([0., 1., 0.]),
-                                 angle=0.),
-                 quatFromAxisAngle(axis=np.array([0., 1., 0.]),
-                                 angle=np.pi/2.),
-                 quatFromAxisAngle(axis=np.array([0., 1., 0.]),
-                                 angle=0.),
-                 quatFromAxisAngle(axis=np.array([0., 1., 0.]),
-                                 angle=np.pi/2.)]
+        # add "table"
+        wall_height = 0.1
+        halfEdge = np.array([10., wall_height, 10.])
+        center = np.array([self.global_scale/2.0, wall_height, 0.0])
+        quats = quatFromAxisAngle(axis=np.array([0., 1., 0.]), angle=0.)
         hideShape = 0
-        color = np.ones(3) * 0.9
-        self.wall_shape_states = np.zeros((4, 14))
-        for i, center in enumerate(centers):
-            pyflex.add_box(halfEdge, center, quats[i], hideShape, color)
-            self.wall_shape_states[i] = np.concatenate([center, center, quats[i], quats[i]])
-        
+        color = np.ones(3) * (160. / 255.)
+        self.wall_shape_states = np.zeros((1, 14))
+        pyflex.add_box(halfEdge, center, quats, hideShape, color)
+        self.wall_shape_states[0] = np.concatenate([center, center, quats, quats])
+
         # add robot
-        self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'xarm/xarm6_with_gripper.urdf', [-5.0 * self.global_scale / 8.0, 0, 0], [0, 0, 0, 1], globalScaling=self.global_scale) 
-        self.rest_joints = np.zeros(8)
+        robot_base_pos = [-5.0 * self.global_scale / 8.0, 0, 0.2]
+        robot_base_orn = [0, 0, 0, 1]
+        self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'xarm/xarm6_with_gripper.urdf', robot_base_pos, robot_base_orn, globalScaling=self.global_scale) 
+        self.rest_joints = np.zeros(8) 
 
         pyflex.set_shape_states(self.robot_to_shape_states(pyflex.getRobotShapeStates(self.flex_robot_helper)))
+        
+        for i in range(300):
+            pyflex.step()
+        
+        # update robot actions
         for idx, joint in enumerate(self.rest_joints):
             pyflex.set_shape_states(self.robot_to_shape_states(pyflex.resetJointState(self.flex_robot_helper, idx, joint)))
         
@@ -281,12 +319,12 @@ class FlexEnv(gym.Env):
         self.reset_robot()
     
     def step(self, action):
-        # h = self.global_scale / 8.0 #TODO
-        h = 0
+        h = 0.2 + self.global_scale / 8.0 #TODO
+        # h = 0
         s_2d = np.concatenate([action[:2], [h]])
         e_2d = np.concatenate([action[2:], [h]])
-        print('start action:', s_2d)
-        print('end action:', e_2d)
+        # print('start action:', s_2d)
+        # print('end action:', e_2d)
 
         # pusher angle depending on x-axis
         if (s_2d - e_2d)[0] == 0:
@@ -343,6 +381,9 @@ class FlexEnv(gym.Env):
             return
         else:
             return pyflex.render(render_depth=True).reshape(self.screenHeight, self.screenWidth, 5)
+    
+    def close(self):
+        pyflex.clean()
     
     def sample_action(self, n):
         # sample one action within feasible space and with corresponding convex region label

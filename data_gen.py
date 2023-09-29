@@ -52,18 +52,18 @@ def gen_data(info):
             print('timestep:', idx_timestep)
             color_diff = 0
             # while color_diff < 0.001:
-            for i in range(5):
+            for i in range(1):
                 u = None
                 # u = env.sample_action(1)
                 # u = u[0, 0] # starting and ending positions of actions
-                u = [1, 0, -1, 0]
+                u = [4, 0, -1, 0]
 
                 # step
                 img = env.step(u)
-
-
+                
         idx_episode += 1
-
+    
+    env.close()
 
 
 

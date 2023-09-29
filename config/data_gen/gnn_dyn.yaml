@@ -2,10 +2,22 @@ dataset:
   folder: "data/gnn_dyn_data" # gen_data
   n_episode: 1 #2000
   n_timestep: 1 #10
-  global_scale: 3
-  obj: "cloth"
+  global_scale: 5 # cloth, shirt: 3
+  obj: "mustard_bottle"
   wkspc_w: 5.0
   headless: False # pyflex visualization 
   robot_type: 'xarm6' # kinova; franka; xarm6
-  camera_view: 0 # 0, 1, 2, 3, 4
-  camera_radius: 4. # cloth: 4
+  camera_view: 4 # 0, 1, 2, 3, 4
+  camera_radius: 5. # cloth: 4
+
+# dataset:
+#   folder: "data/gnn_dyn_data" # gen_data
+#   n_episode: 1 #2000
+#   n_timestep: 1 #10
+#   global_scale: 3 # cloth, shirt: 3
+#   obj: "shirt"
+#   wkspc_w: 5.0
+#   headless: False # pyflex visualization 
+#   robot_type: 'xarm6' # kinova; franka; xarm6
+#   camera_view: 0 # 0, 1, 2, 3, 4
+#   camera_radius: 3. # cloth: 4
