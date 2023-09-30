@@ -22,7 +22,7 @@ pyflex.init(True)
 
 # scene_params = np.array([])
 
-global_scale = 24 # default 24
+global_scale = 2 # default 24
 
 np.random.seed(0)
 rand_scale = np.random.uniform(0.09, 0.12) * global_scale / 8.0

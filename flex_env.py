@@ -235,7 +235,6 @@ class FlexEnv(gym.Env):
             mesh_verts = retval[0]
             mesh_faces = retval[1]
             mesh_stretch_edges, mesh_bend_edges, mesh_shear_edges = retval[2:]
-            num_particle = mesh_verts.shape[0]//3
             
             cloth_pos = [0, 0, 0]
             cloth_size = [100, 100]
@@ -271,6 +270,80 @@ class FlexEnv(gym.Env):
             scene_params = np.array(scale + trans + cluster + [draw_mesh])
             temp = np.array([0])
             pyflex.set_scene(26, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+        elif self.obj == 'carrots':
+            global_scale = 5
+            np.random.seed(0)
+            # rand_scale = np.random.uniform(0.09, 0.12) * global_scale / 8.0
+            rand_scale = 0.08
+            max_scale = rand_scale
+            min_scale = rand_scale
+            # blob_r = np.random.uniform(0.7, 1.0)
+            blob_r = 0.7
+            x = - blob_r * global_scale / 8.0
+            y = 0.5
+            z = - blob_r * global_scale / 8.0
+            inter_space = 1.5 * max_scale
+            num_x = int(abs(x/1.5) / max_scale + 1) * 2
+            num_y = 1
+            num_z = int(abs(z/1.5) / max_scale + 1) * 2
+            x_off = np.random.uniform(-1./24., 1./24.)
+            z_off = np.random.uniform(-1./24., 1./24.)
+            x += x_off
+            z += z_off
+            num_carrots = (num_x * num_z - 1) * 3
+            add_singular = 0.0
+            add_sing_x = -1
+            add_sing_y = -1
+            add_sing_z = -1
+            add_noise = 0.0
+
+            staticFriction = 1.0
+            dynamicFriction = 1.0
+            draw_skin = 1.0
+            min_dist = 5.0
+            max_dist = 10.0
+
+            self.scene_params = np.array([max_scale,
+                        min_scale,
+                        x,
+                        y,
+                        z,
+                        staticFriction,
+                        dynamicFriction,
+                        draw_skin,
+                        num_carrots,
+                        min_dist,
+                        max_dist,
+                        num_x,
+                        num_y,
+                        num_z,
+                        inter_space,
+                        add_singular,
+                        add_sing_x,
+                        add_sing_y,
+                        add_sing_z,
+                        add_noise,])
+
+            temp = np.array([0])
+            pyflex.set_scene(22, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+        elif self.obj == 'coffee':
+            global_scale = 4
+            scale = 0.2 * global_scale / 8.0
+            x = -0.9 * global_scale / 8.0
+            # x = 0
+            y = 0.5
+            # z = 0
+            z = -0.9 * global_scale / 8.0
+            staticFriction = 0.0
+            dynamicFriction = 1.0
+            draw_skin = 1.0
+            num_coffee = 71 # [200, 1000]
+            scene_params = np.array([
+                scale, x, y, z, staticFriction, dynamicFriction, draw_skin, num_coffee])
+
+            temp = np.array([0])
+            pyflex.set_scene(20, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+
         elif self.obj == 'mustard_bottle':
             x = 0.
             y = 1. 
