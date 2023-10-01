@@ -211,8 +211,8 @@ class FlexEnv(gym.Env):
     
     def init_scene(self):
         if self.obj == 'cloth':
-            cloth_pos = [-0.6, 0, -0.6]
-            cloth_size = [100, 100]
+            cloth_pos = [-1., 0, -1.]
+            cloth_size = [150, 150]
             # [0.85, 0.90, 0.90]
             stiffness = [1.5, 1.5, 1.5] # [stretch, bend, shear]
             cloth_mass = 1.5
@@ -229,18 +229,21 @@ class FlexEnv(gym.Env):
                 flip_mesh])
             zeros = np.array([0])
             pyflex.set_scene(29, self.scene_params, zeros.astype(np.float64), zeros, zeros, zeros, zeros, 0)
+        
         elif self.obj == 'shirt':
             path = "cloth3d/Tshirt2.obj"
             retval = load_cloth(path)
             mesh_verts = retval[0]
             mesh_faces = retval[1]
             mesh_stretch_edges, mesh_bend_edges, mesh_shear_edges = retval[2:]
+
+            mesh_verts = mesh_verts * 3
             
-            cloth_pos = [0, 0, 0]
+            cloth_pos = [-0.5, 0, 0]
             cloth_size = [100, 100]
             stiffness = [0.85, 0.90, 0.90] # [stretch, bend, shear]
             cloth_mass = 1.5
-            particle_r = 0.01
+            particle_r = 0.02
             render_mode = 1
             flip_mesh = 0
             self.scene_params = np.array([
@@ -261,15 +264,17 @@ class FlexEnv(gym.Env):
                     mesh_shear_edges.reshape(-1),
                     mesh_faces.reshape(-1),
                     0)
+        
         elif self.obj == 'rope':
             scale = [30., 30., 30.]       # x, y, z
-            trans = [0., 0.1, 0.]       # x, y, z
+            trans = [-1.5, 1., 0.]       # x, y, z
             # stiffness = 0.03 + (y - 4) * 0.04
-            cluster = [1.5, 0., 0.55]    # spacing, radius, stiffness
+            cluster = [1.3, 0., 0.55]    # spacing, radius, stiffness
             draw_mesh = 1
             scene_params = np.array(scale + trans + cluster + [draw_mesh])
             temp = np.array([0])
             pyflex.set_scene(26, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+        
         elif self.obj == 'carrots':
             global_scale = 5
             np.random.seed(0)
@@ -326,13 +331,12 @@ class FlexEnv(gym.Env):
 
             temp = np.array([0])
             pyflex.set_scene(22, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+        
         elif self.obj == 'coffee':
             global_scale = 4
             scale = 0.2 * global_scale / 8.0
             x = -0.9 * global_scale / 8.0
-            # x = 0
             y = 0.5
-            # z = 0
             z = -0.9 * global_scale / 8.0
             staticFriction = 0.0
             dynamicFriction = 1.0
@@ -353,6 +357,25 @@ class FlexEnv(gym.Env):
             self.scene_params = np.array([x, y, z, size, obj_type])
             temp = np.array([0])
             pyflex.set_scene(25, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+        
+        elif self.obj == 'power_drill':
+            x = 0.
+            y = 1. 
+            z = -0.5
+            size = 1.
+            obj_type = 35
+            self.scene_params = np.array([x, y, z, size, obj_type])
+            temp = np.array([0])
+            pyflex.set_scene(25, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+        
+        elif self.obj == 'multi_ycb':
+            x = 0.
+            y = 0.
+            z = 0.
+            size = 1.
+            self.scene_params = np.array([x, y, z, size])
+            temp = np.array([0])
+            pyflex.set_scene(28, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
 
 
         else:
@@ -364,7 +387,10 @@ class FlexEnv(gym.Env):
         
         # add "table"
         wall_height = 0.5
-        halfEdge = np.array([2., wall_height, 2.])
+        if self.obj == 'multi_ycb':
+            halfEdge = np.array([4., wall_height, 4.])
+        else:
+            halfEdge = np.array([2., wall_height, 2.])
         # center = np.array([self.global_scale/2.0-3., 0.0, 0.0])
         center = np.array([0.0, 0.0, 0.0])
         quats = quatFromAxisAngle(axis=np.array([0., 1., 0.]), angle=0.)
