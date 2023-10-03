@@ -211,14 +211,19 @@ class FlexEnv(gym.Env):
     
     def init_scene(self):
         if self.obj == 'cloth':
-            cloth_pos = [-1., 0, -1.]
-            cloth_size = [150, 150]
-            # [0.85, 0.90, 0.90]
-            stiffness = [1.5, 1.5, 1.5] # [stretch, bend, shear]
-            cloth_mass = 1.5
-            particle_r = 0.01
-            render_mode = 1
+            cloth_pos = [-0.5, 0, -0.5]
+            cloth_size = [20, 20]
+            # stiffness = rand_float(0.4, 1.0)
+            stiffness = 1.0
+            stiffness = [stiffness, stiffness, stiffness] # [stretch, bend, shear]
+            cloth_mass = 1.0
+            particle_r = 0.05
+            render_mode = 2 # 1: points, 2: mesh
             flip_mesh = 0
+            dynamicFriction = 0.25
+            staticFriction = 1.0
+            particleFriction = 0.6
+
             self.scene_params = np.array([
                 *cloth_pos,
                 *cloth_size,
@@ -226,7 +231,8 @@ class FlexEnv(gym.Env):
                 cloth_mass,
                 particle_r,
                 render_mode,
-                flip_mesh])
+                flip_mesh,
+                dynamicFriction, staticFriction, particleFriction])
             zeros = np.array([0])
             pyflex.set_scene(29, self.scene_params, zeros.astype(np.float64), zeros, zeros, zeros, zeros, 0)
         
@@ -240,12 +246,17 @@ class FlexEnv(gym.Env):
             mesh_verts = mesh_verts * 3
             
             cloth_pos = [-0.5, 0, 0]
-            cloth_size = [100, 100]
-            stiffness = [0.85, 0.90, 0.90] # [stretch, bend, shear]
-            cloth_mass = 1.5
+            cloth_size = [20, 20]
+            # stiffness = [0.85, 0.90, 0.90] # [stretch, bend, shear]
+            stiffness = rand_float(0.4, 1.0)
+            stiffness = [stiffness, stiffness, stiffness] # [stretch, bend, shear]
+            cloth_mass = 1.0
             particle_r = 0.02
-            render_mode = 1
+            render_mode = 2
             flip_mesh = 0
+            dynamicFriction = 0.6
+            staticFriction = 1.0
+            particleFriction = 0.6
             self.scene_params = np.array([
                 *cloth_pos,
                 *cloth_size,
@@ -253,7 +264,8 @@ class FlexEnv(gym.Env):
                 cloth_mass,
                 particle_r,
                 render_mode,
-                flip_mesh])
+                flip_mesh, 
+                dynamicFriction, staticFriction, particleFriction])
             
             pyflex.set_scene(
                     29,
@@ -264,6 +276,101 @@ class FlexEnv(gym.Env):
                     mesh_shear_edges.reshape(-1),
                     mesh_faces.reshape(-1),
                     0)
+        
+        elif self.obj == '2d_cloth':
+            radius = 0.05
+            offset_x = -1.
+            offset_y = 0.06
+            offset_z = -1.
+            fabric_type = 2
+
+            if fabric_type == 0:
+                # parameters of the shape
+                dimx = rand_int(25, 35)    # dimx, width
+                dimy = rand_int(25, 35)    # dimy, height
+                dimz = 0
+                # the actuated points
+                ctrl_idx = np.array([
+                    0, dimx // 2, dimx - 1,
+                    dimy // 2 * dimx,
+                    dimy // 2 * dimx + dimx - 1,
+                    (dimy - 1) * dimx,
+                    (dimy - 1) * dimx + dimx // 2,
+                    (dimy - 1) * dimx + dimx - 1])
+
+                offset_x = -dimx * radius / 2.
+                offset_y = 0.06
+                offset_z = -dimy * radius / 2.
+
+            elif fabric_type == 1:
+                # parameters of the shape
+                dimx = rand_int(16, 25)     # width of the body
+                dimy = rand_int(30, 35)     # height of the body
+                dimz = 7                    # size of the sleeves
+                # the actuated points
+                ctrl_idx = np.array([
+                    dimx * dimy,
+                    dimx * dimy + dimz * (dimz + dimz // 2) + (1 + dimz) * (dimz + 1) // 4,
+                    dimx * dimy + (1 + dimz) * dimz // 2 + dimz * (dimz - 1),
+                    dimx * dimy + dimz * (dimz + dimz // 2) + (1 + dimz) * (dimz + 1) // 4 + \
+                        (1 + dimz) * dimz // 2 + dimz * dimz - 1,
+                    dimy // 2 * dimx,
+                    dimy // 2 * dimx + dimx - 1,
+                    (dimy - 1) * dimx,
+                    dimy * dimx - 1])
+
+                offset_x = -(dimx + dimz * 4) * radius / 2.
+                offset_y = 0.06
+                offset_z = -dimy * radius / 2.
+
+            elif fabric_type == 2:
+                # parameters of the shape
+                dimx = rand_int(9, 13) * 2 # width of the pants
+                dimy = rand_int(6, 11)      # height of the top part
+                dimz = rand_int(24, 31)     # height of the leg
+                # the actuated points
+                ctrl_idx = np.array([
+                    0, dimx - 1,
+                    (dimy - 1) * dimx,
+                    (dimy - 1) * dimx + dimx - 1,
+                    dimx * dimy + dimz // 2 * (dimx - 4) // 2,
+                    dimx * dimy + (dimz - 1) * (dimx - 4) // 2,
+                    dimx * dimy + dimz * (dimx - 4) // 2 + 3 + \
+                        dimz // 2 * (dimx - 4) // 2 + (dimx - 4) // 2 - 1,
+                    dimx * dimy + dimz * (dimx - 4) // 2 + 3 + \
+                        dimz * (dimx - 4) // 2 - 1])
+
+                offset_x = -dimx * radius / 2.
+                offset_y = 0.06
+                offset_z = -(dimy + dimz) * radius / 2.
+
+            # physical param
+            stiffness = rand_float(0.4, 1.0)
+            stretchStiffness = stiffness
+            bendStiffness = stiffness
+            shearStiffness = stiffness
+
+            dynamicFriction = 0.6
+            staticFriction = 1.0
+            particleFriction = 0.6
+
+            invMass = 1.0
+
+            # other parameters
+            windStrength = 0.0
+            draw_mesh = 1.
+
+            # set up environment
+            self.scene_params = np.array([
+                offset_x, offset_y, offset_z,
+                fabric_type, dimx, dimy, dimz,
+                ctrl_idx[0], ctrl_idx[1], ctrl_idx[2], ctrl_idx[3],
+                ctrl_idx[4], ctrl_idx[5], ctrl_idx[6], ctrl_idx[7],
+                stretchStiffness, bendStiffness, shearStiffness,
+                dynamicFriction, staticFriction, particleFriction,
+                invMass, windStrength, draw_mesh])
+            zeros = np.array([0])
+            pyflex.set_scene(27, self.scene_params, zeros.astype(np.float64), zeros, zeros, zeros, zeros, 0)
         
         elif self.obj == 'rope':
             scale = [30., 30., 30.]       # x, y, z

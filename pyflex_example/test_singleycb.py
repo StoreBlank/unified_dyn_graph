@@ -88,7 +88,7 @@ elif obj_type == 24:
 elif obj_type == 25:
     folder_dir = '../ptcl_data/mug'
 elif obj_type == 35:
-    folder_dir = '../ptcl_data/power_drill'
+    folder_dir = '../ptcl_data/ '
 elif obj_type == 36:
     folder_dir = '../ptcl_data/wood_block'
 elif obj_type == 37:
