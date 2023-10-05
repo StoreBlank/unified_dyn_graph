@@ -243,20 +243,23 @@ class FlexEnv(gym.Env):
             mesh_faces = retval[1]
             mesh_stretch_edges, mesh_bend_edges, mesh_shear_edges = retval[2:]
 
-            mesh_verts = mesh_verts * 3
+            mesh_verts = mesh_verts * 3.5
             
-            cloth_pos = [-0.5, 0, 0]
+            cloth_pos = [-1., 100., 0.]
             cloth_size = [20, 20]
             # stiffness = [0.85, 0.90, 0.90] # [stretch, bend, shear]
             stiffness = rand_float(0.4, 1.0)
             stiffness = [stiffness, stiffness, stiffness] # [stretch, bend, shear]
             cloth_mass = 1.0
-            particle_r = 0.02
+            particle_r = 0.00625
             render_mode = 2
             flip_mesh = 0
-            dynamicFriction = 0.6
-            staticFriction = 1.0
-            particleFriction = 0.6
+            
+            # 0.6, 1.0, 0.6
+            dynamicFriction = 0.1
+            staticFriction = 0.1
+            particleFriction = 0.1
+            
             self.scene_params = np.array([
                 *cloth_pos,
                 *cloth_size,
@@ -280,9 +283,9 @@ class FlexEnv(gym.Env):
         elif self.obj == '2d_cloth':
             radius = 0.05
             offset_x = -1.
-            offset_y = 0.06
+            offset_y = 5.
             offset_z = -1.
-            fabric_type = 2
+            fabric_type = 1 # 0: cloth, 1: shirt, 2: pants
 
             if fabric_type == 0:
                 # parameters of the shape
@@ -539,9 +542,8 @@ class FlexEnv(gym.Env):
         self.reset_robot()
     
     def step(self, action):
-        # h = 0.5 + self.global_scale / 8.0 #TODO
         # h = 0
-        h = 1.0 
+        h = 0.5 + 0.5
         s_2d = np.concatenate([action[:2], [h]])
         e_2d = np.concatenate([action[2:], [h]])
         # print('start action:', s_2d)
@@ -557,14 +559,12 @@ class FlexEnv(gym.Env):
         orn = np.array([0.0, np.pi, pusher_angle + np.pi/2])
 
         # create way points
-        # way_points = [s_2d + np.array([0., 0., self.global_scale / 24.0]), s_2d, e_2d, e_2d + np.array([0., 0., self.global_scale / 24.0])]
-        # way_points = [s_2d + np.array([0., 0., 1.]), s_2d, e_2d, e_2d + np.array([0., 0., 1.])]
         way_points = [s_2d + np.array([0., 0., 0.]), s_2d, e_2d, e_2d + np.array([0., 0., 0.])]
 
         self.reset_robot(self.rest_joints)
         
         # steps from waypoints
-        speed = 1.0/60.
+        speed = 1.0/200.
         for i_p in range(len(way_points)-1):
             s = way_points[i_p]
             e = way_points[i_p+1]

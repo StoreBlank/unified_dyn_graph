@@ -1,3 +1,8 @@
+import numpy as np
+
+import pyflex
+from utils_env import load_cloth
+
 import os
 import cv2
 import numpy as np
@@ -57,8 +62,8 @@ def gen_data(info):
                 # u = env.sample_action(1)
                 # u = u[0, 0] # starting and ending positions of actions
                 # u = [2, 2, -2, -2]
-                u = [1, 0, -1, 0]
-                # u = [0, -2, 0, 1]
+                u = [2, 0, -1, 0]
+                # u = [0, 2, 0, -1]
 
                 # step
                 img = env.step(u)
