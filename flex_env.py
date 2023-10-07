@@ -578,9 +578,19 @@ class FlexEnv(gym.Env):
     def close(self):
         pyflex.clean()
     
-    def sample_action(self, n):
+    def sample_action(self):
         # sample one action within feasible space and with corresponding convex region label
-        action = -self.wkspc_w + 2 * self.wkspc_w * np.random.rand(n, 1, 4) #TODO
+        positions = self.get_positions().reshape(-1, 4)
+        num_points = positions.shape[0]
+        pickpoint = np.random.randint(0, num_points - 1)
+        pickpoint_pos = positions[pickpoint, :2]
+        # print('start pos:', pickpoint_pos)
+
+        endpoint_pos = pickpoint_pos + np.random.uniform(-self.wkspc_w // 2, self.wkspc_w // 2, size=(1, 2))
+        endpoint_pos = endpoint_pos.reshape(-1)
+        # print('end pos:', endpoint_pos)
+        
+        action = np.concatenate([pickpoint_pos, endpoint_pos], axis=0)
         return action
     
     def get_positions(self):

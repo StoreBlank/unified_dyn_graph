@@ -6,6 +6,8 @@ import yaml
 from flex_env import FlexEnv
 import trimesh
 
+np.random.seed(0)
+
 def load_yaml(filename):
     # load YAML file
     return yaml.safe_load(open(filename, 'r'))
@@ -51,7 +53,7 @@ def gen_data(info):
         cv2.imwrite(os.path.join(epi_dir, "0_color.png"), img[..., :3][..., ::-1])
         cv2.imwrite(os.path.join(epi_dir, "0_depth.png"), (img[:, :, -1]*1000).astype(np.uint16))
         with open(os.path.join(epi_dir, '0_particles.npy'), 'wb') as f:
-            np.save(f, env.get_positions())
+            np.save(f, env.get_positions().reshape(-1, 4))
         # save img
         with open(os.path.join(epi_dir, '0_obs.npy'), 'wb') as f:
             np.save(f, img)
@@ -61,11 +63,10 @@ def gen_data(info):
         for idx_timestep in range(n_timestep):
             print('timestep:', idx_timestep)
             color_diff = 0
-            while color_diff < 0.001:
+            while color_diff < 0.1: #0.001
                 u = None
-                u = env.sample_action(1)
-                u = u[0, 0] # starting and ending positions of actions
-                # u = [2, 2, -2, -2]
+                u = env.sample_action()
+                # u = u[0, 0] # starting and ending positions of actions
                 # u = [1, 0, -1, 0]
                 # u = [0, -2, 0, 1]
 
@@ -87,24 +88,24 @@ def gen_data(info):
                 # # save cloth mesh
                 # cloth_mesh.export(os.path.join(epi_dir, "cloth.obj"))
 
-        if valid:
-            cv2.imwrite(os.path.join(epi_dir, '%d_color.png' % (idx_timestep + 1)), img[:, :, :3][..., ::-1])
-            cv2.imwrite(os.path.join(epi_dir, '%d_depth.png' % (idx_timestep + 1)), (img[:, :, -1]*1000).astype(np.uint16))
-            with open(os.path.join(epi_dir, '%d_particles.npy' % (idx_timestep + 1)), 'wb') as f:
-                np.save(f, env.get_positions())
-            # save img
-            with open(os.path.join(epi_dir, '%d_obs.npy' % (idx_timestep + 1)), 'wb') as f:
-                np.save(f, img)
-            
-            actions[idx_timestep] = u
-            last_img = img.copy()
+            if valid:
+                cv2.imwrite(os.path.join(epi_dir, '%d_color.png' % (idx_timestep + 1)), img[:, :, :3][..., ::-1])
+                cv2.imwrite(os.path.join(epi_dir, '%d_depth.png' % (idx_timestep + 1)), (img[:, :, -1]*1000).astype(np.uint16))
+                with open(os.path.join(epi_dir, '%d_particles.npy' % (idx_timestep + 1)), 'wb') as f:
+                    np.save(f, env.get_positions().reshape(-1, 4))
+                # save img
+                with open(os.path.join(epi_dir, '%d_obs.npy' % (idx_timestep + 1)), 'wb') as f:
+                    np.save(f, img)
+                
+                actions[idx_timestep] = u
+                last_img = img.copy()
 
-            if verbose:
-                print('episode %d' % idx_timestep)
-                print('action: ', actions)
-                print('num particles: ', env.get_positions().shape[0] // 4)
-                print('particle positions: ', env.get_positions())
-                print('\n')
+                if verbose:
+                    print('timestep %d' % idx_timestep)
+                    print('action: ', actions)
+                    print('num particles: ', env.get_positions().shape[0] // 4)
+                    print('particle positions: ', env.get_positions().reshape(-1, 4))
+                    print('\n')
                
         idx_episode += 1
     
@@ -123,7 +124,7 @@ def gen_data(info):
 info = {
     "base_epi": 0,
     "thread_idx": 1,
-    "verbose": True
+    "verbose": False
 }
 gen_data(info)
 
