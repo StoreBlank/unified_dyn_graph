@@ -220,8 +220,8 @@ class FlexEnv(gym.Env):
             cloth_pos = [-1., 1., 0.]
             cloth_size = [20, 20]
             # stiffness = [0.85, 0.90, 0.90] # [stretch, bend, shear]
-            stiffness = rand_float(0.4, 1.0)
-            stiffness = [stiffness, stiffness, stiffness] # [stretch, bend, shear]
+            # stiffness = rand_float(0.4, 1.0)
+            stiffness = [1.0, 0.85, 0.85] # [stretch, bend, shear]
             cloth_mass = 1.0
             particle_r = 0.00625
             render_mode = 2
@@ -534,7 +534,7 @@ class FlexEnv(gym.Env):
         self.reset_robot(self.rest_joints)
         
         # steps from waypoints
-        speed = 1.0/200.
+        speed = 1.0/300.
         for i_p in range(len(way_points)-1):
             s = way_points[i_p]
             e = way_points[i_p+1]
@@ -581,16 +581,18 @@ class FlexEnv(gym.Env):
     def sample_action(self):
         # sample one action within feasible space and with corresponding convex region label
         positions = self.get_positions().reshape(-1, 4)
+        # print('positions:', positions)
         num_points = positions.shape[0]
         pickpoint = np.random.randint(0, num_points - 1)
-        pickpoint_pos = positions[pickpoint, :2]
+        
+        start_x, start_z = positions[pickpoint, 0], positions[pickpoint, 2]
+        endpoint_pos = np.array([start_x, start_z]) + np.random.uniform(-0.5, 0.5, size=(1, 2))
         # print('start pos:', pickpoint_pos)
 
-        endpoint_pos = pickpoint_pos + np.random.uniform(-self.wkspc_w // 2, self.wkspc_w // 2, size=(1, 2))
-        endpoint_pos = endpoint_pos.reshape(-1)
+        startpoint_pos = np.random.uniform(-self.wkspc_w // 2, self.wkspc_w // 2, size=(1, 2))
         # print('end pos:', endpoint_pos)
         
-        action = np.concatenate([pickpoint_pos, endpoint_pos], axis=0)
+        action = np.concatenate([startpoint_pos.reshape(-1), endpoint_pos.reshape(-1)], axis=0)
         return action
     
     def get_positions(self):

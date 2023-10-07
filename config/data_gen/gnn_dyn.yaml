@@ -1,6 +1,6 @@
 dataset:
   folder: "data/" # gen_data
-  n_episode: 1 #2000
+  n_episode: 20 #2000
   n_timestep: 5 #10
   obj: "shirt" 
   wkspc_w: 4.0
