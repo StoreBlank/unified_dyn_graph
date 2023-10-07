@@ -150,8 +150,6 @@ class FlexEnv(gym.Env):
         self.headless = config['dataset']['headless']
         self.obj = config['dataset']['obj']
 
-        self.global_scale = config['dataset']['global_scale']
-
         pyflex.set_screenWidth(self.screenWidth)
         pyflex.set_screenHeight(self.screenHeight)
         pyflex.set_light_dir(np.array([0.1, 5.0, 0.1]))
@@ -210,33 +208,7 @@ class FlexEnv(gym.Env):
         pyflex.set_camAngle(self.camAngle)
     
     def init_scene(self):
-        if self.obj == 'cloth':
-            cloth_pos = [-0.5, 0, -0.5]
-            cloth_size = [20, 20]
-            # stiffness = rand_float(0.4, 1.0)
-            stiffness = 1.0
-            stiffness = [stiffness, stiffness, stiffness] # [stretch, bend, shear]
-            cloth_mass = 1.0
-            particle_r = 0.05
-            render_mode = 2 # 1: points, 2: mesh
-            flip_mesh = 0
-            dynamicFriction = 0.25
-            staticFriction = 1.0
-            particleFriction = 0.6
-
-            self.scene_params = np.array([
-                *cloth_pos,
-                *cloth_size,
-                *stiffness,
-                cloth_mass,
-                particle_r,
-                render_mode,
-                flip_mesh,
-                dynamicFriction, staticFriction, particleFriction])
-            zeros = np.array([0])
-            pyflex.set_scene(29, self.scene_params, zeros.astype(np.float64), zeros, zeros, zeros, zeros, 0)
-        
-        elif self.obj == 'shirt':
+        if self.obj == 'shirt':
             path = "cloth3d/Tshirt2.obj"
             retval = load_cloth(path)
             mesh_verts = retval[0]
@@ -245,7 +217,7 @@ class FlexEnv(gym.Env):
 
             mesh_verts = mesh_verts * 3.5
             
-            cloth_pos = [-1., 100., 0.]
+            cloth_pos = [-1., 1., 0.]
             cloth_size = [20, 20]
             # stiffness = [0.85, 0.90, 0.90] # [stretch, bend, shear]
             stiffness = rand_float(0.4, 1.0)
@@ -256,9 +228,9 @@ class FlexEnv(gym.Env):
             flip_mesh = 0
             
             # 0.6, 1.0, 0.6
-            dynamicFriction = 0.1
-            staticFriction = 0.1
-            particleFriction = 0.1
+            dynamicFriction = 0.5
+            staticFriction = 1.0
+            particleFriction = 0.5
             
             self.scene_params = np.array([
                 *cloth_pos,
@@ -495,13 +467,12 @@ class FlexEnv(gym.Env):
         self.init_scene()
         self.set_camera()
         
-        # add "table"
+        # add table board
         wall_height = 0.5
         if self.obj == 'multi_ycb':
-            halfEdge = np.array([4., wall_height, 4.])
+            halfEdge = np.array([self.wkspc_w, wall_height, self.wkspc_w])
         else:
             halfEdge = np.array([2., wall_height, 2.])
-        # center = np.array([self.global_scale/2.0-3., 0.0, 0.0])
         center = np.array([0.0, 0.0, 0.0])
         quats = quatFromAxisAngle(axis=np.array([0., 1., 0.]), angle=0.)
         hideShape = 0
@@ -511,10 +482,9 @@ class FlexEnv(gym.Env):
         self.wall_shape_states[0] = np.concatenate([center, center, quats, quats])
 
         # add robot
-        # robot_base_pos = [-6.0 * self.global_scale / 8.0, 0., 0.]
         robot_base_pos = [-3., 0., 0.5]
         robot_base_orn = [0, 0, 0, 1]
-        self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'xarm/xarm6_with_gripper.urdf', robot_base_pos, robot_base_orn, globalScaling=self.global_scale) 
+        self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'xarm/xarm6_with_gripper.urdf', robot_base_pos, robot_base_orn, globalScaling=5) 
         self.rest_joints = np.zeros(8) 
 
         pyflex.set_shape_states(self.robot_to_shape_states(pyflex.getRobotShapeStates(self.flex_robot_helper)))
@@ -610,12 +580,26 @@ class FlexEnv(gym.Env):
     
     def sample_action(self, n):
         # sample one action within feasible space and with corresponding convex region label
-        action = -self.wkspc_w + 2 * self.wkspc_w * np.random.rand(n, 1, 4)
+        action = -self.wkspc_w + 2 * self.wkspc_w * np.random.rand(n, 1, 4) #TODO
         return action
     
     def get_positions(self):
         return pyflex.get_positions()
+    
+    def get_faces(self):
+        return pyflex.get_faces()
 
+    def get_camera_intrinsics(self):
+        projMat = pyflex.get_projMatrix().reshape(4, 4).T 
+        cx = self.screenWidth / 2.0
+        cy = self.screenHeight / 2.0
+        fx = projMat[0, 0] * cx
+        fy = projMat[1, 1] * cy
+        camera_intrinsic_params = np.array([fx, fy, cx, cy])
+        return camera_intrinsic_params
+    
+    def get_camera_extrinsics(self):
+        return pyflex.get_viewMatrix().reshape(4, 4).T
             
             
 

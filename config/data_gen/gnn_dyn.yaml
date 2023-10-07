@@ -1,11 +1,10 @@
 dataset:
-  folder: "data/gnn_dyn_data" # gen_data
+  folder: "data/" # gen_data
   n_episode: 1 #2000
-  n_timestep: 1 #10
-  global_scale: 5 
+  n_timestep: 10 #10
   obj: "shirt" 
-  wkspc_w: 5.0
+  wkspc_w: 4.0
   headless: False 
   robot_type: 'xarm6' 
-  camera_view: 4 # 0, 1, 2, 3, 4
+  camera_view: 1 # 0, 1, 2, 3, 4
   camera_radius: 5.5
