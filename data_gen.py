@@ -5,7 +5,6 @@ import time
 import yaml
 from flex_env import FlexEnv
 import trimesh
-import tqdm
 
 def load_yaml(filename):
     # load YAML file
@@ -59,8 +58,10 @@ def gen_data(info):
         # if cam_view is 1: reset the actions
         if cam_view == 1:
             actions = np.zeros((n_timestep, action_dim))
+            color_threshold = 0.1
         else:
             actions = all_actions[idx_episode]
+            color_threshold = 0.01
 
         # initial rendering
         img = env.render()
@@ -75,7 +76,7 @@ def gen_data(info):
         valid = True
         for idx_timestep in range(n_timestep):
             color_diff = 0
-            while color_diff < 0.1: #granular: 0.001
+            while color_diff < color_threshold: #granular: 0.001
                 if cam_view == 1:
                     u = None
                     u = env.sample_action()
@@ -103,7 +104,8 @@ def gen_data(info):
                 with open(os.path.join(epi_dir, '%d_obs.npy' % (idx_timestep + 1)), 'wb') as f:
                     np.save(f, img)
                 
-                actions[idx_timestep] = u
+                if cam_view == 1:
+                    actions[idx_timestep] = u
                 last_img = img.copy()
 
                 if verbose:
@@ -131,6 +133,7 @@ def gen_data(info):
 
     # save actions
     if cam_view == 1:
+        all_actions = all_actions.reshape(n_episode, n_timestep, action_dim)
         np.save(os.path.join(folder_dir, 'actions.npy'), all_actions)
 
     env.close()

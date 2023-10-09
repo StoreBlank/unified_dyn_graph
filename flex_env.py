@@ -349,9 +349,8 @@ class FlexEnv(gym.Env):
         
         elif self.obj == 'rope':
             scale = [30., 30., 30.]       # x, y, z
-            trans = [-1.5, 1., 0.]       # x, y, z
-            # stiffness = 0.03 + (y - 4) * 0.04
-            cluster = [1.3, 0., 0.55]    # spacing, radius, stiffness
+            trans = [-1.6, 1., 0.]       # x, y, z
+            cluster = [1.3, 0., 1.0]    # spacing, radius, stiffness
             draw_mesh = 1
             scene_params = np.array(scale + trans + cluster + [draw_mesh])
             temp = np.array([0])
@@ -361,20 +360,20 @@ class FlexEnv(gym.Env):
             global_scale = 5
             np.random.seed(0)
             # rand_scale = np.random.uniform(0.09, 0.12) * global_scale / 8.0
-            rand_scale = 0.08
+            rand_scale = 0.05
             max_scale = rand_scale
             min_scale = rand_scale
             # blob_r = np.random.uniform(0.7, 1.0)
             blob_r = 0.7
-            x = - blob_r * global_scale / 8.0
+            x = - blob_r * global_scale / 5.0
             y = 0.5
-            z = - blob_r * global_scale / 8.0
+            z = - blob_r * global_scale / 5.0
             inter_space = 1.5 * max_scale
             num_x = int(abs(x/1.5) / max_scale + 1) * 2
             num_y = 1
             num_z = int(abs(z/1.5) / max_scale + 1) * 2
-            x_off = np.random.uniform(-1./24., 1./24.)
-            z_off = np.random.uniform(-1./24., 1./24.)
+            x_off = np.random.uniform(-1./100., 1./100.)
+            z_off = np.random.uniform(-1./100., 1./100.)
             x += x_off
             z += z_off
             num_carrots = (num_x * num_z - 1) * 3
@@ -385,7 +384,7 @@ class FlexEnv(gym.Env):
             add_noise = 0.0
 
             staticFriction = 1.0
-            dynamicFriction = 1.0
+            dynamicFriction = 0.9
             draw_skin = 1.0
             min_dist = 5.0
             max_dist = 10.0
@@ -534,7 +533,10 @@ class FlexEnv(gym.Env):
         self.reset_robot(self.rest_joints)
         
         # steps from waypoints
-        speed = 1.0/300.
+        if self.obj == "shirt":
+            speed = 1.0/300.
+        else:
+            speed = 1.0/100.
         for i_p in range(len(way_points)-1):
             s = way_points[i_p]
             e = way_points[i_p+1]
@@ -586,7 +588,7 @@ class FlexEnv(gym.Env):
         pickpoint = np.random.randint(0, num_points - 1)
         
         start_x, start_z = positions[pickpoint, 0], positions[pickpoint, 2]
-        endpoint_pos = np.array([start_x, start_z]) + np.random.uniform(-0.5, 0.5, size=(1, 2))
+        endpoint_pos = np.array([start_x, start_z]) + np.random.uniform(-0.2, 0.2, size=(1, 2)) # tshirt: 0.5, rope: 0.2
         # print('start pos:', pickpoint_pos)
 
         startpoint_pos = np.random.uniform(-self.wkspc_w // 2, self.wkspc_w // 2, size=(1, 2))
