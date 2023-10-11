@@ -164,4 +164,5 @@ cython_debug/
 *.pcd
 ptcl_data*
 cloth3d
-data
+data_dense
+data_sparse

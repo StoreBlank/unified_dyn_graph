@@ -179,11 +179,10 @@ class FlexEnv(gym.Env):
             
         pyflex.set_shape_states(self.robot_to_shape_states(pyflex.getRobotShapeStates(self.flex_robot_helper)))
     
-    def set_camera(self):
+    def set_singleview_camera(self):
         self.move_x = 0.
         self.move_z = 0.
         cam_height = np.sqrt(2)/2 * self.camera_radius
-        cam_dis = np.sqrt(2)/2 * self.camera_radius
         cam_dis = 2.5
         if self.camera_view == 0:
             self.camPos = np.array([self.move_x, cam_height+5., self.move_z])
@@ -203,9 +202,42 @@ class FlexEnv(gym.Env):
             self.camAngle = np.array([np.deg2rad(45.+270.), -np.deg2rad(45.), 0.])
         else:
             raise ValueError('camera_view not defined')
-        
         pyflex.set_camPos(self.camPos)
         pyflex.set_camAngle(self.camAngle)
+    
+    def init_multiview_camera(self):
+        self.camPos_list = []
+        self.camAngle_list = []
+
+        cam_height = np.sqrt(2)/2 * self.camera_radius #TODO
+        cam_dis = self.wkspc_w // 2 + 0.5
+        
+        rad_list = np.deg2rad(np.array([0., 90., 180., 270.]) + 45.)
+        cam_x_list = np.array([cam_dis, cam_dis, -cam_dis, -cam_dis])
+        cam_z_list = np.array([cam_dis, -cam_dis, -cam_dis, cam_dis])
+
+        for i in range(len(rad_list)):
+            self.camPos_list.append(np.array([cam_x_list[i], cam_height, cam_z_list[i]]))
+            self.camAngle_list.append(np.array([rad_list[i], -np.deg2rad(45.), 0.]))
+        
+        self.cam_intrinsic_params = np.zeros([len(self.camPos_list), 4]) # [fx, fy, cx, cy]
+        self.cam_extrinsic_matrix = np.zeros([len(self.camPos_list), 4, 4]) # [R, t]
+
+    def set_table(self):
+        # add table
+        wall_height = 0.5
+        if self.obj == 'multi_ycb':
+            halfEdge = np.array([self.wkspc_w, wall_height, self.wkspc_w])
+        else:
+            halfEdge = np.array([2., wall_height, 2.])
+        
+        center = np.array([0., 0., 0.])
+        quats = quatFromAxisAngle(axis=np.array([0., 1., 0.]), angle=0.)
+        hideShape = 0
+        color = np.ones(3) * (160. / 255.)
+        self.wall_shape_states = np.zeros((1, 14))
+        pyflex.add_box(halfEdge, center, quats, hideShape, color)
+        self.wall_shape_states[0] = np.concatenate([center, center, quats, quats])
     
     def init_scene(self):
         if self.obj == 'shirt':
@@ -466,33 +498,19 @@ class FlexEnv(gym.Env):
     
     def reset(self):
         self.init_scene()
-        self.set_camera()
-        
-        # add table board
-        wall_height = 0.5
-        if self.obj == 'multi_ycb':
-            halfEdge = np.array([self.wkspc_w, wall_height, self.wkspc_w])
-        else:
-            halfEdge = np.array([2., wall_height, 2.])
-        center = np.array([0.0, 0.0, 0.0])
-        quats = quatFromAxisAngle(axis=np.array([0., 1., 0.]), angle=0.)
-        hideShape = 0
-        color = np.ones(3) * (160. / 255.)
-        self.wall_shape_states = np.zeros((1, 14))
-        pyflex.add_box(halfEdge, center, quats, hideShape, color)
-        self.wall_shape_states[0] = np.concatenate([center, center, quats, quats])
+        self.init_multiview_camera()
+        self.set_table()
 
-        # add robot
+        # set robot
         robot_base_pos = [-3., 0., 0.5]
         robot_base_orn = [0, 0, 0, 1]
         self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'xarm/xarm6_with_gripper.urdf', robot_base_pos, robot_base_orn, globalScaling=5) 
         self.rest_joints = np.zeros(8) 
-
         pyflex.set_shape_states(self.robot_to_shape_states(pyflex.getRobotShapeStates(self.flex_robot_helper)))
         
         for i in range(300):
             pyflex.step()
-        
+
         # update robot actions
         for idx, joint in enumerate(self.rest_joints):
             pyflex.set_shape_states(self.robot_to_shape_states(pyflex.resetJointState(self.flex_robot_helper, idx, joint)))
@@ -503,7 +521,6 @@ class FlexEnv(gym.Env):
         dof_idx = 0
         for i in range(self.num_joints):
             info = p.getJointInfo(self.robotId, i)
-            # print(f"Joint {i}:", info)
             jointType = info[2]
             if (jointType == p.JOINT_PRISMATIC or jointType == p.JOINT_REVOLUTE):
                 self.joints_lower[dof_idx] = info[8]
