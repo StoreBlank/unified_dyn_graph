@@ -169,6 +169,9 @@ class FlexEnv(gym.Env):
         # define action space
         self.action_dim = 4
 
+        # define property space
+        self.property = None
+
     def robot_to_shape_states(self, robot_states):
         return np.concatenate([self.wall_shape_states, robot_states], axis=0)
 
@@ -212,7 +215,7 @@ class FlexEnv(gym.Env):
         pyflex.set_camAngle(self.camAngle)
     
     def init_scene(self):
-        if self.obj == 'shirt':
+        if self.obj == 'Tshirt':
             path = "assets/cloth3d/Tshirt2.obj"
             retval = load_cloth(path)
             mesh_verts = retval[0]
@@ -257,24 +260,28 @@ class FlexEnv(gym.Env):
                     0)
         
         elif self.obj == 'rope':
-            scale = [30., 30., 30.]      
-            trans = [-1.6, 1., 0.]  # x, y, z
-            spacing = 1.3
-            cluster_radius = 1.
-            stiffness = 1.
+            scale = np.array([1., 1., 1.]) * 60.
+            trans = [-1.2, 1., 0.]  # x, y, z
+            spacing = 3.
+            cluster_radius = 0.
+            stiffness = 0.55
             draw_mesh = 0
+
+            radius = 0.05
+            dynamicFriction = 0.35
+            particleFriction = 0.25
             
-            scene_params = np.array(*scale, *trans, spacing, cluster_radius, stiffness, draw_mesh)
+            self.scene_params = np.array([*scale, *trans, spacing, cluster_radius, stiffness, draw_mesh,
+                                     radius, dynamicFriction, particleFriction])
             
             temp = np.array([0])
-            pyflex.set_scene(26, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+            pyflex.set_scene(26, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
 
-            # radius = 0.05
-            # mass = 4.31 #431g
-            # rigidStiffness = 1.0
-            # dynamicFriction = 0.5
-            # staticFriction = 0.
-            # viscosity = 0.
+            self.property = {'particle_radius': radius,
+                             'num_particles': self.get_num_particles(),
+                             'stiffness': stiffness,
+                             'spacing': spacing,
+                             'dynamic_friction': dynamicFriction,}
         
         elif self.obj == 'carrots':
             global_scale = 5
@@ -350,11 +357,11 @@ class FlexEnv(gym.Env):
             draw_skin = 0.
             num_coffee = 200 # [200, 1000]
             radius = 0.033
-            scene_params = np.array([
+            self.scene_params = np.array([
                 scale, x, y, z, staticFriction, dynamicFriction, draw_skin, num_coffee, radius])
 
             temp = np.array([0])
-            pyflex.set_scene(20, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+            pyflex.set_scene(20, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
 
         elif self.obj == 'mustard_bottle':
             x = 0.
@@ -537,7 +544,17 @@ class FlexEnv(gym.Env):
         pyflex.clean()
     
     def sample_action(self):
-        # sample one action within feasible space and with corresponding convex region label
+        if self.obj in ['mustard_bottle', 'power_drill']:
+            action = self.sample_rigid_actions()
+        elif self.obj in ['rope']:
+            action = self.sample_rope_actions()
+        elif self.obj in ['Tshirt']:
+            action = self.sample_tshirt_actios()
+        else:
+            raise ValueError('action not defined')
+        return action
+    
+    def sample_rigid_actions(self):
         positions = self.get_positions().reshape(-1, 4)
         positions[:, 2] *= -1 # align with the coordinates
         num_points = positions.shape[0]
@@ -549,28 +566,64 @@ class FlexEnv(gym.Env):
         obj_pos = positions[pickpoint, [0, 2]]
 
         # check if the objects is close to the table edge
-        if np.min((pos_x-2)**2) < 0.1:
+        table_edge = self.wkspc_w / 2
+        action_thres = 0.1
+        if np.min((pos_x-table_edge)**2) < action_thres:
             endpoint_pos = np.array([0., 0.])
             startpoint_pos = obj_pos + np.array([1., 0.])
-        elif np.min((pos_x+2)**2) < 0.1:
+        elif np.min((pos_x+table_edge)**2) < action_thres:
             endpoint_pos = np.array([0., 0.])
             startpoint_pos = obj_pos + np.array([-1., 0.])
-        elif np.min((pos_z-2)**2) < 0.1:
+        elif np.min((pos_z-table_edge)**2) < action_thres:
             endpoint_pos = np.array([0., 0.])
             startpoint_pos = obj_pos + np.array([0., 1.])
-        elif np.min((pos_z+2)**2) < 0.1:
+        elif np.min((pos_z+table_edge)**2) < action_thres:
             endpoint_pos = np.array([0., 0.])
             startpoint_pos = obj_pos + np.array([0., -1.])
         else:
-            endpoint_pos = obj_pos
+            endpoint_pos = obj_pos 
             while True:
-                np.random.uniform(-self.wkspc_w // 2 + 0.5, self.wkspc_w // 2 - 0.5, size=(1, 2))
+                np.random.uniform(-table_edge + 0.5, table_edge - 0.5, size=(1, 2))
                 startpoint_pos = np.random.uniform(-self.wkspc_w // 2 + 0.5, self.wkspc_w // 2 - 0.5, size=(1, 2))
                 if np.min(cdist(startpoint_pos, pos_xz)) > 0.2:
                     break
         
         action = np.concatenate([startpoint_pos.reshape(-1), endpoint_pos.reshape(-1)], axis=0)
         return action
+    
+    def sample_rope_actions(self):
+        positions = self.get_positions().reshape(-1, 4)
+        positions[:, 2] *= -1 # align with the coordinates
+        num_points = positions.shape[0]
+        pos_xz = positions[:, [0, 2]]
+        pos_x, pos_z = positions[:, 0], positions[:, 2]
+
+        # random choose a start point which can not be overlapped with the object
+        while True:
+            startpoint_pos = np.random.uniform(-self.wkspc_w // 2 + 0.5, self.wkspc_w // 2 - 0.5, size=(1, 2))
+            if np.min(cdist(startpoint_pos, pos_xz)) > 0.2:
+                break
+
+        # choose end points within some distances to the object
+        while True:
+            pickpoint = np.random.randint(0, num_points - 1)
+            obj_pos = positions[pickpoint, [0, 2]]
+            # check if the start point is left/right to the object
+            if startpoint_pos.reshape(-1)[1] < 0.:
+                move_dis = np.random.uniform(0., 0.5)
+            else:
+                move_dis = np.random.uniform(-0.5, 0.)
+            # move_dis = np.random.uniform(-0.5, 0.5)
+            # move_dis = 0.
+            endpoint_pos = obj_pos + [0., move_dis]
+            if np.min((endpoint_pos[0] - 2.)**2) > 0.8:
+                break
+
+        action = np.concatenate([startpoint_pos.reshape(-1), endpoint_pos.reshape(-1)], axis=0)
+        return action
+    
+    def sample_tshirt_actios(self):
+        raise NotImplementedError
     
     def get_positions(self):
         return pyflex.get_positions()
@@ -589,6 +642,15 @@ class FlexEnv(gym.Env):
     
     def get_camera_extrinsics(self):
         return pyflex.get_viewMatrix().reshape(4, 4).T
+    
+    def get_scene_para(self):
+        return self.scene_params
+    
+    def get_property(self):
+        return self.property
+    
+    def get_num_particles(self):
+        return self.get_positions().reshape(-1, 4).shape[0]
             
             
 

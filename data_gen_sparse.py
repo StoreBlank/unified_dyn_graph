@@ -5,6 +5,7 @@ import time
 import yaml
 from flex_env_sparse import FlexEnv
 import trimesh
+import json
 
 def load_yaml(filename):
     # load YAML file
@@ -47,13 +48,18 @@ def gen_data(info):
     idx_episode = base_epi
     while idx_episode < base_epi + n_episode:
         start_epi_time = time.time()
-        if verbose: 
-            print('episode:', idx_episode)
+        print('episode:', idx_episode)
        
         env.reset()
        
         epi_dir = os.path.join(des_dir, "episode_%d" % idx_episode)
         os.system("mkdir -p %s" % epi_dir)
+
+        # save property
+        property = env.get_property()
+        print(property)
+        with open(os.path.join(epi_dir, 'property.json'), 'w') as f:
+           json.dump(property, f)
 
         # if cam_view is 1: reset the actions
         if cam_view == 1:
@@ -75,14 +81,18 @@ def gen_data(info):
         last_img = img.copy()
         valid = True
         for idx_timestep in range(n_timestep):
+            if verbose:
+                print('timestep %d' % idx_timestep)
+            
             color_diff = 0
-            while color_diff < color_threshold: #granular: 0.001
-                if cam_view == 1:
-                    u = None
-                    u = env.sample_action()
-                    print('u: ', u)
-                else:
-                    u = actions[idx_timestep]
+            while color_diff < color_threshold: #granular: 0.001 
+                # if cam_view == 1:
+                #     u = None
+                #     u = env.sample_action()
+                # else:
+                #     u = actions[idx_timestep]
+
+                u = [0., 1., 0., -1.]
 
                 # step
                 img = env.step(u)
@@ -92,7 +102,8 @@ def gen_data(info):
                     break
                 
                 color_diff = np.mean(np.abs(img[:, :, :3] - last_img[:, :, :3]))
-                print('color_diff:', color_diff)
+                if verbose:
+                    print('color_diff:', color_diff)
 
             if valid:
                 cv2.imwrite(os.path.join(epi_dir, '%d_color.png' % (idx_timestep + 1)), img[:, :, :3][..., ::-1])
@@ -108,10 +119,9 @@ def gen_data(info):
                 last_img = img.copy()
 
                 if verbose:
-                    print('timestep %d' % idx_timestep)
-                    # print('action: ', u)
+                    print('action: ', u)
                     print('num particles: ', env.get_positions().shape[0] // 4)
-                    # print('particle positions: ', env.get_positions().reshape(-1, 4))
+                    print('particle positions: ', env.get_positions().reshape(-1, 4))
                     print('\n')
             else:
                 break
@@ -143,7 +153,7 @@ def gen_data(info):
 info = {
     "base_epi": 0,
     "thread_idx": 1,
-    "verbose": True
+    "verbose": False,
 }
 gen_data(info)
 

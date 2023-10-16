@@ -2,7 +2,7 @@ dataset:
   folder: "data_dense/" # gen_data
   n_episode: 1 #2000
   n_rollout: 1
-  n_timestep: 2 # tshirt: 5
+  n_timestep: 5 # tshirt: 5
   obj: "rope" 
   wkspc_w: 4.0
   headless: False
