@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import time
 import yaml
-from flex_env import FlexEnv
+from flex_env_sparse import FlexEnv
 import trimesh
 
 def load_yaml(filename):
@@ -80,10 +80,9 @@ def gen_data(info):
                 if cam_view == 1:
                     u = None
                     u = env.sample_action()
+                    print('u: ', u)
                 else:
                     u = actions[idx_timestep]
-                # u = [1, 0, -1, 0]
-                # u = [0, -2, 0, 1]
 
                 # step
                 img = env.step(u)
@@ -110,7 +109,7 @@ def gen_data(info):
 
                 if verbose:
                     print('timestep %d' % idx_timestep)
-                    print('action: ', u)
+                    # print('action: ', u)
                     print('num particles: ', env.get_positions().shape[0] // 4)
                     # print('particle positions: ', env.get_positions().reshape(-1, 4))
                     print('\n')

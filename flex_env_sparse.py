@@ -3,6 +3,7 @@ import numpy as np
 import pyflex
 import gym
 import math
+from scipy.spatial.distance import cdist
 
 # robot
 import pybullet as p
@@ -139,8 +140,13 @@ class FlexEnv(gym.Env):
         # set up robot arm
         # xarm6
         self.flex_robot_helper = FlexRobotHelper()
-        self.end_idx = 6
-        self.num_dofs = 6
+        self.gripper = config['dataset']['gripper']
+        if self.gripper: #TODO    
+            self.end_idx = 14
+            self.num_dofs = 14
+        else:
+            self.end_idx = 6
+            self.num_dofs = 6
 
         # set up pyflex
         self.screenWidth = 720
@@ -166,7 +172,7 @@ class FlexEnv(gym.Env):
     def robot_to_shape_states(self, robot_states):
         return np.concatenate([self.wall_shape_states, robot_states], axis=0)
 
-    def reset_robot(self, jointPositions = np.zeros(6).tolist()):
+    def reset_robot(self, jointPositions = np.zeros(14).tolist()):
         index = 0
         for j in range(self.num_joints):
             p.changeDynamics(self.robotId, j, linearDamping=0, angularDamping=0)
@@ -179,69 +185,35 @@ class FlexEnv(gym.Env):
             
         pyflex.set_shape_states(self.robot_to_shape_states(pyflex.getRobotShapeStates(self.flex_robot_helper)))
     
-    def set_singleview_camera(self):
-        self.move_x = 0.
-        self.move_z = 0.
-        cam_height = np.sqrt(2)/2 * self.camera_radius
-        cam_dis = 2.5
+    def set_camera(self):
+        # cam_height = np.sqrt(2)/2 * self.camera_radius
+        # cam_dis = np.sqrt(2)/2 * self.camera_radius
+        cam_dis = 3.
+        cam_height = 4.5
         if self.camera_view == 0:
-            self.camPos = np.array([self.move_x, cam_height+5., self.move_z])
+            self.camPos = np.array([0., cam_height+5., 0.])
             self.camAngle = np.array([0., -np.deg2rad(90.), 0.])
         elif self.camera_view == 1:
-            # self.camPos = np.array([2. + self.move_x, cam_height, 0. + cam_dis + self.move_z])
-            self.camPos = np.array([cam_dis + self.move_x, cam_height, cam_dis + self.move_z])
+            self.camPos = np.array([cam_dis, cam_height, cam_dis])
             self.camAngle = np.array([np.deg2rad(45.), -np.deg2rad(45.), 0.])
         elif self.camera_view == 2:
-            self.camPos = np.array([cam_dis + self.move_x, cam_height, -cam_dis + self.move_z])
+            self.camPos = np.array([cam_dis, cam_height, -cam_dis])
             self.camAngle = np.array([np.deg2rad(45.+90.), -np.deg2rad(45.), 0.])
         elif self.camera_view == 3:
-            self.camPos = np.array([-cam_dis + self.move_x, cam_height, -cam_dis + self.move_z])
+            self.camPos = np.array([-cam_dis, cam_height, -cam_dis])
             self.camAngle = np.array([np.deg2rad(45.+180.), -np.deg2rad(45.), 0.])
         elif self.camera_view == 4:
-            self.camPos = np.array([-cam_dis + self.move_x, cam_height, cam_dis + self.move_z])
+            self.camPos = np.array([-cam_dis, cam_height, cam_dis])
             self.camAngle = np.array([np.deg2rad(45.+270.), -np.deg2rad(45.), 0.])
         else:
             raise ValueError('camera_view not defined')
+        
         pyflex.set_camPos(self.camPos)
         pyflex.set_camAngle(self.camAngle)
     
-    def init_multiview_camera(self):
-        self.camPos_list = []
-        self.camAngle_list = []
-
-        cam_height = np.sqrt(2)/2 * self.camera_radius #TODO
-        cam_dis = self.wkspc_w // 2 + 0.5
-        
-        rad_list = np.deg2rad(np.array([0., 90., 180., 270.]) + 45.)
-        cam_x_list = np.array([cam_dis, cam_dis, -cam_dis, -cam_dis])
-        cam_z_list = np.array([cam_dis, -cam_dis, -cam_dis, cam_dis])
-
-        for i in range(len(rad_list)):
-            self.camPos_list.append(np.array([cam_x_list[i], cam_height, cam_z_list[i]]))
-            self.camAngle_list.append(np.array([rad_list[i], -np.deg2rad(45.), 0.]))
-        
-        self.cam_intrinsic_params = np.zeros([len(self.camPos_list), 4]) # [fx, fy, cx, cy]
-        self.cam_extrinsic_matrix = np.zeros([len(self.camPos_list), 4, 4]) # [R, t]
-
-    def set_table(self):
-        # add table
-        wall_height = 0.5
-        if self.obj == 'multi_ycb':
-            halfEdge = np.array([self.wkspc_w, wall_height, self.wkspc_w])
-        else:
-            halfEdge = np.array([2., wall_height, 2.])
-        
-        center = np.array([0., 0., 0.])
-        quats = quatFromAxisAngle(axis=np.array([0., 1., 0.]), angle=0.)
-        hideShape = 0
-        color = np.ones(3) * (160. / 255.)
-        self.wall_shape_states = np.zeros((1, 14))
-        pyflex.add_box(halfEdge, center, quats, hideShape, color)
-        self.wall_shape_states[0] = np.concatenate([center, center, quats, quats])
-    
     def init_scene(self):
         if self.obj == 'shirt':
-            path = "cloth3d/Tshirt2.obj"
+            path = "assets/cloth3d/Tshirt2.obj"
             retval = load_cloth(path)
             mesh_verts = retval[0]
             mesh_faces = retval[1]
@@ -256,7 +228,7 @@ class FlexEnv(gym.Env):
             stiffness = [1.0, 0.85, 0.85] # [stretch, bend, shear]
             cloth_mass = 1.0
             particle_r = 0.00625
-            render_mode = 2
+            render_mode = 1
             flip_mesh = 0
             
             # 0.6, 1.0, 0.6
@@ -284,114 +256,30 @@ class FlexEnv(gym.Env):
                     mesh_faces.reshape(-1),
                     0)
         
-        elif self.obj == '2d_cloth':
-            radius = 0.05
-            offset_x = -1.
-            offset_y = 5.
-            offset_z = -1.
-            fabric_type = 1 # 0: cloth, 1: shirt, 2: pants
-
-            if fabric_type == 0:
-                # parameters of the shape
-                dimx = rand_int(25, 35)    # dimx, width
-                dimy = rand_int(25, 35)    # dimy, height
-                dimz = 0
-                # the actuated points
-                ctrl_idx = np.array([
-                    0, dimx // 2, dimx - 1,
-                    dimy // 2 * dimx,
-                    dimy // 2 * dimx + dimx - 1,
-                    (dimy - 1) * dimx,
-                    (dimy - 1) * dimx + dimx // 2,
-                    (dimy - 1) * dimx + dimx - 1])
-
-                offset_x = -dimx * radius / 2.
-                offset_y = 0.06
-                offset_z = -dimy * radius / 2.
-
-            elif fabric_type == 1:
-                # parameters of the shape
-                dimx = rand_int(16, 25)     # width of the body
-                dimy = rand_int(30, 35)     # height of the body
-                dimz = 7                    # size of the sleeves
-                # the actuated points
-                ctrl_idx = np.array([
-                    dimx * dimy,
-                    dimx * dimy + dimz * (dimz + dimz // 2) + (1 + dimz) * (dimz + 1) // 4,
-                    dimx * dimy + (1 + dimz) * dimz // 2 + dimz * (dimz - 1),
-                    dimx * dimy + dimz * (dimz + dimz // 2) + (1 + dimz) * (dimz + 1) // 4 + \
-                        (1 + dimz) * dimz // 2 + dimz * dimz - 1,
-                    dimy // 2 * dimx,
-                    dimy // 2 * dimx + dimx - 1,
-                    (dimy - 1) * dimx,
-                    dimy * dimx - 1])
-
-                offset_x = -(dimx + dimz * 4) * radius / 2.
-                offset_y = 0.06
-                offset_z = -dimy * radius / 2.
-
-            elif fabric_type == 2:
-                # parameters of the shape
-                dimx = rand_int(9, 13) * 2 # width of the pants
-                dimy = rand_int(6, 11)      # height of the top part
-                dimz = rand_int(24, 31)     # height of the leg
-                # the actuated points
-                ctrl_idx = np.array([
-                    0, dimx - 1,
-                    (dimy - 1) * dimx,
-                    (dimy - 1) * dimx + dimx - 1,
-                    dimx * dimy + dimz // 2 * (dimx - 4) // 2,
-                    dimx * dimy + (dimz - 1) * (dimx - 4) // 2,
-                    dimx * dimy + dimz * (dimx - 4) // 2 + 3 + \
-                        dimz // 2 * (dimx - 4) // 2 + (dimx - 4) // 2 - 1,
-                    dimx * dimy + dimz * (dimx - 4) // 2 + 3 + \
-                        dimz * (dimx - 4) // 2 - 1])
-
-                offset_x = -dimx * radius / 2.
-                offset_y = 0.06
-                offset_z = -(dimy + dimz) * radius / 2.
-
-            # physical param
-            stiffness = rand_float(0.4, 1.0)
-            stretchStiffness = stiffness
-            bendStiffness = stiffness
-            shearStiffness = stiffness
-
-            dynamicFriction = 0.6
-            staticFriction = 1.0
-            particleFriction = 0.6
-
-            invMass = 1.0
-
-            # other parameters
-            windStrength = 0.0
-            draw_mesh = 1.
-
-            # set up environment
-            self.scene_params = np.array([
-                offset_x, offset_y, offset_z,
-                fabric_type, dimx, dimy, dimz,
-                ctrl_idx[0], ctrl_idx[1], ctrl_idx[2], ctrl_idx[3],
-                ctrl_idx[4], ctrl_idx[5], ctrl_idx[6], ctrl_idx[7],
-                stretchStiffness, bendStiffness, shearStiffness,
-                dynamicFriction, staticFriction, particleFriction,
-                invMass, windStrength, draw_mesh])
-            zeros = np.array([0])
-            pyflex.set_scene(27, self.scene_params, zeros.astype(np.float64), zeros, zeros, zeros, zeros, 0)
-        
         elif self.obj == 'rope':
-            scale = [30., 30., 30.]       # x, y, z
-            trans = [-1.6, 1., 0.]       # x, y, z
-            cluster = [1.3, 0., 1.0]    # spacing, radius, stiffness
-            draw_mesh = 1
-            scene_params = np.array(scale + trans + cluster + [draw_mesh])
+            scale = [30., 30., 30.]      
+            trans = [-1.6, 1., 0.]  # x, y, z
+            spacing = 1.3
+            cluster_radius = 1.
+            stiffness = 1.
+            draw_mesh = 0
+            
+            scene_params = np.array(*scale, *trans, spacing, cluster_radius, stiffness, draw_mesh)
+            
             temp = np.array([0])
             pyflex.set_scene(26, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+
+            # radius = 0.05
+            # mass = 4.31 #431g
+            # rigidStiffness = 1.0
+            # dynamicFriction = 0.5
+            # staticFriction = 0.
+            # viscosity = 0.
         
         elif self.obj == 'carrots':
             global_scale = 5
             np.random.seed(0)
-            rand_scale = np.random.uniform(0.09, 0.12) * global_scale / 8.0
+            rand_scale = np.random.uniform(0.09, 0.12) * global_scale / 7.0
             # rand_scale = 0.07
             max_scale = rand_scale
             min_scale = rand_scale
@@ -409,6 +297,7 @@ class FlexEnv(gym.Env):
             x += x_off
             z += z_off
             num_carrots = (num_x * num_z - 1) * 3
+            # num_carrots = pyflex.get_n_particles()
             print('num_carrots:', num_carrots)
 
             add_singular = 0.0
@@ -416,10 +305,12 @@ class FlexEnv(gym.Env):
             add_sing_y = -1
             add_sing_z = -1
             add_noise = 0.0
+            radius = 0.033
+            print('particle_r:', radius)
 
             staticFriction = 1.0
             dynamicFriction = 0.9
-            draw_skin = 1.0
+            draw_skin = 0. # 0: point; 1: mesh
             min_dist = 5.0
             max_dist = 10.0
 
@@ -442,12 +333,13 @@ class FlexEnv(gym.Env):
                         add_sing_x,
                         add_sing_y,
                         add_sing_z,
-                        add_noise,])
+                        add_noise,
+                        radius])
 
             temp = np.array([0])
             pyflex.set_scene(22, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
         
-        elif self.obj == 'coffee':
+        elif self.obj == 'coffee': #TODO: change particle radius
             global_scale = 4
             scale = 0.2 * global_scale / 8.0
             x = -0.9 * global_scale / 8.0
@@ -455,10 +347,11 @@ class FlexEnv(gym.Env):
             z = -0.9 * global_scale / 8.0
             staticFriction = 0.0
             dynamicFriction = 1.0
-            draw_skin = 1.0
-            num_coffee = 71 # [200, 1000]
+            draw_skin = 0.
+            num_coffee = 200 # [200, 1000]
+            radius = 0.033
             scene_params = np.array([
-                scale, x, y, z, staticFriction, dynamicFriction, draw_skin, num_coffee])
+                scale, x, y, z, staticFriction, dynamicFriction, draw_skin, num_coffee, radius])
 
             temp = np.array([0])
             pyflex.set_scene(20, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
@@ -466,10 +359,21 @@ class FlexEnv(gym.Env):
         elif self.obj == 'mustard_bottle':
             x = 0.
             y = 1. 
-            z = -0.5
-            size = 1.
+            z = 0.
+            size = 0.8
             obj_type = 6
-            self.scene_params = np.array([x, y, z, size, obj_type])
+            draw_mesh = 0
+
+            radius = 0.05
+            mass = 4.31 #431g
+            rigidStiffness = 1.0
+            dynamicFriction = 0.5
+            staticFriction = 0.
+            viscosity = 0.
+
+            self.scene_params = np.array([x, y, z, size, obj_type, draw_mesh,
+                                          radius, mass, rigidStiffness, dynamicFriction, staticFriction, viscosity])
+            
             temp = np.array([0])
             pyflex.set_scene(25, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
         
@@ -479,7 +383,18 @@ class FlexEnv(gym.Env):
             z = -0.5
             size = 1.
             obj_type = 35
-            self.scene_params = np.array([x, y, z, size, obj_type])
+            draw_mesh = 0
+
+            radius = 0.1
+            mass = 10.
+            rigidStiffness = 1.0
+            dynamicFriction = 0.5
+            staticFriction = 0.
+            viscosity = 0.
+
+            self.scene_params = np.array([x, y, z, size, obj_type, draw_mesh,
+                                          radius, mass, rigidStiffness, dynamicFriction, staticFriction, viscosity])
+    
             temp = np.array([0])
             pyflex.set_scene(25, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
         
@@ -492,25 +407,44 @@ class FlexEnv(gym.Env):
             temp = np.array([0])
             pyflex.set_scene(28, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
 
-
         else:
             raise ValueError('obj not defined')
     
     def reset(self):
         self.init_scene()
-        self.init_multiview_camera()
-        self.set_table()
+        self.set_camera()
+        
+        # add table board
+        wall_height = 0.5
+        if self.obj == 'multi_ycb':
+            halfEdge = np.array([self.wkspc_w, wall_height, self.wkspc_w])
+        else:
+            halfEdge = np.array([2., wall_height, 2.])
+        center = np.array([0.0, 0.0, 0.0])
+        quats = quatFromAxisAngle(axis=np.array([0., 1., 0.]), angle=0.)
+        hideShape = 0
+        color = np.ones(3) * (160. / 255.)
+        self.wall_shape_states = np.zeros((1, 14))
+        pyflex.add_box(halfEdge, center, quats, hideShape, color)
+        self.wall_shape_states[0] = np.concatenate([center, center, quats, quats])
 
-        # set robot
-        robot_base_pos = [-3., 0., 0.5]
-        robot_base_orn = [0, 0, 0, 1]
-        self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'xarm/xarm6_with_gripper.urdf', robot_base_pos, robot_base_orn, globalScaling=5) 
-        self.rest_joints = np.zeros(8) 
+        # add robot
+        if self.gripper:
+            robot_base_pos = [-2.5, 0., 1.]
+            robot_base_orn = [0, 0, 0, 1]
+            self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'assets/xarm/xarm6_with_gripper_2.urdf', robot_base_pos, robot_base_orn, globalScaling=4.5) 
+            self.rest_joints = np.zeros(14)
+        else:
+            robot_base_pos = [-2.5, 0., 0.5]
+            robot_base_orn = [0, 0, 0, 1]
+            self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'assets/xarm/xarm6_with_gripper.urdf', robot_base_pos, robot_base_orn, globalScaling=4.5) 
+            self.rest_joints = np.zeros(8)
+
         pyflex.set_shape_states(self.robot_to_shape_states(pyflex.getRobotShapeStates(self.flex_robot_helper)))
         
         for i in range(300):
             pyflex.step()
-
+        
         # update robot actions
         for idx, joint in enumerate(self.rest_joints):
             pyflex.set_shape_states(self.robot_to_shape_states(pyflex.resetJointState(self.flex_robot_helper, idx, joint)))
@@ -531,23 +465,26 @@ class FlexEnv(gym.Env):
     
     def step(self, action):
         # h = 0
-        h = 0.5 + 0.5
+        if self.gripper:
+            h = 0.5 + 1
+        else:
+            h = 0.5 + 0.5 # table + pusher
         s_2d = np.concatenate([action[:2], [h]])
         e_2d = np.concatenate([action[2:], [h]])
-        # print('start action:', s_2d)
-        # print('end action:', e_2d)
 
         # pusher angle depending on x-axis
         if (s_2d - e_2d)[0] == 0:
             pusher_angle = np.pi/2
         else:
-            pusher_angle = np.arctan((s_2d - e_2d)[1] / (s_2d - e_2d)[0])
+            pusher_angle = np.arctan2((s_2d - e_2d)[1], (s_2d - e_2d)[0])
         
         # robot orientation
         orn = np.array([0.0, np.pi, pusher_angle + np.pi/2])
 
         # create way points
-        way_points = [s_2d + np.array([0., 0., 0.]), s_2d, e_2d, e_2d + np.array([0., 0., 0.])]
+        # way_points = [s_2d + np.array([0., 0., 0.]), s_2d, e_2d, e_2d + np.array([0., 0., 0.])]
+        way_points = [s_2d, e_2d]
+        # print('way_points:', way_points)
 
         self.reset_robot(self.rest_joints)
         
@@ -602,16 +539,35 @@ class FlexEnv(gym.Env):
     def sample_action(self):
         # sample one action within feasible space and with corresponding convex region label
         positions = self.get_positions().reshape(-1, 4)
-        # print('positions:', positions)
+        positions[:, 2] *= -1 # align with the coordinates
         num_points = positions.shape[0]
-        pickpoint = np.random.randint(0, num_points - 1)
-        
-        start_x, start_z = positions[pickpoint, 0], positions[pickpoint, 2]
-        endpoint_pos = np.array([start_x, start_z]) + np.random.uniform(-0.2, 0.2, size=(1, 2)) # tshirt: 0.5, rope: 0.2
-        # print('start pos:', pickpoint_pos)
+        pos_xz = positions[:, [0, 2]]
+        pos_x, pos_z = positions[:, 0], positions[:, 2]
 
-        startpoint_pos = np.random.uniform(-self.wkspc_w // 2, self.wkspc_w // 2, size=(1, 2))
-        # print('end pos:', endpoint_pos)
+        # choose end points within the limited region of workspace
+        pickpoint = np.random.randint(0, num_points - 1)
+        obj_pos = positions[pickpoint, [0, 2]]
+
+        # check if the objects is close to the table edge
+        if np.min((pos_x-2)**2) < 0.1:
+            endpoint_pos = np.array([0., 0.])
+            startpoint_pos = obj_pos + np.array([1., 0.])
+        elif np.min((pos_x+2)**2) < 0.1:
+            endpoint_pos = np.array([0., 0.])
+            startpoint_pos = obj_pos + np.array([-1., 0.])
+        elif np.min((pos_z-2)**2) < 0.1:
+            endpoint_pos = np.array([0., 0.])
+            startpoint_pos = obj_pos + np.array([0., 1.])
+        elif np.min((pos_z+2)**2) < 0.1:
+            endpoint_pos = np.array([0., 0.])
+            startpoint_pos = obj_pos + np.array([0., -1.])
+        else:
+            endpoint_pos = obj_pos
+            while True:
+                np.random.uniform(-self.wkspc_w // 2 + 0.5, self.wkspc_w // 2 - 0.5, size=(1, 2))
+                startpoint_pos = np.random.uniform(-self.wkspc_w // 2 + 0.5, self.wkspc_w // 2 - 0.5, size=(1, 2))
+                if np.min(cdist(startpoint_pos, pos_xz)) > 0.2:
+                    break
         
         action = np.concatenate([startpoint_pos.reshape(-1), endpoint_pos.reshape(-1)], axis=0)
         return action

@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pyflex
 import trimesh
+import cv2
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -82,11 +83,13 @@ def load_cloth(path):
             list(bend_edges)), np.array(list(shear_edges))
 
 # convert mesh to vertices
-path = "/home/baoyu/2023/unified_dyn_graph/cloth3d/Tshirt2.obj"
+path = "/home/baoyu/2023/unified_dyn_graph/assets/cloth3d/Tshirt4.obj"
 retval = load_cloth(path)
 mesh_verts = retval[0]
 mesh_faces = retval[1]
 mesh_stretch_edges, mesh_bend_edges, mesh_shear_edges = retval[2:]
+
+mesh_verts = mesh_verts * 3.5
 
 num_particle = mesh_verts.shape[0]//3
 # flattened_area = trimesh.load(path).area/2
@@ -94,7 +97,7 @@ num_particle = mesh_verts.shape[0]//3
 ## scene parameters
 # cloth_pos [X, Y, Z] 0, 1, 2
 # cloth_pos = [0, 0, 0] # tshirt
-cloth_pos = [-0.6, 0, -0.7] # cloth
+cloth_pos = [-0., 0, -0.] # cloth
 
 # cloth_size [dimx, dimz] 3, 4 # have not been applied to shirt 
 cloth_size = [100, 100] # [100, 100] + r=0.01 one grid
@@ -107,7 +110,7 @@ cloth_mass = np.random.uniform(0.2, 2.0)
 particle_r = 0.01 # default 0.00625
 
 # render mode 10; flip_mesh 11
-render_mode = 1 # 0: points, 1: mesh, 2: mesh + points
+render_mode = 2 # 0: points, 1: mesh, 2: mesh + points
 flip_mesh = 0
 
 pyflex.init(False)
@@ -158,7 +161,7 @@ if args.view == 0: # top view
     cam_height = np.sqrt(2)/2 * r
     cam_dis = np.sqrt(2)/2 * r
     
-    camPos = np.array([0.+move_x, cam_height, 0.+move_z])
+    camPos = np.array([0.+move_x, cam_height+2, 0.+move_z])
     camAngle = np.array([0., -np.deg2rad(90.), 0.])
     
 elif args.view == 1: # lower right corner
@@ -224,7 +227,13 @@ for i in range(time_step):
 
 # render
 obs = pyflex.render(render_depth=True).reshape(screenHeight, screenWidth, 5)
+img = obs[..., :3][..., ::-1]
+# save images
+# cv2.imwrite(os.path.join(des_dir, "color.png"), img)
+
+cv2.imwrite('color.png', obs[:, :, :3][..., ::-1])
 # print('obs.shape', obs.shape)
+print('save to ', des_dir)
 
 # save obs and camera_params
 np.save(os.path.join(des_dir, 'obs.npy'), obs)

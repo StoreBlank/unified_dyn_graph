@@ -18,7 +18,7 @@ time_step = args.time_step # 120
 folder_dir = '../ptcl_data/carrots'
 os.system('mkdir -p ' + folder_dir)
 
-pyflex.init(True)
+pyflex.init(False)
 
 # scene_params = np.array([])
 
@@ -49,7 +49,7 @@ add_noise = 0.0
 
 staticFriction = 1.0
 dynamicFriction = 0.9
-draw_skin = 1.0
+draw_skin = 0.0
 min_dist = 10.0
 max_dist = 20.0
 
