@@ -29,6 +29,7 @@ def gen_data(info):
     base_epi = info["base_epi"]
     thread_idx = info["thread_idx"]
     verbose = info["verbose"]
+    debug = info["debug"]
 
     # create folder
     folder_dir = os.path.join(data_dir, obj)
@@ -71,12 +72,12 @@ def gen_data(info):
 
         # initial rendering
         img = env.render()
-        cv2.imwrite(os.path.join(epi_dir, "0_color.png"), img[..., :3][..., ::-1])
-        cv2.imwrite(os.path.join(epi_dir, "0_depth.png"), (img[:, :, -1]*1000).astype(np.uint16))
-        with open(os.path.join(epi_dir, '0_particles.npy'), 'wb') as f:
-            np.save(f, env.get_positions().reshape(-1, 4))
-        with open(os.path.join(epi_dir, '0_obs.npy'), 'wb') as f:
-            np.save(f, img)
+        # cv2.imwrite(os.path.join(epi_dir, "0_color.png"), img[..., :3][..., ::-1])
+        # cv2.imwrite(os.path.join(epi_dir, "0_depth.png"), (img[:, :, -1]*1000).astype(np.uint16))
+        # with open(os.path.join(epi_dir, '0_particles.npy'), 'wb') as f:
+        #     np.save(f, env.get_positions().reshape(-1, 4))
+        # with open(os.path.join(epi_dir, '0_obs.npy'), 'wb') as f:
+        #     np.save(f, img)
         
         last_img = img.copy()
         valid = True
@@ -95,7 +96,11 @@ def gen_data(info):
                 u = [0., 1., 0., -1.]
 
                 # step
-                img = env.step(u)
+                if debug:
+                    img, steps = env.step(u)
+                else: 
+                    img, steps = env.step(u, epi_dir)
+                
                 if img is None:
                     valid = False
                     print('rerun epsiode %d' % idx_episode)
@@ -106,13 +111,13 @@ def gen_data(info):
                     print('color_diff:', color_diff)
 
             if valid:
-                cv2.imwrite(os.path.join(epi_dir, '%d_color.png' % (idx_timestep + 1)), img[:, :, :3][..., ::-1])
-                cv2.imwrite(os.path.join(epi_dir, '%d_depth.png' % (idx_timestep + 1)), (img[:, :, -1]*1000).astype(np.uint16))
-                with open(os.path.join(epi_dir, '%d_particles.npy' % (idx_timestep + 1)), 'wb') as f:
-                    np.save(f, env.get_positions().reshape(-1, 4))
-                # save img
-                with open(os.path.join(epi_dir, '%d_obs.npy' % (idx_timestep + 1)), 'wb') as f:
-                    np.save(f, img)
+                # cv2.imwrite(os.path.join(epi_dir, '%d_color.png' % (idx_timestep + 1)), img[:, :, :3][..., ::-1])
+                # cv2.imwrite(os.path.join(epi_dir, '%d_depth.png' % (idx_timestep + 1)), (img[:, :, -1]*1000).astype(np.uint16))
+                # with open(os.path.join(epi_dir, '%d_particles.npy' % (idx_timestep + 1)), 'wb') as f:
+                #     np.save(f, env.get_positions().reshape(-1, 4))
+                # # save img
+                # with open(os.path.join(epi_dir, '%d_obs.npy' % (idx_timestep + 1)), 'wb') as f:
+                #     np.save(f, img)
                 
                 if cam_view == 1:
                     actions[idx_timestep] = u
@@ -154,6 +159,7 @@ info = {
     "base_epi": 0,
     "thread_idx": 1,
     "verbose": False,
+    "debug": True,
 }
 gen_data(info)
 

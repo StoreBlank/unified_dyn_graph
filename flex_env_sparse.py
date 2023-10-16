@@ -3,6 +3,7 @@ import numpy as np
 import pyflex
 import gym
 import math
+import cv2
 from scipy.spatial.distance import cdist
 
 # robot
@@ -264,7 +265,7 @@ class FlexEnv(gym.Env):
             trans = [-1.2, 1., 0.]  # x, y, z
             spacing = 3.
             cluster_radius = 0.
-            stiffness = 0.55
+            stiffness = 0.5
             draw_mesh = 0
 
             radius = 0.05
@@ -346,7 +347,7 @@ class FlexEnv(gym.Env):
             temp = np.array([0])
             pyflex.set_scene(22, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
         
-        elif self.obj == 'coffee': #TODO: change particle radius
+        elif self.obj == 'coffee':
             global_scale = 4
             scale = 0.2 * global_scale / 8.0
             x = -0.9 * global_scale / 8.0
@@ -470,7 +471,7 @@ class FlexEnv(gym.Env):
         self.last_ee = None
         self.reset_robot()
     
-    def step(self, action):
+    def step(self, action, dir=None):
         # h = 0
         if self.gripper:
             h = 0.5 + 1
@@ -500,10 +501,12 @@ class FlexEnv(gym.Env):
             speed = 1.0/300.
         else:
             speed = 1.0/100.
+
         for i_p in range(len(way_points)-1):
             s = way_points[i_p]
             e = way_points[i_p+1]
             steps = int(np.linalg.norm(e-s)/speed) + 1
+            print('steps:', steps)
 
             for i in range(steps):
                 end_effector_pos = s + (e-s) * i / steps
@@ -518,6 +521,15 @@ class FlexEnv(gym.Env):
                                                         self.rest_joints)
                 self.reset_robot(jointPoses)
                 pyflex.step()
+
+                # save img in each step
+                if dir != None:
+                    img = self.render()
+                    cv2.imwrite(os.path.join(dir, '%d_color.png' % (i)), img[:, :, :3][..., ::-1])
+                    cv2.imwrite(os.path.join(dir, '%d_depth.png' % (i)), (img[:, :, -1]*1000).astype(np.uint16))
+                    with open(os.path.join(dir, '%d_particles.npy' % (i)), 'wb') as f:
+                        np.save(f, self.get_positions().reshape(-1, 4))
+
                 self.reset_robot()
 
                 if math.isnan(self.get_positions().reshape(-1, 4)[:, 0].max()):
@@ -531,7 +543,7 @@ class FlexEnv(gym.Env):
             pyflex.step()
         
         obs = self.render()
-        return obs
+        return obs, steps
     
     def render(self, no_return=False):
         pyflex.step()
