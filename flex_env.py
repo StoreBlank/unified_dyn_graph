@@ -263,25 +263,46 @@ class FlexEnv(gym.Env):
         elif self.obj == 'rope':
             scale = np.array([1., 1., 1.]) * 60.
             trans = [-1.2, 1., 0.]  # x, y, z
-            spacing = 3.
-            cluster_radius = 0.
-            stiffness = 0.5
-            draw_mesh = 0
-
             radius = 0.05
-            dynamicFriction = 0.35
+            
+            cluster_spacing = 3.
+            cluster_radius = 0.
+            cluster_stiffness = 0.5
+
+            link_radius = 0.
+            link_stiffness = 1.
+
+            global_stiffness = 0.
+
+            surface_sampling = 0
+            volume_sampling = 4.
+
+            skinning_falloff = 2.
+            skinning_max_dist = 100.
+
+            cluster_plastic_threshold = 0.
+            cluster_plastic_creep = 0.
+
+            dynamicFriction = 0.5 # 0.35
             particleFriction = 0.25
             
-            self.scene_params = np.array([*scale, *trans, spacing, cluster_radius, stiffness, draw_mesh,
-                                     radius, dynamicFriction, particleFriction])
+            draw_mesh = 0
+
+            relaxtion_factor = 1.
+
+            self.scene_params = np.array([*scale, *trans, radius, 
+                                            cluster_spacing, cluster_radius, cluster_stiffness,
+                                            link_radius, link_stiffness, global_stiffness,
+                                            surface_sampling, volume_sampling, skinning_falloff, skinning_max_dist,
+                                            cluster_plastic_threshold, cluster_plastic_creep,
+                                            dynamicFriction, particleFriction, draw_mesh, relaxtion_factor])
             
             temp = np.array([0])
             pyflex.set_scene(26, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
 
             self.property = {'particle_radius': radius,
                              'num_particles': self.get_num_particles(),
-                             'stiffness': stiffness,
-                             'spacing': spacing,
+                             'stiffness': global_stiffness,
                              'dynamic_friction': dynamicFriction,}
         
         elif self.obj == 'carrots':
@@ -370,10 +391,10 @@ class FlexEnv(gym.Env):
             z = 0.
             size = 0.8
             obj_type = 6
-            draw_mesh = 0
+            draw_mesh = 1
 
             radius = 0.05
-            mass = 4.31 #431g
+            mass = 1000 #431g
             rigidStiffness = 1.0
             dynamicFriction = 0.5
             staticFriction = 0.
@@ -384,6 +405,13 @@ class FlexEnv(gym.Env):
             
             temp = np.array([0])
             pyflex.set_scene(25, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+
+            self.property = {'particle_radius': radius,
+                             'num_particles': self.get_num_particles(),
+                             'mass': mass,
+                             'rigid_stiffness': rigidStiffness,
+                             'dynamic_friction': dynamicFriction,
+                             'viscosity': viscosity,}
         
         elif self.obj == 'power_drill':
             x = 0.
