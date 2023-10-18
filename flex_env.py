@@ -195,7 +195,7 @@ class FlexEnv(gym.Env):
         cam_dis = 3.
         cam_height = 4.5
         if self.camera_view == 0:
-            self.camPos = np.array([0., cam_height+5., 0.])
+            self.camPos = np.array([0., cam_height+6., 0.])
             self.camAngle = np.array([0., -np.deg2rad(90.), 0.])
         elif self.camera_view == 1:
             self.camPos = np.array([cam_dis, cam_height, cam_dis])
@@ -262,7 +262,7 @@ class FlexEnv(gym.Env):
         
         elif self.obj == 'rope':
             scale = np.array([1., 1., 1.]) * 110
-            trans = [-1., 1., 0.]  # x, y, z
+            trans = [-1., 4., -2.1]  # x, y, z
             radius = 0.025
             # 0.025 -> 110
             # 0.05 -> 60
@@ -286,7 +286,7 @@ class FlexEnv(gym.Env):
             cluster_plastic_threshold = 0.
             cluster_plastic_creep = 0.
 
-            dynamicFriction = 0.5 # 0.35
+            dynamicFriction = 0.2 # 0.35
             particleFriction = 1e20 #0.25
             
             draw_mesh = 1
@@ -395,17 +395,18 @@ class FlexEnv(gym.Env):
 
         elif self.obj == 'mustard_bottle':
             x = 0.
-            y = 1. 
-            z = 0.
+            y = 1. #3.5
+            z = -1. #-3.3
             size = 0.8
             obj_type = 6
             draw_mesh = 1
 
             radius = 0.05
-            mass = 1000 #431g
-            rigidStiffness = 1.0
+            mass = 4.31 #431g
+            rigidStiffness = 1.
             dynamicFriction = 0.5
             staticFriction = 0.
+            
             viscosity = 0.
 
             self.scene_params = np.array([x, y, z, size, obj_type, draw_mesh,
@@ -459,6 +460,7 @@ class FlexEnv(gym.Env):
         self.set_camera()
         
         # add table board
+        self.wall_shape_states = np.zeros((2, 14))
         wall_height = 0.5
         if self.obj == 'multi_ycb':
             halfEdge = np.array([self.wkspc_w, wall_height, self.wkspc_w])
@@ -468,9 +470,17 @@ class FlexEnv(gym.Env):
         quats = quatFromAxisAngle(axis=np.array([0., 1., 0.]), angle=0.)
         hideShape = 0
         color = np.ones(3) * (160. / 255.)
-        self.wall_shape_states = np.zeros((1, 14))
         pyflex.add_box(halfEdge, center, quats, hideShape, color)
         self.wall_shape_states[0] = np.concatenate([center, center, quats, quats])
+
+        # add slope for random initial configurations 
+        halfEdge = np.array([1., 0.0001, 1.])
+        center = np.array([0., 1., -2.6])
+        quats = quatFromAxisAngle(axis=np.array([1., 0., 0.]), angle=np.deg2rad(40.))
+        hideShape = 0
+        color = np.ones(3) * (160. / 255.)
+        pyflex.add_box(halfEdge, center, quats, hideShape, color)
+        self.wall_shape_states[1] = np.concatenate([center, center, quats, quats])
 
         # add robot
         if self.gripper:

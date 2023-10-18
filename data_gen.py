@@ -63,7 +63,7 @@ def gen_data(info):
            json.dump(property, f)
 
         # if cam_view is 1: reset the actions
-        if cam_view == 1:
+        if cam_view in [0, 1]:
             actions = np.zeros((n_timestep, action_dim))
             color_threshold = 0.1
         else:
@@ -93,6 +93,7 @@ def gen_data(info):
                 # else:
                 #     u = actions[idx_timestep]
 
+                # u = [0., 0., 0., 0.]
                 u = [0., 1., 0., -1.]
 
                 # step
@@ -119,7 +120,7 @@ def gen_data(info):
                 # with open(os.path.join(epi_dir, '%d_obs.npy' % (idx_timestep + 1)), 'wb') as f:
                 #     np.save(f, img)
                 
-                if cam_view == 1:
+                if cam_view in [0, 1]:
                     actions[idx_timestep] = u
                 last_img = img.copy()
 
@@ -132,7 +133,7 @@ def gen_data(info):
                 break
 
         if valid:   
-            if cam_view == 1: 
+            if cam_view in [0, 1]: 
                 all_actions = np.append(all_actions, actions)
             
             end_epi_time = time.time()
@@ -146,7 +147,7 @@ def gen_data(info):
     np.save(os.path.join(des_dir, 'camera_extrinsic_matrix.npy'), cam_extrinsic_matrix)
 
     # save actions
-    # if cam_view == 1:
+    # if cam_view in [0, 1]:
     #     all_actions = all_actions.reshape(n_episode, n_timestep, action_dim)
     #     np.save(os.path.join(folder_dir, 'actions.npy'), all_actions)
             
