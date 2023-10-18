@@ -138,7 +138,7 @@ def gen_data(info):
             end_epi_time = time.time()
             print('episiode %d time: ' % idx_episode, end_epi_time - start_epi_time)
             idx_episode += 1
-            
+        
     # save camera params
     cam_intrinsic_params = env.get_camera_intrinsics()
     cam_extrinsic_matrix = env.get_camera_extrinsics()
@@ -146,10 +146,10 @@ def gen_data(info):
     np.save(os.path.join(des_dir, 'camera_extrinsic_matrix.npy'), cam_extrinsic_matrix)
 
     # save actions
-    if cam_view == 1:
-        all_actions = all_actions.reshape(n_episode, n_timestep, action_dim)
-        np.save(os.path.join(folder_dir, 'actions.npy'), all_actions)
-
+    # if cam_view == 1:
+    #     all_actions = all_actions.reshape(n_episode, n_timestep, action_dim)
+    #     np.save(os.path.join(folder_dir, 'actions.npy'), all_actions)
+            
     env.close()
     end_time = time.time()
     print('total time: ', end_time - start_time)

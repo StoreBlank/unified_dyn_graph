@@ -261,32 +261,35 @@ class FlexEnv(gym.Env):
                     0)
         
         elif self.obj == 'rope':
-            scale = np.array([1., 1., 1.]) * 60.
-            trans = [-1.2, 1., 0.]  # x, y, z
-            radius = 0.05
+            scale = np.array([1., 1., 1.]) * 110
+            trans = [-1., 1., 0.]  # x, y, z
+            radius = 0.025
+            # 0.025 -> 110
+            # 0.05 -> 60
             
-            cluster_spacing = 3.
+            cluster_spacing = float(np.random.randint(4, 8))
             cluster_radius = 0.
-            cluster_stiffness = 0.5
+            # cluster_stiffness = np.random.choice([0.3, 0.4, 0.5, 0.6, 0.7, 0.8], 1)[0]
+            cluster_stiffness = 0.2
 
-            link_radius = 0.
+            link_radius = 0. 
             link_stiffness = 1.
 
-            global_stiffness = 0.
+            global_stiffness = 0. #np.random.choice([0., 1e-5, 1e-4, 5e-4, 1e-3], 1)[0]
 
-            surface_sampling = 0
+            surface_sampling = 0.
             volume_sampling = 4.
 
-            skinning_falloff = 2.
+            skinning_falloff = 5.
             skinning_max_dist = 100.
 
             cluster_plastic_threshold = 0.
             cluster_plastic_creep = 0.
 
             dynamicFriction = 0.5 # 0.35
-            particleFriction = 0.25
+            particleFriction = 1e20 #0.25
             
-            draw_mesh = 0
+            draw_mesh = 1
 
             relaxtion_factor = 1.
 
@@ -302,8 +305,13 @@ class FlexEnv(gym.Env):
 
             self.property = {'particle_radius': radius,
                              'num_particles': self.get_num_particles(),
-                             'stiffness': global_stiffness,
-                             'dynamic_friction': dynamicFriction,}
+                             'dynamic_friction': dynamicFriction,
+                             'particle_friction': particleFriction,
+                             'cluster_spacing': cluster_spacing,
+                             'global_stiffness': global_stiffness,
+                             'cluster_stiffness': cluster_stiffness,
+                             'link_stiffness': link_stiffness,
+                             'skin_falloff': skinning_falloff,}
         
         elif self.obj == 'carrots':
             global_scale = 5
