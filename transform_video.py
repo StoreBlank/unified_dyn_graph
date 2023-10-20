@@ -2,6 +2,7 @@ import os
 import numpy as np
 import cv2
 import PIL.Image as Image
+import json
 
 def merge_video(image_path, video_path):
     f_names = os.listdir(image_path)
@@ -30,6 +31,12 @@ def merge_video(image_path, video_path):
     video_writer.release()
 
 if __name__ == '__main__':
-    image_path = "/home/baoyu/2023/unified_dyn_graph/data_dense/rope/camera_1/episode_0"
-    video_path = "/home/baoyu/2023/unified_dyn_graph/data_dense/rope/camera_1/episode_0/video.mp4"
-    merge_video(image_path, video_path)
+    for i in range(10):
+        epi_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/rope/episode_{i}"
+        image_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/rope/episode_{i}/camera_0"
+        video_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/rope/episode_{i}/camera_0/video.mp4" 
+        merge_video(image_path, video_path)
+        # open json file
+        with open(os.path.join(epi_path, 'property.json'), 'r') as f:
+            property = json.load(f)
+        print(i, property['cluster_spacing'])
