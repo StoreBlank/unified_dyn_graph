@@ -501,7 +501,7 @@ class FlexEnv(gym.Env):
         halfEdge = np.array([1., 0.0001, 1.])
         center = np.array([0., 1., -2.6])
         quats = quatFromAxisAngle(axis=np.array([1., 0., 0.]), angle=np.deg2rad(40.))
-        hideShape = 0
+        hideShape = 1
         color = np.ones(3) * (160. / 255.)
         pyflex.add_box(halfEdge, center, quats, hideShape, color)
         self.wall_shape_states[1] = np.concatenate([center, center, quats, quats])
@@ -566,7 +566,7 @@ class FlexEnv(gym.Env):
 
         self.reset_robot(self.rest_joints)
 
-        # initial rendering
+        # save initial rendering
         if dir != None:
             for j in range(len(self.camPos_list)):
                 pyflex.set_camPos(self.camPos_list[j])
@@ -579,6 +579,8 @@ class FlexEnv(gym.Env):
                 img = self.render()
                 cv2.imwrite(os.path.join(cam_dir, '0_color.png'), img[:, :, :3][..., ::-1])
                 # cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % (i)), (img[:, :, -1]*1000).astype(np.uint16))
+                with open(os.path.join(cam_dir, '0_obs.npy'), 'wb') as f:
+                    np.save(f, img)
                 with open(os.path.join(cam_dir, '0_particles.npy'), 'wb') as f:
                     np.save(f, self.get_positions().reshape(-1, 4))
         
@@ -621,10 +623,30 @@ class FlexEnv(gym.Env):
                         img = self.render()
                         cv2.imwrite(os.path.join(cam_dir, '%d_color.png' % (i+1)), img[:, :, :3][..., ::-1])
                         # cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % (i)), (img[:, :, -1]*1000).astype(np.uint16))
+                        with open(os.path.join(cam_dir, '%d_obs.npy' % (i+1)), 'wb') as f:
+                            np.save(f, img)
                         with open(os.path.join(cam_dir, '%d_particles.npy' % (i+1)), 'wb') as f:
                             np.save(f, self.get_positions().reshape(-1, 4))
 
                 self.reset_robot()
+
+                # save the last img
+                if dir != None:
+                    for j in range(len(self.camPos_list)):
+                        pyflex.set_camPos(self.camPos_list[j])
+                        pyflex.set_camAngle(self.camAngle_list[j])
+
+                        # create dir with cameras
+                        cam_dir = os.path.join(dir, 'camera_%d' % (j))
+                        os.system('mkdir -p %s' % (cam_dir))
+
+                        img = self.render()
+                        cv2.imwrite(os.path.join(cam_dir, '%d_color.png' % steps), img[:, :, :3][..., ::-1])
+                        # cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % (i)), (img[:, :, -1]*1000).astype(np.uint16))
+                        with open(os.path.join(cam_dir, '%d_obs.npy' % steps), 'wb') as f:
+                            np.save(f, img)
+                        with open(os.path.join(cam_dir, '%d_particles.npy' % steps), 'wb') as f:
+                            np.save(f, self.get_positions().reshape(-1, 4))
 
                 if math.isnan(self.get_positions().reshape(-1, 4)[:, 0].max()):
                     print('simulator exploded when action is', action)
@@ -709,22 +731,22 @@ class FlexEnv(gym.Env):
             startpoint_pos = np.random.uniform(-self.wkspc_w // 2 + 0.5, self.wkspc_w // 2 - 0.5, size=(1, 2))
             if np.min(cdist(startpoint_pos, pos_xz)) > 0.2:
                 break
+        startpoint_pos = startpoint_pos.reshape(-1)
 
-        # choose end points within some distances to the object
+        # choose end points which is the expolation of the start point and obj point
         while True:
             pickpoint = np.random.randint(0, num_points - 1)
             obj_pos = positions[pickpoint, [0, 2]]
-            # check if the start point is left/right to the object
-            if startpoint_pos.reshape(-1)[1] < 0.:
-                move_dis = np.random.uniform(0., 0.5)
-            else:
-                move_dis = np.random.uniform(-0.5, 0.)
-            # move_dis = np.random.uniform(-0.5, 0.5)
-            # move_dis = 0.
-            endpoint_pos = obj_pos + [0., move_dis]
-            if np.min((endpoint_pos[0] - 2.)**2) > 0.8:
+            if obj_pos[0] != startpoint_pos[0]:
                 break
-
+        slope = (obj_pos[1] - startpoint_pos[1]) / (obj_pos[0] - startpoint_pos[0])
+        if obj_pos[0] < startpoint_pos[0]:
+            x_end = obj_pos[0] - 0.2
+        else:
+            x_end = obj_pos[0] + 0.2
+        y_end = slope * (x_end - startpoint_pos[0]) + startpoint_pos[1]
+        endpoint_pos = np.array([x_end, y_end])
+        
         action = np.concatenate([startpoint_pos.reshape(-1), endpoint_pos.reshape(-1)], axis=0)
         return action
     

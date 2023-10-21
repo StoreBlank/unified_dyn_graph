@@ -71,15 +71,12 @@ def gen_data(info):
                 print('timestep %d' % idx_timestep)
             
             color_diff = 0
-            while color_diff < color_threshold: #granular: 0.001 
-                # if cam_view == 1:
-                #     u = None
-                #     u = env.sample_action()
-                # else:
-                #     u = actions[idx_timestep]
-
+            while color_diff < color_threshold: #granular: 0.001
+                u = None
+                u = env.sample_action()
+                
                 # u = [0., 0., 0., 0.]
-                u = [0., 1., 0., -1.]
+                # u = [0., 1., 0., -1.]
 
                 # step
                 if debug:
@@ -122,26 +119,27 @@ def gen_data(info):
     print('total time: ', end_time - start_time)
 
 # multiprocessing
-infos=[]
-for i in range(n_worker):
-    info = {
-        "base_epi": i*n_episode//n_worker,
-        "n_epi_per_worker": n_episode//n_worker,
-        "thread_idx": i,
-        "verbose": False,
-        "debug": False,
-    }
-    infos.append(info)
+# infos=[]
+# for i in range(n_worker):
+#     info = {
+#         "base_epi": i*n_episode//n_worker,
+#         "n_epi_per_worker": n_episode//n_worker,
+#         "thread_idx": i,
+#         "verbose": False,
+#         "debug": True,
+#     }
+#     infos.append(info)
 
-pool = mp.Pool(processes=n_worker)
-pool.map(gen_data, infos)
+# pool = mp.Pool(processes=n_worker)
+# pool.map(gen_data, infos)
 
 
-# info = {
-#     "base_epi": 0,
-#     "thread_idx": 1,
-#     "verbose": False,
-#     "debug": True,
-# }
-# gen_data(info)
+info = {
+    "base_epi": 0,
+    "n_epi_per_worker": n_episode,
+    "thread_idx": 1,
+    "verbose": False,
+    "debug": True,
+}
+gen_data(info)
 
