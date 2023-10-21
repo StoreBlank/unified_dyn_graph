@@ -14,25 +14,7 @@ from transformations import quaternion_from_matrix, quaternion_matrix
 
 # utils
 from utils_env import load_cloth
-
-def rand_float(lo, hi):
-    return np.random.rand() * (hi - lo) + lo
-
-def rand_int(lo, hi):
-    return np.random.randint(lo, hi)
-
-def quatFromAxisAngle(axis, angle):
-    axis /= np.linalg.norm(axis)
-
-    half = angle * 0.5
-    w = np.cos(half)
-
-    sin_theta_over_two = np.sin(half)
-    axis *= sin_theta_over_two
-
-    quat = np.array([axis[0], axis[1], axis[2], w])
-
-    return quat
+from utils_env import rand_float, rand_int, quatFromAxisAngle
 
 # Robot Arm
 class FlexRobotHelper:
@@ -156,6 +138,7 @@ class FlexEnv(gym.Env):
         self.wkspc_w = config['dataset']['wkspc_w']
         self.headless = config['dataset']['headless']
         self.obj = config['dataset']['obj']
+        self.cont_motion = config['dataset']['cont_motion']
 
         pyflex.set_screenWidth(self.screenWidth)
         pyflex.set_screenHeight(self.screenHeight)
@@ -282,23 +265,21 @@ class FlexEnv(gym.Env):
                     0)
         
         elif self.obj == 'rope':
-            scale = np.array([1., 1., 1.]) * 110 # length, extension, thickness, 
-    
-            # trans = [-1., 4., -3.]  # x, y, z
-            trans = [-1., 4., 0.]
+            # rand_float(0.8, 1.5)
+            scale = np.array([rand_float(0.8, 1.5), 1.5, rand_float(1., 2.)]) * 80 # length, extension, thickness, 
+            trans = [-1., 4., rand_float(-1, 1)]
             radius = 0.025
             # 0.025 -> 110
             # 0.05 -> 60
             
-            cluster_spacing = float(np.random.randint(4, 8))
+            cluster_spacing = rand_float(4, 8) # change the stiffness of the rope
             cluster_radius = 0.
-            # cluster_stiffness = np.random.choice([0.3, 0.4, 0.5, 0.6, 0.7, 0.8], 1)[0]
             cluster_stiffness = 0.2
 
             link_radius = 0. 
             link_stiffness = 1.
 
-            global_stiffness = 0. #np.random.choice([0., 1e-5, 1e-4, 5e-4, 1e-3], 1)[0]
+            global_stiffness = 0.
 
             surface_sampling = 0.
             volume_sampling = 4.
@@ -309,7 +290,7 @@ class FlexEnv(gym.Env):
             cluster_plastic_threshold = 0.
             cluster_plastic_creep = 0.
 
-            dynamicFriction = 0.2 
+            dynamicFriction = rand_float(0.1, 0.7)
             particleFriction = 0.25
             
             draw_mesh = 1
@@ -328,13 +309,11 @@ class FlexEnv(gym.Env):
 
             self.property = {'particle_radius': radius,
                              'num_particles': self.get_num_particles(),
+                             'length': scale[0],
+                             'thickness': scale[2],
                              'dynamic_friction': dynamicFriction,
-                             'particle_friction': particleFriction,
                              'cluster_spacing': cluster_spacing,
-                             'global_stiffness': global_stiffness,
-                             'cluster_stiffness': cluster_stiffness,
-                             'link_stiffness': link_stiffness,
-                             'skin_falloff': skinning_falloff,}
+                             'global_stiffness': global_stiffness,}
         
         elif self.obj == 'carrots':
             global_scale = 5
@@ -541,7 +520,7 @@ class FlexEnv(gym.Env):
         self.last_ee = None
         self.reset_robot()
     
-    def step(self, action, dir=None):
+    def step(self, action, prev_counts=0, dir=None,):
         # h = 0
         if self.gripper:
             h = 0.5 + 1
@@ -560,41 +539,49 @@ class FlexEnv(gym.Env):
         orn = np.array([0.0, np.pi, pusher_angle + np.pi/2])
 
         # create way points
-        # way_points = [s_2d + np.array([0., 0., 0.]), s_2d, e_2d, e_2d + np.array([0., 0., 0.])]
-        way_points = [s_2d, e_2d]
-        # print('way_points:', way_points)
+        if self.cont_motion:
+            if self.last_ee is not None:
+                self.reset_robot(self.rest_joints)
+                self.last_ee = s_2d
+            way_points = [self.last_ee, s_2d, e_2d]
+        else:
+            way_points = [s_2d, e_2d]
+            self.reset_robot(self.rest_joints)
 
-        self.reset_robot(self.rest_joints)
-
-        # save initial rendering
-        if dir != None:
-            for j in range(len(self.camPos_list)):
-                pyflex.set_camPos(self.camPos_list[j])
-                pyflex.set_camAngle(self.camAngle_list[j])
-
-                # create dir with cameras
-                cam_dir = os.path.join(dir, 'camera_%d' % (j))
-                os.system('mkdir -p %s' % (cam_dir))
-
-                img = self.render()
-                cv2.imwrite(os.path.join(cam_dir, '0_color.png'), img[:, :, :3][..., ::-1])
-                # cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % (i)), (img[:, :, -1]*1000).astype(np.uint16))
-                with open(os.path.join(cam_dir, '0_obs.npy'), 'wb') as f:
-                    np.save(f, img)
-                with open(os.path.join(cam_dir, '0_particles.npy'), 'wb') as f:
-                    np.save(f, self.get_positions().reshape(-1, 4))
-        
-        # steps from waypoints
+        # set robot speed
         if self.obj == "shirt":
             speed = 1.0/300.
         else:
             speed = 1.0/100.
 
+        record_count = prev_counts
         for i_p in range(len(way_points)-1):
             s = way_points[i_p]
             e = way_points[i_p+1]
             steps = int(np.linalg.norm(e-s)/speed) + 1
-            print('steps:', steps)
+            # print('steps:', steps)
+
+            # save initial rendering
+            if dir != None:
+                for j in range(len(self.camPos_list)):
+                    pyflex.set_camPos(self.camPos_list[j])
+                    pyflex.set_camAngle(self.camAngle_list[j])
+
+                    # create dir with cameras
+                    cam_dir = os.path.join(dir, 'camera_%d' % (j))
+                    os.system('mkdir -p %s' % (cam_dir))
+
+                    img = self.render()
+                    cv2.imwrite(os.path.join(cam_dir, '%d_color.png' % record_count), img[:, :, :3][..., ::-1])
+                    cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % record_count), (img[:, :, -1]*1000).astype(np.uint16))
+                    with open(os.path.join(cam_dir, '%d_particles.npy' % record_count), 'wb') as f:
+                        np.save(f, self.get_positions().reshape(-1, 4))
+            
+                    # save camera intrinsic and extrinsic parameters
+                    if self.cam_intrinsic_params[j].sum() == 0 or self.cam_extrinsic_matrix[j].sum() == 0:
+                        self.cam_intrinsic_params[j] = self.get_camera_intrinsics()
+                        self.cam_extrinsic_matrix[j] = self.get_camera_extrinsics()
+                record_count += 1
 
             for i in range(steps):
                 end_effector_pos = s + (e-s) * i / steps
@@ -611,7 +598,10 @@ class FlexEnv(gym.Env):
                 pyflex.step()
 
                 # save img in each step
-                if dir != None:
+                obj_pos = self.get_positions().reshape(-1, 4)[:, [0, 2]]
+                obj_pos[:, 1] *= -1
+                robot_obj_dist = np.min(cdist(end_effector_pos[:2].reshape(1, 2), obj_pos))
+                if dir != None and robot_obj_dist < 0.2:
                     for j in range(len(self.camPos_list)):
                         pyflex.set_camPos(self.camPos_list[j])
                         pyflex.set_camAngle(self.camAngle_list[j])
@@ -621,45 +611,43 @@ class FlexEnv(gym.Env):
                         os.system('mkdir -p %s' % (cam_dir))
 
                         img = self.render()
-                        cv2.imwrite(os.path.join(cam_dir, '%d_color.png' % (i+1)), img[:, :, :3][..., ::-1])
-                        # cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % (i)), (img[:, :, -1]*1000).astype(np.uint16))
-                        with open(os.path.join(cam_dir, '%d_obs.npy' % (i+1)), 'wb') as f:
-                            np.save(f, img)
-                        with open(os.path.join(cam_dir, '%d_particles.npy' % (i+1)), 'wb') as f:
+                        cv2.imwrite(os.path.join(cam_dir, '%d_color.png' % record_count), img[:, :, :3][..., ::-1])
+                        cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % record_count), (img[:, :, -1]*1000).astype(np.uint16))
+                        with open(os.path.join(cam_dir, '%d_particles.npy' % record_count), 'wb') as f:
                             np.save(f, self.get_positions().reshape(-1, 4))
+                    record_count += 1
 
                 self.reset_robot()
-
-                # save the last img
-                if dir != None:
-                    for j in range(len(self.camPos_list)):
-                        pyflex.set_camPos(self.camPos_list[j])
-                        pyflex.set_camAngle(self.camAngle_list[j])
-
-                        # create dir with cameras
-                        cam_dir = os.path.join(dir, 'camera_%d' % (j))
-                        os.system('mkdir -p %s' % (cam_dir))
-
-                        img = self.render()
-                        cv2.imwrite(os.path.join(cam_dir, '%d_color.png' % steps), img[:, :, :3][..., ::-1])
-                        # cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % (i)), (img[:, :, -1]*1000).astype(np.uint16))
-                        with open(os.path.join(cam_dir, '%d_obs.npy' % steps), 'wb') as f:
-                            np.save(f, img)
-                        with open(os.path.join(cam_dir, '%d_particles.npy' % steps), 'wb') as f:
-                            np.save(f, self.get_positions().reshape(-1, 4))
 
                 if math.isnan(self.get_positions().reshape(-1, 4)[:, 0].max()):
                     print('simulator exploded when action is', action)
                     return None
-        
+                        
             self.last_ee = end_effector_pos.copy()
         
         self.reset_robot()
         for i in range(200):
             pyflex.step()
         
+        # save final rendering
+        if dir != None:
+            for j in range(len(self.camPos_list)):
+                pyflex.set_camPos(self.camPos_list[j])
+                pyflex.set_camAngle(self.camAngle_list[j])
+
+                # create dir with cameras
+                cam_dir = os.path.join(dir, 'camera_%d' % (j))
+                os.system('mkdir -p %s' % (cam_dir))
+
+                img = self.render()
+                cv2.imwrite(os.path.join(cam_dir, '%d_color.png' % record_count), img[:, :, :3][..., ::-1])
+                cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % record_count), (img[:, :, -1]*1000).astype(np.uint16))
+                with open(os.path.join(cam_dir, '%d_particles.npy' % record_count), 'wb') as f:
+                    np.save(f, self.get_positions().reshape(-1, 4))
+            record_count += 1
+        
         obs = self.render()
-        return obs, steps
+        return obs, record_count
     
     def render(self, no_return=False):
         pyflex.step()
@@ -739,13 +727,30 @@ class FlexEnv(gym.Env):
             obj_pos = positions[pickpoint, [0, 2]]
             if obj_pos[0] != startpoint_pos[0]:
                 break
-        slope = (obj_pos[1] - startpoint_pos[1]) / (obj_pos[0] - startpoint_pos[0])
-        if obj_pos[0] < startpoint_pos[0]:
-            x_end = obj_pos[0] - 0.2
+        
+         # check if the objects is close to the table edge
+        table_edge = self.wkspc_w / 2
+        action_thres = 0.1
+        if np.min((pos_x-table_edge)**2) < action_thres:
+            endpoint_pos = np.array([0., 0.])
+            startpoint_pos = obj_pos + np.array([0.1, 0.])
+        elif np.min((pos_x+table_edge)**2) < action_thres:
+            endpoint_pos = np.array([0., 0.])
+            startpoint_pos = obj_pos + np.array([-0.1, 0.])
+        elif np.min((pos_z-table_edge)**2) < action_thres:
+            endpoint_pos = np.array([0., 0.])
+            startpoint_pos = obj_pos + np.array([0., 0.1])
+        elif np.min((pos_z+table_edge)**2) < action_thres:
+            endpoint_pos = np.array([0., 0.])
+            startpoint_pos = obj_pos + np.array([0., -0.1])
         else:
-            x_end = obj_pos[0] + 0.2
-        y_end = slope * (x_end - startpoint_pos[0]) + startpoint_pos[1]
-        endpoint_pos = np.array([x_end, y_end])
+            slope = (obj_pos[1] - startpoint_pos[1]) / (obj_pos[0] - startpoint_pos[0])
+            if obj_pos[0] < startpoint_pos[0]:
+                x_end = obj_pos[0] - rand_float(0.1, 0.2)
+            else:
+                x_end = obj_pos[0] + rand_float(0.1, 0.2)
+            y_end = slope * (x_end - startpoint_pos[0]) + startpoint_pos[1]
+            endpoint_pos = np.array([x_end, y_end])
         
         action = np.concatenate([startpoint_pos.reshape(-1), endpoint_pos.reshape(-1)], axis=0)
         return action
@@ -771,7 +776,10 @@ class FlexEnv(gym.Env):
     def get_camera_extrinsics(self):
         return pyflex.get_viewMatrix().reshape(4, 4).T
     
-    def get_scene_para(self):
+    def get_camera_params(self):
+        return self.cam_intrinsic_params, self.cam_extrinsic_matrix
+    
+    def get_scene_params(self):
         return self.scene_params
     
     def get_property(self):

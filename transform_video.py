@@ -31,7 +31,7 @@ def merge_video(image_path, video_path):
     video_writer.release()
 
 if __name__ == '__main__':
-    for i in range(10):
+    for i in range(1):
         epi_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/rope/episode_{i}"
         image_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/rope/episode_{i}/camera_0"
         video_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/rope/episode_{i}/camera_0/video.mp4" 

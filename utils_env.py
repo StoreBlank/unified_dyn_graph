@@ -64,3 +64,22 @@ def load_cloth(path):
     return np.array(vertices), np.array(triangle_faces),\
         np.array(list(stretch_edges)), np.array(
             list(bend_edges)), np.array(list(shear_edges))
+
+def rand_float(lo, hi):
+    return np.random.rand() * (hi - lo) + lo
+
+def rand_int(lo, hi):
+    return np.random.randint(lo, hi)
+
+def quatFromAxisAngle(axis, angle):
+    axis /= np.linalg.norm(axis)
+
+    half = angle * 0.5
+    w = np.cos(half)
+
+    sin_theta_over_two = np.sin(half)
+    axis *= sin_theta_over_two
+
+    quat = np.array([axis[0], axis[1], axis[2], w])
+
+    return quat
