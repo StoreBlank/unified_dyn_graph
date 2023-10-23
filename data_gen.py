@@ -42,8 +42,6 @@ def gen_data(info):
     env = FlexEnv(config)
     np.random.seed(round(time.time() * 1000 + thread_idx) % 2 ** 32)
 
-    all_actions = np.array([])
-
     idx_episode = base_epi
     while idx_episode < base_epi + n_epi_per_worker:
         start_epi_time = time.time()
@@ -74,10 +72,10 @@ def gen_data(info):
             
             color_diff = 0
             while color_diff < color_threshold: #granular: 0.001
-                # u = None
-                # u = env.sample_action()
+                u = None
+                u = env.sample_action()
                 
-                u = [1., 0., -1., 0.]
+                # u = [1., 0., -1., 0.]
 
                 # step
                 if debug:
@@ -118,28 +116,28 @@ def gen_data(info):
     print('total time: ', end_time - start_time)
 
 # multiprocessing
-# infos=[]
-# base = 0
-# for i in range(n_worker):
-#     info = {
-#         "base_epi": base+i*n_episode//n_worker,
-#         "n_epi_per_worker": n_episode//n_worker,
-#         "thread_idx": i,
-#         "verbose": False,
-#         "debug": False,
-#     }
-#     infos.append(info)
+infos=[]
+base = 0
+for i in range(n_worker):
+    info = {
+        "base_epi": base+i*n_episode//n_worker,
+        "n_epi_per_worker": n_episode//n_worker,
+        "thread_idx": i,
+        "verbose": False,
+        "debug": False,
+    }
+    infos.append(info)
 
-# pool = mp.Pool(processes=n_worker)
-# pool.map(gen_data, infos)
+pool = mp.Pool(processes=n_worker)
+pool.map(gen_data, infos)
 
 
-info = {
-    "base_epi": 0,
-    "n_epi_per_worker": n_episode,
-    "thread_idx": 1,
-    "verbose": False,
-    "debug": True,
-}
-gen_data(info)
+# info = {
+#     "base_epi": 0,
+#     "n_epi_per_worker": n_episode,
+#     "thread_idx": 1,
+#     "verbose": False,
+#     "debug": True,
+# }
+# gen_data(info)
 

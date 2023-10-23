@@ -221,7 +221,12 @@ class FlexEnv(gym.Env):
     
     def init_scene(self):
         if self.obj == 'Tshirt':
-            path = "assets/cloth3d/Tshirt2.obj"
+            cloth_dir = "assets/cloth3d/train"
+            # random choose a folder in cloth_dir
+            cloth_folder = os.path.join(cloth_dir, np.random.choice(os.listdir(cloth_dir)))
+            path = os.path.join(cloth_folder, 'Tshirt_processed.obj')
+            #path = "assets/cloth3d/Tshirt2.obj"
+            
             retval = load_cloth(path)
             mesh_verts = retval[0]
             mesh_faces = retval[1]
@@ -229,20 +234,23 @@ class FlexEnv(gym.Env):
 
             mesh_verts = mesh_verts * 3.5
             
-            cloth_pos = [-1., 1., 0.]
+            cloth_pos = [rand_float(-1., 0.), rand_float(1., 3.), rand_float(-0.5, 0.5)]
             cloth_size = [20, 20]
             # stiffness = [0.85, 0.90, 0.90] # [stretch, bend, shear]
             # stiffness = rand_float(0.4, 1.0)
-            stiffness = [1.0, 0.85, 0.85] # [stretch, bend, shear]
-            cloth_mass = 1.0
-            particle_r = 0.00625
+            stretch_stiffness = rand_float(0.1, 1.0)
+            bend_stiffness = rand_float(0.1, 1.0)
+            shear_stiffness = rand_float(0.1, 1.0)
+            stiffness = [stretch_stiffness, bend_stiffness, shear_stiffness] # [stretch, bend, shear]
+            cloth_mass = rand_float(1., 5.)
+            particle_r = rand_float(0.005, 0.015) #0.00625
             render_mode = 2
             flip_mesh = 0
             
             # 0.6, 1.0, 0.6
-            dynamicFriction = 0.5
-            staticFriction = 1.0
-            particleFriction = 0.5
+            dynamicFriction = rand_float(0.1, 1.) 
+            staticFriction = rand_float(0.1, 1.)
+            particleFriction = rand_float(0.1, 1.)
             
             self.scene_params = np.array([
                 *cloth_pos,
@@ -263,6 +271,16 @@ class FlexEnv(gym.Env):
                     mesh_shear_edges.reshape(-1),
                     mesh_faces.reshape(-1),
                     0)
+            
+            self.property = {'particle_radius': particle_r,
+                             'num_particles': self.get_num_particles(),
+                             'cloth_mass': cloth_mass,
+                             'stretch_stiffness': stretch_stiffness,
+                             'bend_stiffness': bend_stiffness,
+                             'shear_stiffness': shear_stiffness,
+                             'dynamic_friction': dynamicFriction,
+                             'static_friction': staticFriction,
+                             'particle_friction': particleFriction,}
         
         elif self.obj == 'rope':
             # rand_float(0.8, 1.5)
@@ -662,10 +680,10 @@ class FlexEnv(gym.Env):
     def sample_action(self):
         if self.obj in ['mustard_bottle', 'power_drill']:
             action = self.sample_rigid_actions()
-        elif self.obj in ['rope']:
+        elif self.obj in ['rope', 'Tshirt']:
             action = self.sample_rope_actions()
-        elif self.obj in ['Tshirt']:
-            action = self.sample_tshirt_actios()
+        # elif self.obj in ['Tshirt']:
+        #     action = self.sample_tshirt_actios()
         else:
             raise ValueError('action not defined')
         return action

@@ -1,11 +1,11 @@
 dataset:
-  folder: "data_dense/" # gen_data
+  folder: "/media/baoyu/sumsung/" # gen_data
   n_worker: 20
-  n_episode: 1 #2000
-  n_timestep: 1 # tshirt: 5
+  n_episode: 200 #2000
+  n_timestep: 5 # tshirt: 5
   obj: "Tshirt" 
   wkspc_w: 4.0
-  headless: False
+  headless: True
   robot_type: 'xarm6' 
   cont_motion: False
   camera_view: 1 # 0, 1, 2, 3, 4

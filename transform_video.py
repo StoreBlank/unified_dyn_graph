@@ -31,12 +31,12 @@ def merge_video(image_path, video_path):
     video_writer.release()
 
 if __name__ == '__main__':
-    for i in range(1):
-        epi_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/rope/episode_{i}"
-        image_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/rope/episode_{i}/camera_0"
-        video_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/rope/episode_{i}/camera_0/video.mp4" 
+    for i in range(10):
+        epi_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/Tshirt/episode_{i}"
+        image_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/Tshirt/episode_{i}/camera_0"
+        video_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/Tshirt/episode_{i}/camera_0/video.mp4" 
         merge_video(image_path, video_path)
         # open json file
-        with open(os.path.join(epi_path, 'property.json'), 'r') as f:
-            property = json.load(f)
-        print(i, property['cluster_spacing'])
+        # with open(os.path.join(epi_path, 'property.json'), 'r') as f:
+        #     property = json.load(f)
+        # print(i, property['cluster_spacing'])
