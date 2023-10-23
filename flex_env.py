@@ -236,7 +236,7 @@ class FlexEnv(gym.Env):
             stiffness = [1.0, 0.85, 0.85] # [stretch, bend, shear]
             cloth_mass = 1.0
             particle_r = 0.00625
-            render_mode = 1
+            render_mode = 2
             flip_mesh = 0
             
             # 0.6, 1.0, 0.6
@@ -549,7 +549,7 @@ class FlexEnv(gym.Env):
             self.reset_robot(self.rest_joints)
 
         # set robot speed
-        if self.obj == "shirt":
+        if self.obj == "Tshirt":
             speed = 1.0/300.
         else:
             speed = 1.0/100.

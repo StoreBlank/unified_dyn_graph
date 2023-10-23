@@ -1,11 +1,11 @@
 dataset:
   folder: "data_dense/" # gen_data
   n_worker: 20
-  n_episode: 400 #2000
-  n_timestep: 5 # tshirt: 5
-  obj: "rope" 
+  n_episode: 1 #2000
+  n_timestep: 1 # tshirt: 5
+  obj: "Tshirt" 
   wkspc_w: 4.0
-  headless: True
+  headless: False
   robot_type: 'xarm6' 
   cont_motion: False
   camera_view: 1 # 0, 1, 2, 3, 4
