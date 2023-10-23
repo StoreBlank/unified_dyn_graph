@@ -533,7 +533,7 @@ class FlexEnv(gym.Env):
         if (s_2d - e_2d)[0] == 0:
             pusher_angle = np.pi/2
         else:
-            pusher_angle = np.arctan2((s_2d - e_2d)[1], (s_2d - e_2d)[0])
+            pusher_angle = np.arctan((s_2d - e_2d)[1] / (s_2d - e_2d)[0])
         
         # robot orientation
         orn = np.array([0.0, np.pi, pusher_angle + np.pi/2])

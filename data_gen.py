@@ -77,7 +77,7 @@ def gen_data(info):
                 # u = None
                 # u = env.sample_action()
                 
-                u = [0., 1., 0., -1.]
+                u = [1., 0., -1., 0.]
 
                 # step
                 if debug:
