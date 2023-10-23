@@ -487,14 +487,14 @@ class FlexEnv(gym.Env):
 
         # add robot
         if self.gripper:
-            robot_base_pos = [-2.5, 0., 1.]
+            robot_base_pos = [-3., 0., 1.]
             robot_base_orn = [0, 0, 0, 1]
-            self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'assets/xarm/xarm6_with_gripper_2.urdf', robot_base_pos, robot_base_orn, globalScaling=4.5) 
+            self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'assets/xarm/xarm6_with_gripper_2.urdf', robot_base_pos, robot_base_orn, globalScaling=5) 
             self.rest_joints = np.zeros(14)
         else:
-            robot_base_pos = [-2.5, 0., 0.5]
+            robot_base_pos = [-3., 0., 0.5]
             robot_base_orn = [0, 0, 0, 1]
-            self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'assets/xarm/xarm6_with_gripper.urdf', robot_base_pos, robot_base_orn, globalScaling=4.5) 
+            self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'assets/xarm/xarm6_with_gripper.urdf', robot_base_pos, robot_base_orn, globalScaling=5) 
             self.rest_joints = np.zeros(8)
 
         pyflex.set_shape_states(self.robot_to_shape_states(pyflex.getRobotShapeStates(self.flex_robot_helper)))
