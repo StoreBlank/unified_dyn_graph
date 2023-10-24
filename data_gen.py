@@ -26,8 +26,6 @@ cam_view = config['dataset']['camera_view']
 os.system("mkdir -p %s" % data_dir)
 
 def gen_data(info):
-    start_time = time.time()
-
     base_epi = info["base_epi"]
     n_epi_per_worker = info["n_epi_per_worker"]
     thread_idx = info["thread_idx"]
@@ -54,7 +52,7 @@ def gen_data(info):
 
         # save property
         property = env.get_property()
-        print(property)
+        # print(property)
         with open(os.path.join(epi_dir, 'property.json'), 'w') as f:
            json.dump(property, f)
         
@@ -71,21 +69,26 @@ def gen_data(info):
                 print('timestep %d' % idx_timestep)
             
             color_diff = 0
-            while color_diff < color_threshold: #granular: 0.001
+            while color_diff < color_threshold:
                 u = None
                 u = env.sample_action()
                 
                 # u = [1., 0., -1., 0.]
 
                 # step
+                prev_steps = n_steps
                 if debug:
                     img, n_steps = env.step(u)
                 else: 
                     img, n_steps = env.step(u, n_steps, epi_dir)
-                # print('n_steps:', idx_timestep, n_steps)
-                steps_list.append(n_steps)
                 
+                # check whether action is valid 
                 color_diff = np.mean(np.abs(img[:, :, :3] - last_img[:, :, :3]))
+                if color_diff < color_threshold:
+                    n_steps = prev_steps
+                else:
+                    steps_list.append(n_steps)
+                
                 if verbose:
                     print('color_diff:', color_diff)
 
@@ -97,12 +100,18 @@ def gen_data(info):
                 print('num particles: ', env.get_positions().shape[0] // 4)
                 print('particle positions: ', env.get_positions().reshape(-1, 4))
                 print('\n')
+            
+            # check whether the object is inside the workspace
+            if not env.inside_workspace():
+                print("Object outside workspace!")
+                break
         
         # save actions and steps
         np.save(os.path.join(epi_dir, 'actions.npy'), actions)
         np.save(os.path.join(epi_dir, 'steps.npy'), np.array(steps_list))
 
         end_epi_time = time.time()
+        print("Finish episode %d!!!!" % idx_episode)
         print('episiode %d time: ' % idx_episode, end_epi_time - start_epi_time)
         idx_episode += 1
         
@@ -112,8 +121,8 @@ def gen_data(info):
     np.save(os.path.join(folder_dir, 'camera_extrinsic_matrix.npy'), cam_extrinsic_matrix)
             
     env.close()
-    end_time = time.time()
-    print('total time: ', end_time - start_time)
+    # end_time = time.time()
+    # print('total time: ', end_time - start_time)
 
 # multiprocessing
 infos=[]

@@ -590,10 +590,11 @@ class FlexEnv(gym.Env):
                     os.system('mkdir -p %s' % (cam_dir))
 
                     img = self.render()
-                    cv2.imwrite(os.path.join(cam_dir, '%d_color.png' % record_count), img[:, :, :3][..., ::-1])
+                    cv2.imwrite(os.path.join(cam_dir, '%d_color.jpg' % record_count), img[:, :, :3][..., ::-1])
                     cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % record_count), (img[:, :, -1]*1000).astype(np.uint16))
-                    with open(os.path.join(cam_dir, '%d_particles.npy' % record_count), 'wb') as f:
-                        np.save(f, self.get_positions().reshape(-1, 4))
+                    if j == 0:
+                        with open(os.path.join(cam_dir, '%d_particles.npy' % record_count), 'wb') as f:
+                            np.save(f, self.get_positions().reshape(-1, 4))
             
                     # save camera intrinsic and extrinsic parameters
                     if self.cam_intrinsic_params[j].sum() == 0 or self.cam_extrinsic_matrix[j].sum() == 0:
@@ -629,10 +630,11 @@ class FlexEnv(gym.Env):
                         os.system('mkdir -p %s' % (cam_dir))
 
                         img = self.render()
-                        cv2.imwrite(os.path.join(cam_dir, '%d_color.png' % record_count), img[:, :, :3][..., ::-1])
+                        cv2.imwrite(os.path.join(cam_dir, '%d_color.jpg' % record_count), img[:, :, :3][..., ::-1])
                         cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % record_count), (img[:, :, -1]*1000).astype(np.uint16))
-                        with open(os.path.join(cam_dir, '%d_particles.npy' % record_count), 'wb') as f:
-                            np.save(f, self.get_positions().reshape(-1, 4))
+                        if j == 0:
+                            with open(os.path.join(cam_dir, '%d_particles.npy' % record_count), 'wb') as f:
+                                np.save(f, self.get_positions().reshape(-1, 4))
                     record_count += 1
 
                 self.reset_robot()
@@ -658,10 +660,11 @@ class FlexEnv(gym.Env):
                 os.system('mkdir -p %s' % (cam_dir))
 
                 img = self.render()
-                cv2.imwrite(os.path.join(cam_dir, '%d_color.png' % record_count), img[:, :, :3][..., ::-1])
+                cv2.imwrite(os.path.join(cam_dir, '%d_color.jpg' % record_count), img[:, :, :3][..., ::-1])
                 cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % record_count), (img[:, :, -1]*1000).astype(np.uint16))
-                with open(os.path.join(cam_dir, '%d_particles.npy' % record_count), 'wb') as f:
-                    np.save(f, self.get_positions().reshape(-1, 4))
+                if j == 0:
+                    with open(os.path.join(cam_dir, '%d_particles.npy' % record_count), 'wb') as f:
+                        np.save(f, self.get_positions().reshape(-1, 4))
             record_count += 1
         
         obs = self.render()
@@ -681,9 +684,7 @@ class FlexEnv(gym.Env):
         if self.obj in ['mustard_bottle', 'power_drill']:
             action = self.sample_rigid_actions()
         elif self.obj in ['rope', 'Tshirt']:
-            action = self.sample_rope_actions()
-        # elif self.obj in ['Tshirt']:
-        #     action = self.sample_tshirt_actios()
+            action = self.sample_soft_actions()
         else:
             raise ValueError('action not defined')
         return action
@@ -725,16 +726,15 @@ class FlexEnv(gym.Env):
         action = np.concatenate([startpoint_pos.reshape(-1), endpoint_pos.reshape(-1)], axis=0)
         return action
     
-    def sample_rope_actions(self):
+    def sample_soft_actions(self):
         positions = self.get_positions().reshape(-1, 4)
         positions[:, 2] *= -1 # align with the coordinates
         num_points = positions.shape[0]
         pos_xz = positions[:, [0, 2]]
-        pos_x, pos_z = positions[:, 0], positions[:, 2]
 
         # random choose a start point which can not be overlapped with the object
         while True:
-            startpoint_pos = np.random.uniform(-self.wkspc_w // 2 + 0.5, self.wkspc_w // 2 - 0.5, size=(1, 2))
+            startpoint_pos = np.random.uniform(-self.wkspc_w // 2 + 0.5, self.wkspc_w // 2 - 1., size=(1, 2))
             if np.min(cdist(startpoint_pos, pos_xz)) > 0.2:
                 break
         startpoint_pos = startpoint_pos.reshape(-1)
@@ -743,25 +743,6 @@ class FlexEnv(gym.Env):
         while True:
             pickpoint = np.random.randint(0, num_points - 1)
             obj_pos = positions[pickpoint, [0, 2]]
-            if obj_pos[0] != startpoint_pos[0]:
-                break
-        
-         # check if the objects is close to the table edge
-        table_edge = self.wkspc_w / 2
-        action_thres = 0.1
-        if np.min((pos_x-table_edge)**2) < action_thres:
-            endpoint_pos = np.array([0., 0.])
-            startpoint_pos = obj_pos + np.array([0.1, 0.])
-        elif np.min((pos_x+table_edge)**2) < action_thres:
-            endpoint_pos = np.array([0., 0.])
-            startpoint_pos = obj_pos + np.array([-0.1, 0.])
-        elif np.min((pos_z-table_edge)**2) < action_thres:
-            endpoint_pos = np.array([0., 0.])
-            startpoint_pos = obj_pos + np.array([0., 0.1])
-        elif np.min((pos_z+table_edge)**2) < action_thres:
-            endpoint_pos = np.array([0., 0.])
-            startpoint_pos = obj_pos + np.array([0., -0.1])
-        else:
             slope = (obj_pos[1] - startpoint_pos[1]) / (obj_pos[0] - startpoint_pos[0])
             if obj_pos[0] < startpoint_pos[0]:
                 x_end = obj_pos[0] - rand_float(0.1, 0.2)
@@ -769,12 +750,18 @@ class FlexEnv(gym.Env):
                 x_end = obj_pos[0] + rand_float(0.1, 0.2)
             y_end = slope * (x_end - startpoint_pos[0]) + startpoint_pos[1]
             endpoint_pos = np.array([x_end, y_end])
+            if obj_pos[0] != startpoint_pos[0] and np.abs(x_end) < 1.5 and np.abs(y_end) < 1.5:
+                break
         
         action = np.concatenate([startpoint_pos.reshape(-1), endpoint_pos.reshape(-1)], axis=0)
         return action
     
-    def sample_tshirt_actios(self):
-        raise NotImplementedError
+    def inside_workspace(self):
+        pos = self.get_positions().reshape(-1, 4)[:, [0, 2]]
+        if np.abs(pos[0]).any() > 2 or np.abs(pos[1]).any() > 2:
+            return False
+        else:
+            return True
     
     def get_positions(self):
         return pyflex.get_positions()

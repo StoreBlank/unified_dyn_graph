@@ -1,9 +1,9 @@
 dataset:
-  folder: "/media/baoyu/sumsung/" # gen_data
+  folder: "/media/baoyu/sumsung/debug" # gen_data
   n_worker: 20
-  n_episode: 200 #2000
+  n_episode: 20 #2000
   n_timestep: 5 # tshirt: 5
-  obj: "Tshirt" 
+  obj: "rope" 
   wkspc_w: 4.0
   headless: True
   robot_type: 'xarm6' 
