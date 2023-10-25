@@ -5,6 +5,7 @@ import gym
 import math
 import cv2
 from scipy.spatial.distance import cdist
+from scipy.spatial.transform import Rotation
 
 # robot
 import pybullet as p
@@ -178,7 +179,7 @@ class FlexEnv(gym.Env):
         cam_dis = 3.
         cam_height = 4.5
         if self.camera_view == 0:
-            self.camPos = np.array([0., cam_height+6., 0.])
+            self.camPos = np.array([0., cam_height+10., 0.])
             self.camAngle = np.array([0., -np.deg2rad(90.), 0.])
         elif self.camera_view == 1:
             self.camPos = np.array([cam_dis, cam_height, cam_dis])
@@ -284,11 +285,13 @@ class FlexEnv(gym.Env):
         
         elif self.obj == 'rope':
             # rand_float(0.8, 1.5)
-            scale = np.array([rand_float(0.8, 1.5), 1.5, rand_float(1., 2.)]) * 80 # length, extension, thickness, 
-            trans = [-1., 4., rand_float(-1, 1)]
             radius = 0.025
-            # 0.025 -> 110
-            # 0.05 -> 60
+            scale = np.array([rand_float(0.8, 1.5), 1.5, rand_float(1., 2.)]) * 80 # length, extension, thickness, 
+            # trans = [-1., 4., rand_float(-1, 1)]
+            trans = [-1., 2., 0.]
+            # rotate_y = np.random.choice([0, 30, 45, 90, 180])
+            rot = Rotation.from_euler('xyz', [0, rand_float(0, 360), 0], degrees=True)
+            rotate = rot.as_quat()
             
             cluster_spacing = rand_float(4, 8) # change the stiffness of the rope
             cluster_radius = 0.
@@ -314,13 +317,15 @@ class FlexEnv(gym.Env):
             draw_mesh = 1
 
             relaxtion_factor = 1.
-
+            collisionDistance = radius * 0.5
+            
             self.scene_params = np.array([*scale, *trans, radius, 
                                             cluster_spacing, cluster_radius, cluster_stiffness,
                                             link_radius, link_stiffness, global_stiffness,
                                             surface_sampling, volume_sampling, skinning_falloff, skinning_max_dist,
                                             cluster_plastic_threshold, cluster_plastic_creep,
-                                            dynamicFriction, particleFriction, draw_mesh, relaxtion_factor])
+                                            dynamicFriction, particleFriction, draw_mesh, relaxtion_factor, 
+                                            *rotate, collisionDistance])
             
             temp = np.array([0])
             pyflex.set_scene(26, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
@@ -481,7 +486,7 @@ class FlexEnv(gym.Env):
         self.init_multiview_camera()
         
         # add table board
-        self.wall_shape_states = np.zeros((2, 14))
+        self.wall_shape_states = np.zeros((1, 14))
         wall_height = 0.5
         if self.obj == 'multi_ycb':
             halfEdge = np.array([self.wkspc_w, wall_height, self.wkspc_w])
@@ -495,13 +500,13 @@ class FlexEnv(gym.Env):
         self.wall_shape_states[0] = np.concatenate([center, center, quats, quats])
 
         # add slope for random initial configurations 
-        halfEdge = np.array([1., 0.0001, 1.])
-        center = np.array([0., 1., -2.6])
-        quats = quatFromAxisAngle(axis=np.array([1., 0., 0.]), angle=np.deg2rad(40.))
-        hideShape = 1
-        color = np.ones(3) * (160. / 255.)
-        pyflex.add_box(halfEdge, center, quats, hideShape, color)
-        self.wall_shape_states[1] = np.concatenate([center, center, quats, quats])
+        # halfEdge = np.array([1., 0.0001, 1.])
+        # center = np.array([0., 1., -2.6])
+        # quats = quatFromAxisAngle(axis=np.array([1., 0., 0.]), angle=np.deg2rad(40.))
+        # hideShape = 1
+        # color = np.ones(3) * (160. / 255.)
+        # pyflex.add_box(halfEdge, center, quats, hideShape, color)
+        # self.wall_shape_states[1] = np.concatenate([center, center, quats, quats])
 
         # add robot
         if self.gripper:
@@ -517,7 +522,7 @@ class FlexEnv(gym.Env):
 
         pyflex.set_shape_states(self.robot_to_shape_states(pyflex.getRobotShapeStates(self.flex_robot_helper)))
         
-        for i in range(300):
+        for i in range(500):
             pyflex.step()
         
         # update robot actions
@@ -538,7 +543,7 @@ class FlexEnv(gym.Env):
         self.last_ee = None
         self.reset_robot()
     
-    def step(self, action, prev_counts=0, dir=None,):
+    def step(self, action, prev_counts=0, dir=None):
         # h = 0
         if self.gripper:
             h = 0.5 + 1
@@ -557,8 +562,8 @@ class FlexEnv(gym.Env):
         orn = np.array([0.0, np.pi, pusher_angle + np.pi/2])
 
         # create way points
-        if self.cont_motion:
-            if self.last_ee is not None:
+        if self.cont_motion: #TODO - strange
+            if self.last_ee is None:
                 self.reset_robot(self.rest_joints)
                 self.last_ee = s_2d
             way_points = [self.last_ee, s_2d, e_2d]
@@ -570,7 +575,7 @@ class FlexEnv(gym.Env):
         if self.obj == "Tshirt":
             speed = 1.0/300.
         else:
-            speed = 1.0/100.
+            speed = 1.0/300.
 
         record_count = prev_counts
         for i_p in range(len(way_points)-1):
@@ -595,6 +600,8 @@ class FlexEnv(gym.Env):
                     if j == 0:
                         with open(os.path.join(cam_dir, '%d_particles.npy' % record_count), 'wb') as f:
                             np.save(f, self.get_positions().reshape(-1, 4))
+                        with open(os.path.join(cam_dir, '%d_endeffector.npy' % record_count), 'wb') as f:
+                            np.save(f, np.array([-2., 0., h]))
             
                     # save camera intrinsic and extrinsic parameters
                     if self.cam_intrinsic_params[j].sum() == 0 or self.cam_extrinsic_matrix[j].sum() == 0:
@@ -635,6 +642,8 @@ class FlexEnv(gym.Env):
                         if j == 0:
                             with open(os.path.join(cam_dir, '%d_particles.npy' % record_count), 'wb') as f:
                                 np.save(f, self.get_positions().reshape(-1, 4))
+                            with open(os.path.join(cam_dir, '%d_endeffector.npy' % record_count), 'wb') as f:
+                                np.save(f, end_effector_pos)
                     record_count += 1
 
                 self.reset_robot()
@@ -665,6 +674,8 @@ class FlexEnv(gym.Env):
                 if j == 0:
                     with open(os.path.join(cam_dir, '%d_particles.npy' % record_count), 'wb') as f:
                         np.save(f, self.get_positions().reshape(-1, 4))
+                    with open(os.path.join(cam_dir, '%d_endeffector.npy' % record_count), 'wb') as f:
+                            np.save(f, np.array([-2., 0., h]))
             record_count += 1
         
         obs = self.render()

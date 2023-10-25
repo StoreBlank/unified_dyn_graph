@@ -6,6 +6,7 @@ import yaml
 from flex_env import FlexEnv
 import trimesh
 import json
+import pickle
 import multiprocessing as mp
 
 def load_yaml(filename):
@@ -64,6 +65,7 @@ def gen_data(info):
         last_img = img.copy()
         n_steps = 0
         steps_list = []
+        end_effector_pos_all = []
         for idx_timestep in range(n_timestep):
             if verbose:
                 print('timestep %d' % idx_timestep)
@@ -72,7 +74,6 @@ def gen_data(info):
             while color_diff < color_threshold:
                 u = None
                 u = env.sample_action()
-                
                 # u = [1., 0., -1., 0.]
 
                 # step
@@ -106,7 +107,7 @@ def gen_data(info):
                 print("Object outside workspace!")
                 break
         
-        # save actions and steps
+        # save actions and steps and end effector positions
         np.save(os.path.join(epi_dir, 'actions.npy'), actions)
         np.save(os.path.join(epi_dir, 'steps.npy'), np.array(steps_list))
 

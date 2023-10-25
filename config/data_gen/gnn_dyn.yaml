@@ -1,8 +1,8 @@
 dataset:
-  folder: "/media/baoyu/sumsung/debug" # gen_data
-  n_worker: 20
-  n_episode: 20 #2000
-  n_timestep: 5 # tshirt: 5
+  folder: "/media/baoyu/sumsung" 
+  n_worker: 25
+  n_episode: 100 #2000
+  n_timestep: 5 
   obj: "rope" 
   wkspc_w: 4.0
   headless: True
