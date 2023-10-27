@@ -8,7 +8,7 @@ def merge_video(image_path, video_path):
     f_names = os.listdir(image_path)
     image_names = []
     for f_name in f_names:
-        if '_color.png' in f_name:
+        if '_color.jpg' in f_name:
             image_names.append(f_name)
 
     image_names.sort(key=lambda x: int(x.split('_')[0]))
@@ -16,7 +16,7 @@ def merge_video(image_path, video_path):
     # print(image_names)
 
     fourcc = cv2.VideoWriter_fourcc('M', 'P', '4', 'V')
-    fps = 20
+    fps = 40
 
     img = Image.open(os.path.join(image_path, image_names[0]))
 
@@ -31,10 +31,11 @@ def merge_video(image_path, video_path):
     video_writer.release()
 
 if __name__ == '__main__':
-    for i in range(10):
-        epi_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/Tshirt/episode_{i}"
-        image_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/Tshirt/episode_{i}/camera_0"
-        video_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/Tshirt/episode_{i}/camera_0/video.mp4" 
+    for n in range(1):
+        i = 1
+        epi_path = f"/media/baoyu/sumsung/debug/Tshirt/episode_{i}/camera_0"
+        image_path = f"/media/baoyu/sumsung/debug/Tshirt/episode_{i}/camera_0"
+        video_path = f"/media/baoyu/sumsung/video/Tshirt/video_{i}.mp4" 
         merge_video(image_path, video_path)
         # open json file
         # with open(os.path.join(epi_path, 'property.json'), 'r') as f:

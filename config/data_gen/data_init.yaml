@@ -1,11 +1,11 @@
 dataset:
-  folder: "/media/baoyu/sumsung/rope_2" 
-  n_worker: 6
-  n_episode: 6 #2000
-  n_timestep: 5
+  folder: "/media/baoyu/sumsung/rope_init" 
+  n_worker: 5
+  n_episode: 1 #2000
+  n_timestep: 1
   obj: "rope" 
   wkspc_w: 4.0
-  headless: True
+  headless: False
   robot_type: 'xarm6' 
   cont_motion: False
   camera_view: 1 # 0, 1, 2, 3, 4
