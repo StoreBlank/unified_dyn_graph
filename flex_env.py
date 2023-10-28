@@ -125,9 +125,9 @@ class FlexEnv(gym.Env):
         # xarm6
         self.flex_robot_helper = FlexRobotHelper()
         self.gripper = config['dataset']['gripper']
-        if self.gripper: #TODO    
-            self.end_idx = 14
-            self.num_dofs = 14
+        if self.gripper:   
+            self.end_idx = 13
+            self.num_dofs = 13
         else:
             self.end_idx = 6
             self.num_dofs = 6
@@ -164,7 +164,7 @@ class FlexEnv(gym.Env):
     def robot_to_shape_states(self, robot_states):
         return np.concatenate([self.wall_shape_states, robot_states], axis=0)
 
-    def reset_robot(self, jointPositions = np.zeros(14).tolist()):
+    def reset_robot(self, jointPositions = np.zeros(13).tolist()):
         index = 0
         for j in range(self.num_joints):
             p.changeDynamics(self.robotId, j, linearDamping=0, angularDamping=0)
@@ -518,7 +518,7 @@ class FlexEnv(gym.Env):
             robot_base_pos = [-3., 0., 1.]
             robot_base_orn = [0, 0, 0, 1]
             self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'assets/xarm/xarm6_with_gripper_2.urdf', robot_base_pos, robot_base_orn, globalScaling=5) 
-            self.rest_joints = np.zeros(14)
+            self.rest_joints = np.zeros(13)
         else:
             robot_base_pos = [-3., 0., 0.5]
             robot_base_orn = [0, 0, 0, 1]
@@ -595,11 +595,7 @@ class FlexEnv(gym.Env):
             
     
     def step(self, action, prev_counts=0, dir=None):
-        # h = 0
-        if self.gripper:
-            h = 0.5 + 1
-        else:
-            h = 0.5 + 0.5 # table + pusher
+        h = 0.5 + 0.5 # table + pusher
         s_2d = np.concatenate([action[:2], [h]])
         e_2d = np.concatenate([action[2:], [h]])
 
@@ -619,7 +615,8 @@ class FlexEnv(gym.Env):
                 self.last_ee = s_2d
             way_points = [self.last_ee, s_2d, e_2d]
         else:
-            way_points = [s_2d, e_2d]
+            # way_points = [s_2d, e_2d]
+            way_points = [s_2d + [0., 0., 0.5], s_2d, e_2d, e_2d + [0., 0., 0.5]]
             self.reset_robot(self.rest_joints)
 
         # set robot speed

@@ -46,16 +46,16 @@ def gen_data(info):
         start_epi_time = time.time()
         print('episode:', idx_episode)
         
-        epi_dir = os.path.join(folder_dir, "episode_%d" % idx_episode)
-        os.system("mkdir -p %s" % epi_dir)
-       
-        n_steps = env.reset(dir=epi_dir)
-       
-        # save property
-        property = env.get_property()
-        # print(property)
-        with open(os.path.join(epi_dir, 'property.json'), 'w') as f:
-           json.dump(property, f)
+        if debug:
+            n_steps = env.reset() 
+        else:
+            epi_dir = os.path.join(folder_dir, "episode_%d" % idx_episode)
+            os.system("mkdir -p %s" % epi_dir)
+            n_steps = env.reset(dir=epi_dir)
+            # save property
+            property = env.get_property()
+            with open(os.path.join(epi_dir, 'property.json'), 'w') as f:
+                json.dump(property, f)
         
         actions = np.zeros((n_timestep, action_dim))
         color_threshold = 0.1
@@ -106,8 +106,9 @@ def gen_data(info):
                 break
         
         # save actions and steps and end effector positions
-        np.save(os.path.join(epi_dir, 'actions.npy'), actions)
-        np.save(os.path.join(epi_dir, 'steps.npy'), np.array(steps_list))
+        if not debug:
+            np.save(os.path.join(epi_dir, 'actions.npy'), actions)
+            np.save(os.path.join(epi_dir, 'steps.npy'), np.array(steps_list))
 
         end_epi_time = time.time()
         print("Finish episode %d!!!!" % idx_episode)
@@ -115,35 +116,36 @@ def gen_data(info):
         idx_episode += 1
         
     # save camera params
-    cam_intrinsic_params, cam_extrinsic_matrix = env.get_camera_params()
-    np.save(os.path.join(folder_dir, 'camera_intrinsic_params.npy'), cam_intrinsic_params)
-    np.save(os.path.join(folder_dir, 'camera_extrinsic_matrix.npy'), cam_extrinsic_matrix)
+    if not debug:
+        cam_intrinsic_params, cam_extrinsic_matrix = env.get_camera_params()
+        np.save(os.path.join(folder_dir, 'camera_intrinsic_params.npy'), cam_intrinsic_params)
+        np.save(os.path.join(folder_dir, 'camera_extrinsic_matrix.npy'), cam_extrinsic_matrix)
             
     env.close()
 
 # multiprocessing
-infos=[]
-base = 34
-for i in range(n_worker):
-    info = {
-        "base_epi": base+i*n_episode//n_worker,
-        "n_epi_per_worker": n_episode//n_worker,
-        "thread_idx": i,
-        "verbose": False,
-        "debug": False,
-    }
-    infos.append(info)
+# infos=[]
+# base = 34
+# for i in range(n_worker):
+#     info = {
+#         "base_epi": base+i*n_episode//n_worker,
+#         "n_epi_per_worker": n_episode//n_worker,
+#         "thread_idx": i,
+#         "verbose": False,
+#         "debug": False,
+#     }
+#     infos.append(info)
 
-pool = mp.Pool(processes=n_worker)
-pool.map(gen_data, infos)
+# pool = mp.Pool(processes=n_worker)
+# pool.map(gen_data, infos)
 
 
-# info = {
-#     "base_epi": 0,
-#     "n_epi_per_worker": n_episode,
-#     "thread_idx": 1,
-#     "verbose": False,
-#     "debug": False,
-# }
-# gen_data(info)
+info = {
+    "base_epi": 0,
+    "n_epi_per_worker": n_episode,
+    "thread_idx": 1,
+    "verbose": False,
+    "debug": True,
+}
+gen_data(info)
 
