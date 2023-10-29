@@ -70,9 +70,9 @@ def gen_data(info):
             
             color_diff = 0
             while color_diff < color_threshold:
-                u = None
-                u = env.sample_action()
-                # u = [1., 0., -1., 0.]
+                # u = None
+                # u = env.sample_action()
+                u = [0., 0., 0., 0.]
 
                 # step
                 prev_steps = n_steps

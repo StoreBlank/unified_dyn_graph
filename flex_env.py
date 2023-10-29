@@ -126,8 +126,9 @@ class FlexEnv(gym.Env):
         self.flex_robot_helper = FlexRobotHelper()
         self.gripper = config['dataset']['gripper']
         if self.gripper:   
-            self.end_idx = 13
-            self.num_dofs = 13
+            self.end_idx = 13 #13
+            self.num_dofs = 12 #13
+            self.gripper_state = 0
         else:
             self.end_idx = 6
             self.num_dofs = 6
@@ -163,18 +164,69 @@ class FlexEnv(gym.Env):
         
     def robot_to_shape_states(self, robot_states):
         return np.concatenate([self.wall_shape_states, robot_states], axis=0)
+    
+    def robot_close_gripper(self, close, jointPoses=None):
+        
+        # c = p.createConstraint(self.robotId,
+        #                         6,
+        #                         self.robotId,
+        #                         12,
+        #                         jointType=p.JOINT_GEAR,
+        #                         jointAxis=[1, 0, 0],
+        #                         parentFramePosition=[0, 0, 0],
+        #                         childFramePosition=[0, 0, 0])
+        # p.changeConstraint(c, gearRatio=-1, erp=0.1, maxForce=50)
+        
+        # p.submitProfileTiming()
+        # index = 0
+        # for j in range(6, self.num_joints):
+        #     p.changeDynamics(self.robotId, j, linearDamping=0, angularDamping=0)
+        #     info = p.getJointInfo(self.robotId, j)
+        #     jointType = info[2]
+        #     if (jointType == p.JOINT_PRISMATIC or jointType == p.JOINT_REVOLUTE):
+        #         p.setJointMotorControl2(self.robotId, j, p.POSITION_CONTROL, jointPoses[index], force=0)
+        #         # pyflex.resetJointState(self.flex_robot_helper, j, jointPoses[index])
+        #         index = index + 1
+        # for _ in range(1000):
+        #     p.stepSimulation()
+        
+        for j in range(8, self.num_joints):
+            pyflex.resetJointState(self.flex_robot_helper, j, close)
+        
+        pyflex.set_shape_states(self.robot_to_shape_states(pyflex.getRobotShapeStates(self.flex_robot_helper)))            
+        
 
+    
+    def robot_open_gripper(self):
+        for j in range(7, self.num_joints):
+            pyflex.resetJointState(self.flex_robot_helper, j, 0.0)
+                        
     def reset_robot(self, jointPositions = np.zeros(13).tolist()):
+        # create a constraint to keep the fingers centered
+        # if self.gripper:
+        #     c = p.createConstraint(self.robotId,
+        #                         6,
+        #                         self.robotId,
+        #                         13,
+        #                         jointType=p.JOINT_GEAR,
+        #                         jointAxis=[1, 0, 0],
+        #                         parentFramePosition=[0, 0, 0],
+        #                         childFramePosition=[0, 0, 0])
+        #     p.changeConstraint(c, gearRatio=-1, erp=0.1, maxForce=50)
+            
+        # print('jointPositions', jointPositions)
+        
         index = 0
-        for j in range(self.num_joints):
+        for j in range(6):
             p.changeDynamics(self.robotId, j, linearDamping=0, angularDamping=0)
             info = p.getJointInfo(self.robotId, j)
 
             jointType = info[2]
             if (jointType == p.JOINT_PRISMATIC or jointType == p.JOINT_REVOLUTE):
                 pyflex.resetJointState(self.flex_robot_helper, j, jointPositions[index])
+                # print(j, 'jointPositions', jointPositions[index])
                 index = index + 1
-            
+                
         pyflex.set_shape_states(self.robot_to_shape_states(pyflex.getRobotShapeStates(self.flex_robot_helper)))
     
     def set_camera(self):
@@ -291,8 +343,9 @@ class FlexEnv(gym.Env):
             else:
                 scale = np.array([rand_float(0.8, 1.5), 1.5, rand_float(1., 2.)]) * 80 # length, extension, thickness
                 cluster_spacing = rand_float(4, 8) # change the stiffness of the rope
-                dynamicFriction = rand_float(0.1, 0.7)
-                rot = Rotation.from_euler('xyz', [0, 0, rand_float(70, 80)], degrees=True)
+                dynamicFriction = 0.7 #rand_float(0.1, 0.7)
+                # rand_float(70, 80)
+                rot = Rotation.from_euler('xyz', [0, 0, 0], degrees=True)
             
             trans = [-1., 2., 0.]
             # rotate_y = np.random.choice([0, 30, 45, 90, 180])
@@ -567,7 +620,7 @@ class FlexEnv(gym.Env):
         self.last_ee = None
         self.reset_robot()
         
-        for _ in range(500):
+        for _ in range(50):
             pyflex.step()
         # print('num_particles:', self.get_num_particles())
         
@@ -595,7 +648,13 @@ class FlexEnv(gym.Env):
             
     
     def step(self, action, prev_counts=0, dir=None):
-        h = 0.5 + 0.5 # table + pusher
+        if self.gripper:
+            particle_h = self.get_positions().reshape(-1, 4)[0, 1]
+            gripper_h = 0.35
+            h = particle_h + gripper_h
+            # print('h', h)
+        else:
+            h = 0.5 + 0.5 # table + pusher
         s_2d = np.concatenate([action[:2], [h]])
         e_2d = np.concatenate([action[2:], [h]])
 
@@ -616,7 +675,7 @@ class FlexEnv(gym.Env):
             way_points = [self.last_ee, s_2d, e_2d]
         else:
             # way_points = [s_2d, e_2d]
-            way_points = [s_2d + [0., 0., 0.5], s_2d, e_2d, e_2d + [0., 0., 0.5]]
+            way_points = [s_2d + [0., 0., 0.5], s_2d, e_2d + [0., 0., 1.5]]
             self.reset_robot(self.rest_joints)
 
         # set robot speed
@@ -624,16 +683,23 @@ class FlexEnv(gym.Env):
             speed = 1.0/300.
         else:
             speed = 1.0/100.
-
+        
         self.count = prev_counts
+        
+        if self.gripper:
+            self.robot_open_gripper()
+        
         for i_p in range(len(way_points)-1):
             s = way_points[i_p]
             e = way_points[i_p+1]
             steps = int(np.linalg.norm(e-s)/speed) + 1
-
+            
+            # p.submitProfileTiming("step")
             for i in range(steps):
                 end_effector_pos = s + (e-s) * i / steps
                 end_effector_orn = p.getQuaternionFromEuler(orn)
+                # end_effector_orn = ([math.pi/2, 0., 0.])
+                # p.submitProfileTiming("IK")
                 jointPoses = p.calculateInverseKinematics(self.robotId, 
                                                         self.end_idx, 
                                                         end_effector_pos, 
@@ -642,6 +708,27 @@ class FlexEnv(gym.Env):
                                                         self.joints_upper.tolist(),
                                                         (self.joints_upper - self.joints_lower).tolist(),
                                                         self.rest_joints)
+                                                        # maxNumIterations=20)
+                
+                
+                
+                self.reset_robot(jointPoses)
+                pyflex.step()
+                
+                if self.gripper:
+                    if end_effector_pos[-1] == h:
+                        close = 0
+                        start = 0
+                        end = 0.8
+                        close_steps = 1000
+                        for j in range(close_steps):
+                            close += (end - start) / close_steps
+                            self.robot_close_gripper(close)
+                            pyflex.step()
+                
+                    
+                # self.robot_close_gripper(jointPoses)
+                
                 self.reset_robot(jointPoses)
                 pyflex.step()
 
