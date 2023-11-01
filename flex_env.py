@@ -125,6 +125,7 @@ class FlexEnv(gym.Env):
         # xarm6
         self.flex_robot_helper = FlexRobotHelper()
         self.gripper = config['dataset']['gripper']
+        self.grasp = config['dataset']['grasp']
         if self.gripper:   
             self.end_idx = 13 #13
             self.num_dofs = 12 #13
@@ -273,8 +274,8 @@ class FlexEnv(gym.Env):
         self.cam_intrinsic_params = np.zeros([len(self.camPos_list), 4]) # [fx, fy, cx, cy]
         self.cam_extrinsic_matrix = np.zeros([len(self.camPos_list), 4, 4]) # [R, t]
     
-    def init_scene(self, init=False, property = None):
-        if self.obj == 'Tshirt':
+    def init_scene(self, obj, init=False, property = None):
+        if obj == 'Tshirt':
             cloth_dir = "assets/cloth3d/train"
             # random choose a folder in cloth_dir
             cloth_folder = os.path.join(cloth_dir, np.random.choice(os.listdir(cloth_dir)))
@@ -333,7 +334,7 @@ class FlexEnv(gym.Env):
                              'static_friction': staticFriction,
                              'particle_friction': particleFriction,}
         
-        elif self.obj == 'rope':
+        elif obj == 'rope':
             radius = 0.025
             if init:
                 scale = np.array([property['length'], 1.5 * 80., property['thickness']])
@@ -394,7 +395,7 @@ class FlexEnv(gym.Env):
                              'cluster_spacing': cluster_spacing,
                              'global_stiffness': global_stiffness,}
         
-        elif self.obj == 'carrots':
+        elif obj == 'carrots':
             global_scale = 5
             np.random.seed(0)
             rand_scale = np.random.uniform(0.09, 0.12) * global_scale / 7.0
@@ -457,7 +458,7 @@ class FlexEnv(gym.Env):
             temp = np.array([0])
             pyflex.set_scene(22, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
         
-        elif self.obj == 'coffee':
+        elif obj == 'coffee':
             global_scale = 4
             scale = 0.2 * global_scale / 8.0
             x = -0.9 * global_scale / 8.0
@@ -474,10 +475,10 @@ class FlexEnv(gym.Env):
             temp = np.array([0])
             pyflex.set_scene(20, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
 
-        elif self.obj == 'mustard_bottle':
+        elif obj == 'mustard_bottle':
             x = 0.
             y = 1. #3.5
-            z = -1. #-3.3
+            z = 0. #-3.3
             size = 0.8
             obj_type = 6
             draw_mesh = 1
@@ -503,7 +504,7 @@ class FlexEnv(gym.Env):
                              'dynamic_friction': dynamicFriction,
                              'viscosity': viscosity,}
         
-        elif self.obj == 'power_drill':
+        elif obj == 'power_drill':
             x = 0.
             y = 1. 
             z = -0.5
@@ -524,7 +525,7 @@ class FlexEnv(gym.Env):
             temp = np.array([0])
             pyflex.set_scene(25, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
         
-        elif self.obj == 'multi_ycb':
+        elif obj == 'multi_ycb':
             x = 0.
             y = 0.
             z = 0.
@@ -532,16 +533,101 @@ class FlexEnv(gym.Env):
             self.scene_params = np.array([x, y, z, size])
             temp = np.array([0])
             pyflex.set_scene(28, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+        
+        # object-object interactions
+        elif obj == 'rope_rigid':
+            # rope
+            radius = 0.025
+            scale = np.array([rand_float(0.8, 1.5), 1.5, rand_float(1., 2.)]) * 80 # length, extension, thickness
+            cluster_spacing = rand_float(4, 8) # change the stiffness of the rope
+            dynamicFriction = 0.7 #rand_float(0.1, 0.7)
+            # rand_float(70, 80)
+            rot = Rotation.from_euler('xyz', [0, 0, 0], degrees=True)
+            
+            trans = [-1., 2., 0.]
+            # rotate_y = np.random.choice([0, 30, 45, 90, 180])
+            rotate = rot.as_quat()
+            
+            cluster_radius = 0.
+            cluster_stiffness = 0.2
+
+            link_radius = 0. 
+            link_stiffness = 1.
+
+            global_stiffness = 0.
+
+            surface_sampling = 0.
+            volume_sampling = 4.
+
+            skinning_falloff = 5.
+            skinning_max_dist = 100.
+
+            cluster_plastic_threshold = 0.
+            cluster_plastic_creep = 0.
+
+            particleFriction = 0.25
+            
+            draw_mesh = 1
+
+            relaxtion_factor = 1.
+            collisionDistance = radius * 0.5
+            
+            # rigid
+            x, y, z = 0., 0., 0.
+            size = 0.8
+            mass = 1.0
+            
+            self.scene_params = np.array([*scale, *trans, radius, 
+                                            cluster_spacing, cluster_radius, cluster_stiffness,
+                                            link_radius, link_stiffness, global_stiffness,
+                                            surface_sampling, volume_sampling, skinning_falloff, skinning_max_dist,
+                                            cluster_plastic_threshold, cluster_plastic_creep,
+                                            dynamicFriction, particleFriction, draw_mesh, relaxtion_factor, 
+                                            *rotate, collisionDistance])
+            
+            temp = np.array([0])
+            pyflex.set_scene(31, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+        
+        elif obj == 'rigid_granular':
+            # rigid
+            x = -0.5
+            y = 1. #3.5
+            z = 0. #-3.3
+            size = 0.8 #0.8
+            obj_type = 6 #6
+            draw_mesh = 0
+
+            radius = 0.1 #0.05
+            mass = 4.31 #431g
+            rigidStiffness = 0.5
+            dynamicFriction = 0.5
+            staticFriction = 1.
+            viscosity = 0.
+            
+            # granular
+            num_granular_ft = [5, 1, 5]
+            granular_scale = 0.1
+            pos_granular = [0., 1., 0.]
+            granular_dis = 0.
+            
+            self.scene_params = np.array([x, y, z, size, obj_type, draw_mesh,
+                                          radius, mass, rigidStiffness, dynamicFriction, staticFriction, viscosity,
+                                          *num_granular_ft, granular_scale, *pos_granular, granular_dis])
+            temp = np.array([0])
+            pyflex.set_scene(32, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+        
 
         else:
             raise ValueError('obj not defined')
     
     def reset(self, count=0, init=False, epi=0, property=None, dir=None):
-        self.init_scene(init, property)
+        # self.init_scene(init, property)
+        obj = self.obj
+        self.init_scene(obj, init, property)
+        
+        # camera setting
         self.set_camera()
         self.init_multiview_camera()
-        
-        self.count = count
         
         # add table board
         self.wall_shape_states = np.zeros((1, 14))
@@ -584,6 +670,7 @@ class FlexEnv(gym.Env):
             pyflex.step()
         # print('num_particles:', self.get_num_particles())
         
+        self.count = count
         # initial pose render
         if dir != None:
             for j in range(len(self.camPos_list)):
@@ -650,7 +737,10 @@ class FlexEnv(gym.Env):
     def step(self, action, prev_counts=0, dir=None):
         if self.gripper:
             particle_h = self.get_positions().reshape(-1, 4)[0, 1]
-            gripper_h = 0.35
+            if self.grasp:
+                gripper_h = 0.35
+            else:
+                gripper_h = 0.5
             h = particle_h + gripper_h
             # print('h', h)
         else:
@@ -675,20 +765,28 @@ class FlexEnv(gym.Env):
             way_points = [self.last_ee, s_2d, e_2d]
         else:
             # way_points = [s_2d, e_2d]
-            way_points = [s_2d + [0., 0., 0.5], s_2d, e_2d + [0., 0., 1.5]]
+            if self.grasp:
+                way_points = [s_2d + [0., 0., 0.5], s_2d, e_2d, e_2d + [0., 0., 1.5]]
+            else:
+                way_points = [s_2d, e_2d]
             self.reset_robot(self.rest_joints)
 
         # set robot speed
         if self.obj in ["Tshirt", "rope"]:
-            speed = 1.0/300.
+            speed = 1.0/500.
         else:
             speed = 1.0/100.
         
         self.count = prev_counts
         
+        # set up gripper
         if self.gripper:
-            self.robot_open_gripper()
-        
+            if self.grasp:
+                self.robot_open_gripper()
+            else:
+                close = 0.8
+                self.robot_close_gripper(close)
+                
         for i_p in range(len(way_points)-1):
             s = way_points[i_p]
             e = way_points[i_p+1]
@@ -715,20 +813,17 @@ class FlexEnv(gym.Env):
                 self.reset_robot(jointPoses)
                 pyflex.step()
                 
-                if self.gripper:
+                if self.gripper and i_p == 1 and self.grasp:
                     if end_effector_pos[-1] == h:
                         close = 0
                         start = 0
-                        end = 0.8
+                        end = 0.85
                         close_steps = 1000
                         for j in range(close_steps):
                             close += (end - start) / close_steps
                             self.robot_close_gripper(close)
                             pyflex.step()
-                
                     
-                # self.robot_close_gripper(jointPoses)
-                
                 self.reset_robot(jointPoses)
                 pyflex.step()
 
