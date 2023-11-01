@@ -3,7 +3,7 @@ dataset:
   n_worker: 6
   n_episode: 1 #2000
   n_timestep: 1
-  obj: "rigid_granular" 
+  obj: "rope" 
   wkspc_w: 4.0
   headless: False
   robot_type: 'xarm6' 
@@ -12,5 +12,5 @@ dataset:
   camera_radius: 5.5
   dt: 0.1
   gripper: True
-  grasp: False
+  grasp: True
   init: False

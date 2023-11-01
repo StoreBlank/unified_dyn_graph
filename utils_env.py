@@ -1,4 +1,5 @@
 import numpy as np
+import scipy
 
 def load_cloth(path):
     """Load .obj of cloth mesh. Only quad-mesh is acceptable!
@@ -83,3 +84,11 @@ def quatFromAxisAngle(axis, angle):
     quat = np.array([axis[0], axis[1], axis[2], w])
 
     return quat
+
+
+def find_min_distance(X, Z):
+    """Find the minimum distance between point X and set of points Z using numpy."""
+    Z_array = np.array(Z)
+    distances = np.linalg.norm(Z_array - X, axis=1)
+    min_index = np.argmin(distances)
+    return distances[min_index], Z_array[min_index], min_index

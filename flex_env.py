@@ -15,7 +15,7 @@ from transformations import quaternion_from_matrix, quaternion_matrix
 
 # utils
 from utils_env import load_cloth
-from utils_env import rand_float, rand_int, quatFromAxisAngle
+from utils_env import rand_float, rand_int, quatFromAxisAngle, find_min_distance
 
 # Robot Arm
 class FlexRobotHelper:
@@ -43,6 +43,19 @@ class FlexRobotHelper:
         self.num_meshes = 0
         self.has_mesh = np.ones(len(links), dtype=bool)
         
+        """
+        XARM with gripper:
+        0: base_link;
+        1 - 6: link1 - link6; (without gripper - 7: stick/finger)
+        
+        7: base_link;
+        8: left outer knuckle;
+        9: left finger;
+        10: left inner knuckle;
+        11: right outer knuckle;
+        12: right finger;
+        13: right inner knuckle;
+        """
         for i in range(len(links)):
             link = links[i]
             if link.find_all('geometry'):
@@ -127,8 +140,8 @@ class FlexEnv(gym.Env):
         self.gripper = config['dataset']['gripper']
         self.grasp = config['dataset']['grasp']
         if self.gripper:   
-            self.end_idx = 13 #13
-            self.num_dofs = 12 #13
+            self.end_idx = 13 # 6(arm) + 1 base_link + 6(gripper; 9-left finger, 12-right finger)
+            self.num_dofs = 12 
             self.gripper_state = 0
         else:
             self.end_idx = 6
@@ -195,11 +208,9 @@ class FlexEnv(gym.Env):
             pyflex.resetJointState(self.flex_robot_helper, j, close)
         
         pyflex.set_shape_states(self.robot_to_shape_states(pyflex.getRobotShapeStates(self.flex_robot_helper)))            
-        
-
     
     def robot_open_gripper(self):
-        for j in range(7, self.num_joints):
+        for j in range(8, self.num_joints):
             pyflex.resetJointState(self.flex_robot_helper, j, 0.0)
                         
     def reset_robot(self, jointPositions = np.zeros(13).tolist()):
@@ -218,7 +229,7 @@ class FlexEnv(gym.Env):
         # print('jointPositions', jointPositions)
         
         index = 0
-        for j in range(6):
+        for j in range(7):
             p.changeDynamics(self.robotId, j, linearDamping=0, angularDamping=0)
             info = p.getJointInfo(self.robotId, j)
 
@@ -274,6 +285,7 @@ class FlexEnv(gym.Env):
         self.cam_intrinsic_params = np.zeros([len(self.camPos_list), 4]) # [fx, fy, cx, cy]
         self.cam_extrinsic_matrix = np.zeros([len(self.camPos_list), 4, 4]) # [R, t]
     
+    ### TODO: write the scene as a class
     def init_scene(self, obj, init=False, property = None):
         if obj == 'Tshirt':
             cloth_dir = "assets/cloth3d/train"
@@ -342,9 +354,10 @@ class FlexEnv(gym.Env):
                 dynamicFriction = property['dynamic_friction']
                 rot = Rotation.from_euler('xyz', [0, 0, 0], degrees=True)
             else:
-                scale = np.array([rand_float(0.8, 1.5), 1.5, rand_float(1., 2.)]) * 80 # length, extension, thickness
-                cluster_spacing = rand_float(4, 8) # change the stiffness of the rope
-                dynamicFriction = 0.7 #rand_float(0.1, 0.7)
+                # scale = np.array([rand_float(0.8, 1.5), 1.5, rand_float(1., 2.)]) * 80 # length, extension, thickness
+                scale = np.array([0.8, 1.5, 2.]) * 80.
+                cluster_spacing = 4 #rand_float(4, 8) # change the stiffness of the rope
+                dynamicFriction = 0.3 #rand_float(0.1, 0.7)
                 # rand_float(70, 80)
                 rot = Rotation.from_euler('xyz', [0, 0, 0], degrees=True)
             
@@ -733,14 +746,22 @@ class FlexEnv(gym.Env):
             self.count += 1
         return self.count
             
-    
+            
+    def _set_pos(self, picker_pos, particle_pos):
+        shape_states = np.array(pyflex.get_shape_states()).reshape(-1, 14)
+        shape_states[:, 3:6] = shape_states[:, :3] #picker_pos
+        shape_states[:, :3] = picker_pos
+        pyflex.set_shape_states(shape_states)
+        pyflex.set_positions(particle_pos)
+        
+
     def step(self, action, prev_counts=0, dir=None):
         if self.gripper:
             particle_h = self.get_positions().reshape(-1, 4)[0, 1]
             if self.grasp:
-                gripper_h = 0.35
+                gripper_h = 0.4
             else:
-                gripper_h = 0.5
+                gripper_h = 0.4
             h = particle_h + gripper_h
             # print('h', h)
         else:
@@ -766,14 +787,14 @@ class FlexEnv(gym.Env):
         else:
             # way_points = [s_2d, e_2d]
             if self.grasp:
-                way_points = [s_2d + [0., 0., 0.5], s_2d, e_2d, e_2d + [0., 0., 1.5]]
+                way_points = [s_2d + [0., 0., 0.5], s_2d, e_2d, e_2d + [0., 0., 1.]]
             else:
                 way_points = [s_2d, e_2d]
             self.reset_robot(self.rest_joints)
 
         # set robot speed
         if self.obj in ["Tshirt", "rope"]:
-            speed = 1.0/500.
+            speed = 1.0/300.
         else:
             speed = 1.0/100.
         
@@ -813,16 +834,103 @@ class FlexEnv(gym.Env):
                 self.reset_robot(jointPoses)
                 pyflex.step()
                 
-                if self.gripper and i_p == 1 and self.grasp:
-                    if end_effector_pos[-1] == h:
+                ##### TODO: debug
+                # gripper control
+                if self.gripper and self.grasp and i_p >= 1:
+                    grasp_thresd = 0.0001
+                    obj_pos = self.get_positions().reshape(-1, 4)[:, :3]
+                    new_particle_pos = self.get_positions().reshape(-1, 4).copy()
+                    if end_effector_pos[-1] == h and i_p == 1:
+                        length = self.get_num_particles()
+                        pick_id_list = np.zeros(length)
+                        # print('obj_pos:', obj_pos.shape) # (860, )
+                        # print('new_particle_pos_shape:', new_particle_pos.shape)
                         close = 0
                         start = 0
-                        end = 0.85
-                        close_steps = 1000
+                        end = 0.7
+                        close_steps = 2000
                         for j in range(close_steps):
+                            robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper) # 9: left finger; 12: right finger
+                            left_finger_pos, right_finger_pos = robot_shape_states[9][:3], robot_shape_states[12][:3]
+                            # print('left_finger_pos:', left_finger_pos)
+                            # print('right_finger_pos:', right_finger_pos)
+                            left_min_dist, left_rope_point, left_index = find_min_distance(left_finger_pos, obj_pos)
+                            right_min_dist, right_rope_point, right_index = find_min_distance(right_finger_pos, obj_pos)
+                            # print('left_min_dist:', left_min_dist, 'left_finger_point:', left_finger_point)
+                            # print('right_min_dist:', right_min_dist, 'right_finger_point:', right_finger_point)
+                            
+                            new_finger_pos = left_finger_pos.copy()
+                            # print(new_particle_pos[left_index])
+                            # print(new_particle_pos[pick_id, :3].shape)
+                            new_particle_pos[left_index, :3] = left_rope_point
+                            new_particle_pos[left_index, 3] = 0
+                            new_particle_pos[right_index, :3] = right_rope_point
+                            new_particle_pos[right_index, 3] = 0
+                            # new_particle_pos[0, :3] = left_rope_point
+                            
+                            # left_idx_dists = np.hstack([np.arange(left_rope_point.shape[0]).reshape(-1, 1), left_min_dist.reshape(-1, 1)])
+                            # right_idx_dists = np.hstack([np.arange(right_rope_point.shape[0]).reshape(-1, 1), right_min_dist.reshape(-1, 1)])
+
+                            # new_particle_pos[pick_id, :3] = left_finger_pos[pick_id][:3] - left_finger_pos - 2
+                            # print('new_particle_pos:', new_particle_pos.shape)
+                            
+                            # init_dis = np.linalg.norm(left_finger_pos - left_rope_point)
+                            # now_dis = np.linalg.norm(new_particle_pos - left_rope_point)
+                            
+                            if (left_finger_pos - left_finger_pos)[2] <= grasp_thresd * 0.5:
+                                print("True")
+                                new_finger_pos = left_finger_pos.copy()
+                                new_particle_pos[left_index, :3] = left_finger_pos
+                                new_particle_pos[right_index, :3] = right_finger_pos
+                                
+                                
+                            self._set_pos(new_finger_pos, new_particle_pos)
+                            
+                            # shape_states = np.array(pyflex.get_shape_states()).reshape(-1, 14)
+                            # shape_states[:, 3:6] = right_rope_point
+                            # shape_states[:, :3] = right_finger_pos
+                            # pyflex.set_shape_states(shape_states)
+
                             close += (end - start) / close_steps
                             self.robot_close_gripper(close)
                             pyflex.step()
+                    
+                    robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper) # 9: left finger; 12: right finger
+                    left_finger_pos, right_finger_pos = robot_shape_states[9][:3], robot_shape_states[12][:3]
+                    
+                    new_finger_pos = left_finger_pos.copy()
+                    # print(new_particle_pos[left_index])
+                    # print(new_particle_pos[pick_id, :3].shape)
+                    new_particle_pos[left_index, :3] = left_rope_point
+                    new_particle_pos[left_index, 3] = 0
+                    new_particle_pos[right_index, :3] = right_rope_point
+                    new_particle_pos[right_index, 3] = 0
+                    # new_particle_pos[0, :3] = left_rope_point
+                    
+                    # left_idx_dists = np.hstack([np.arange(left_rope_point.shape[0]).reshape(-1, 1), left_min_dist.reshape(-1, 1)])
+                    # right_idx_dists = np.hstack([np.arange(right_rope_point.shape[0]).reshape(-1, 1), right_min_dist.reshape(-1, 1)])
+
+                    # new_particle_pos[pick_id, :3] = left_finger_pos[pick_id][:3] - left_finger_pos - 2
+                    # print('new_particle_pos:', new_particle_pos.shape)
+                    
+                    # init_dis = np.linalg.norm(left_finger_pos - left_rope_point)
+                    # now_dis = np.linalg.norm(new_particle_pos - left_rope_point)
+                    
+                    if (left_finger_pos - left_finger_pos)[2] <= grasp_thresd * 0.5:
+                        print("True")
+                        new_finger_pos = left_finger_pos.copy()
+                        new_particle_pos[left_index, :3] = left_finger_pos
+                        new_particle_pos[right_index, :3] = right_finger_pos
+                        
+                        
+                    self._set_pos(new_finger_pos, new_particle_pos)
+                            
+                            
+                            
+                            
+                            
+                            
+                            
                     
                 self.reset_robot(jointPoses)
                 pyflex.step()
@@ -999,15 +1107,14 @@ class FlexEnv(gym.Env):
     def get_camera_params(self):
         return self.cam_intrinsic_params, self.cam_extrinsic_matrix
     
-    def get_scene_params(self):
-        return self.scene_params
-    
     def get_property(self):
         return self.property
     
     def get_num_particles(self):
         return self.get_positions().reshape(-1, 4).shape[0]
-            
+    
+    def grasp_action(self, end_effector_pos, h):
+        pass
             
 
 
