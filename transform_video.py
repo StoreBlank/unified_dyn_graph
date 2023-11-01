@@ -16,7 +16,7 @@ def merge_video(image_path, video_path):
     # print(image_names)
 
     fourcc = cv2.VideoWriter_fourcc('M', 'P', '4', 'V')
-    fps = 40
+    fps = 100
 
     img = Image.open(os.path.join(image_path, image_names[0]))
 
@@ -31,10 +31,11 @@ def merge_video(image_path, video_path):
     video_writer.release()
 
 if __name__ == '__main__':
-    for n in range(1):
-        i = 1
-        epi_path = f"/media/baoyu/sumsung/debug/Tshirt/episode_{i}/camera_0"
-        image_path = f"/media/baoyu/sumsung/debug/Tshirt/episode_{i}/camera_0"
+    for n in range(100):
+        i = np.random.randint(0, 200)
+        j = np.random.randint(0, 4)
+        epi_path = f"/media/baoyu/sumsung/Tshirt/episode_{i}/camera_{j}"
+        image_path = f"/media/baoyu/sumsung/Tshirt/episode_{i}/camera_{j}"
         video_path = f"/media/baoyu/sumsung/video/Tshirt/video_{i}.mp4" 
         merge_video(image_path, video_path)
         # open json file
