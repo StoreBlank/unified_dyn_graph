@@ -354,10 +354,10 @@ class FlexEnv(gym.Env):
                 dynamicFriction = property['dynamic_friction']
                 rot = Rotation.from_euler('xyz', [0, 0, 0], degrees=True)
             else:
-                # scale = np.array([rand_float(0.8, 1.5), 1.5, rand_float(1., 2.)]) * 80 # length, extension, thickness
-                scale = np.array([0.8, 1.5, 2.]) * 80.
-                cluster_spacing = 4 #rand_float(4, 8) # change the stiffness of the rope
-                dynamicFriction = 0.3 #rand_float(0.1, 0.7)
+                scale = np.array([rand_float(0.8, 1.5), 1.5, rand_float(1., 2.)]) * 80 # length, extension, thickness
+                # scale = np.array([0.8, 1.5, 2.]) * 80.
+                cluster_spacing = rand_float(4, 8) # change the stiffness of the rope
+                dynamicFriction = rand_float(0.1, 0.7)
                 # rand_float(70, 80)
                 rot = Rotation.from_euler('xyz', [0, 0, 0], degrees=True)
             
@@ -745,19 +745,6 @@ class FlexEnv(gym.Env):
                         self.cam_extrinsic_matrix[j] = self.get_camera_extrinsics()
             self.count += 1
         return self.count
-            
-            
-    def _set_pos(self, picker_pos, particle_pos):
-        """For gripper and grasp task."""
-        shape_states = np.array(pyflex.get_shape_states()).reshape(-1, 14)
-        shape_states[:, 3:6] = shape_states[:, :3] #picker_pos
-        shape_states[:, :3] = picker_pos
-        pyflex.set_shape_states(shape_states)
-        pyflex.set_positions(particle_pos)
-    
-    def _reset_pos(self, particle_pos):
-        """For gripper and grasp task."""
-        pyflex.set_positions(particle_pos)
         
     def step(self, action, prev_counts=0, dir=None):
         if self.gripper:
@@ -789,7 +776,6 @@ class FlexEnv(gym.Env):
                 self.last_ee = s_2d
             way_points = [self.last_ee, s_2d, e_2d]
         else:
-            # way_points = [s_2d, e_2d]
             if self.grasp:
                 way_points = [s_2d + [0., 0., 0.5], s_2d, e_2d, e_2d + [0., 0., 1.]]
             else:
@@ -809,20 +795,16 @@ class FlexEnv(gym.Env):
             if self.grasp:
                 self.robot_open_gripper()
             else:
-                close = 0.8
-                self.robot_close_gripper(close)
+                self.robot_close_gripper(0.7)
                 
         for i_p in range(len(way_points)-1):
             s = way_points[i_p]
             e = way_points[i_p+1]
             steps = int(np.linalg.norm(e-s)/speed) + 1
             
-            # p.submitProfileTiming("step")
             for i in range(steps):
                 end_effector_pos = s + (e-s) * i / steps
                 end_effector_orn = p.getQuaternionFromEuler(orn)
-                # end_effector_orn = ([math.pi/2, 0., 0.])
-                # p.submitProfileTiming("IK")
                 jointPoses = p.calculateInverseKinematics(self.robotId, 
                                                         self.end_idx, 
                                                         end_effector_pos, 
@@ -831,10 +813,7 @@ class FlexEnv(gym.Env):
                                                         self.joints_upper.tolist(),
                                                         (self.joints_upper - self.joints_lower).tolist(),
                                                         self.rest_joints)
-                                                        # maxNumIterations=20)
-                
-                
-                
+                    
                 self.reset_robot(jointPoses)
                 pyflex.step()
                 
@@ -844,55 +823,53 @@ class FlexEnv(gym.Env):
                     grasp_thresd = 0.1
                     obj_pos = self.get_positions().reshape(-1, 4)[:, :3]
                     new_particle_pos = self.get_positions().reshape(-1, 4).copy()
+                    
+                    # grasping 
                     if end_effector_pos[-1] == h and i_p == 1:
                         close = 0
                         start = 0
                         end = 0.7
-                        close_steps = 1000
+                        close_steps = 500
                         for j in range(close_steps):
+                            robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper) # 9: left finger; 12: right finger
+                            left_finger_pos, right_finger_pos = robot_shape_states[9][:3], robot_shape_states[12][:3]
+                            new_finger_pos = (left_finger_pos + right_finger_pos) / 2
                             if j == 0:
-                                robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper) # 9: left finger; 12: right finger
-                                left_finger_pos, right_finger_pos = robot_shape_states[9][:3], robot_shape_states[12][:3]
-                                # print('left_finger_pos:', left_finger_pos)
-                                # print('right_finger_pos:', right_finger_pos)
-                                left_min_dist, left_rope_point, left_index = find_min_distance(left_finger_pos, obj_pos)
-                                right_min_dist, right_rope_point, right_index = find_min_distance(right_finger_pos, obj_pos)
-                                # print('left_min_dist:', left_min_dist, 'left_finger_point:', left_finger_point)
-                                # print('right_min_dist:', right_min_dist, 'right_finger_point:', right_finger_point)
+                                # fine the k pick point
+                                pick_k = 2
+                                left_min_dist, left_index = find_min_distance(left_finger_pos, obj_pos, pick_k)
+                                right_min_dist, right_index = find_min_distance(right_finger_pos, obj_pos, pick_k)
                                 
                                 # save the original setting for restoring
                                 left_origin, right_origin = new_particle_pos[left_index], new_particle_pos[right_index]
-                                
-                                new_finger_pos = (left_finger_pos + right_finger_pos) / 2
-                               
+                            
+                            # connect pick pick point to the finger
                             if left_min_dist <= grasp_thresd: 
-                                new_finger_pos = (left_finger_pos + right_finger_pos) / 2
                                 new_particle_pos[left_index, :3] = left_finger_pos
                                 new_particle_pos[left_index, 3] = 0 # set the mass to infinity
-                            
                             if right_min_dist <= grasp_thresd:
-                                new_finger_pos = (left_finger_pos + right_finger_pos) / 2
                                 new_particle_pos[right_index, :3] = right_finger_pos
-                                new_particle_pos[right_index, 3] = 0
-                                
+                                new_particle_pos[right_index, 3] = 0 # set the mass to infinity
                             self._set_pos(new_finger_pos, new_particle_pos)
-
+                            
+                            # close the gripper slowly 
                             close += (end - start) / close_steps
                             self.robot_close_gripper(close)
                             pyflex.step()
                     
+                    # find finger positions
                     robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper) # 9: left finger; 12: right finger
                     left_finger_pos, right_finger_pos = robot_shape_states[9][:3], robot_shape_states[12][:3]
-                    
                     new_finger_pos = (left_finger_pos + right_finger_pos) / 2
+                    # connect the pick point to the finger
                     new_particle_pos[left_index, :3] = left_finger_pos
                     new_particle_pos[left_index, 3] = 0
                     new_particle_pos[right_index, :3] = right_finger_pos
                     new_particle_pos[right_index, 3] = 0
-                    # new_particle_pos[right_index, :3] = right_finger_pos
                         
                     self._set_pos(new_finger_pos, new_particle_pos)
-                            
+                
+                # reset robot
                 self.reset_robot(jointPoses)
                 pyflex.step()
 
@@ -1080,7 +1057,19 @@ class FlexEnv(gym.Env):
     def get_num_particles(self):
         return self.get_positions().reshape(-1, 4).shape[0]
     
-    def grasp_action(self, end_effector_pos, h):
+    def _set_pos(self, picker_pos, particle_pos):
+        """For gripper and grasp task."""
+        shape_states = np.array(pyflex.get_shape_states()).reshape(-1, 14)
+        shape_states[:, 3:6] = shape_states[:, :3] #picker_pos
+        shape_states[:, :3] = picker_pos
+        pyflex.set_shape_states(shape_states)
+        pyflex.set_positions(particle_pos)
+    
+    def _reset_pos(self, particle_pos):
+        """For gripper and grasp task."""
+        pyflex.set_positions(particle_pos)
+    
+    def grasp_action(self):
         pass
             
 
