@@ -74,7 +74,7 @@ def gen_data(info):
                 # u = env.sample_action()
                 # u = [0., -0.5, 0., 0.5]
                 # u = [-2., -0.3, 1., -0.3]
-                u = [0., 0., 0., 0.]
+                u = [0., 0., 1., 1.]
 
                 # step
                 prev_steps = n_steps
