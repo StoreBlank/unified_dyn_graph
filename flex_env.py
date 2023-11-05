@@ -276,13 +276,13 @@ class FlexEnv(gym.Env):
             mesh_verts = mesh_verts * 3.5
             
             # cloth_pos = [rand_float(-1., 0.), rand_float(1., 3.), rand_float(-0.5, 0.5)]
-            cloth_pos = [0., 1., 0.]
+            cloth_pos = [-1., 1., 0.]
             cloth_size = [20, 20]
             stretch_stiffness = rand_float(0.1, 1.0)
             bend_stiffness = rand_float(0.1, 1.0)
             shear_stiffness = rand_float(0.1, 1.0)
             stiffness = [stretch_stiffness, bend_stiffness, shear_stiffness] # [stretch, bend, shear]
-            cloth_mass = 1. #rand_float(1., 5.)
+            cloth_mass = 0.5 #rand_float(1., 5.)
             particle_r = rand_float(0.005, 0.015) #0.00625
             render_mode = 2
             flip_mesh = 0
@@ -331,7 +331,7 @@ class FlexEnv(gym.Env):
             else:
                 scale = np.array([rand_float(0.8, 1.5), 1.5, rand_float(1., 2.)]) * 80 # length, extension, thickness
                 # scale = np.array([0.8, 1.5, 2.]) * 80.
-                cluster_spacing = rand_float(4, 8) # change the stiffness of the rope
+                cluster_spacing = 4 #rand_float(4, 8) # change the stiffness of the rope
                 print('cluster_spacing:', cluster_spacing)
                 dynamicFriction = rand_float(0.1, 0.7)
                 print('dynamicFriction:', dynamicFriction)
@@ -750,6 +750,9 @@ class FlexEnv(gym.Env):
         else:
             if self.grasp:
                 way_points = [s_2d + [0., 0., 0.5], s_2d, s_2d, s_2d + [0., 0., 1.], e_2d + [0., 0., 1.]]
+                way_points.append(e_2d + [-1.5, 0., 1.])
+                way_points.append(e_2d + [-1.5, -1., 0.8])
+                way_points.append(e_2d + [0., -1., 1.])
             else:
                 way_points = [s_2d, e_2d]
             self.reset_robot(self.rest_joints)
@@ -808,9 +811,8 @@ class FlexEnv(gym.Env):
                             
                             if j == 0:
                                 # fine the k pick point
-                                pick_k = 5
+                                pick_k = 100 #rope:5
                                 min_dist, pick_index = find_min_distance(new_finger_pos, obj_pos, pick_k)
-                                
                                 # save the original setting for restoring
                                 pick_origin = new_particle_pos[pick_index]
                             
