@@ -407,7 +407,7 @@ class FlexEnv(gym.Env):
             z += z_off
             num_carrots = (num_x * num_z - 1) * 3
             # num_carrots = pyflex.get_n_particles()
-            print('num_carrots:', num_carrots)
+            # print('num_carrots:', num_carrots)
 
             add_singular = 0.0
             add_sing_x = -1
@@ -415,11 +415,11 @@ class FlexEnv(gym.Env):
             add_sing_z = -1
             add_noise = 0.0
             radius = 0.033
-            print('particle_r:', radius)
+            # print('particle_r:', radius)
 
             staticFriction = 1.0
             dynamicFriction = 0.9
-            draw_skin = 0. # 0: point; 1: mesh
+            draw_skin = 1 # 0: point; 1: mesh
             min_dist = 5.0
             max_dist = 10.0
 
@@ -466,23 +466,26 @@ class FlexEnv(gym.Env):
             pyflex.set_scene(20, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
 
         elif obj == 'mustard_bottle':
-            x = 0.
+            x = -0.1
             y = 1. #3.5
-            z = 0. #-3.3
+            z = 0.4 #-3.3
             size = 0.8
             obj_type = 6
             draw_mesh = 1
 
-            radius = 0.05
+            radius = 0.033
             mass = 4.31 #431g
-            rigidStiffness = 0.5
+            rigidStiffness = 1.
             dynamicFriction = 0.5
-            staticFriction = 1.
+            staticFriction = 0.
+            viscosity = 2.
             
-            viscosity = 0.
+            rotation = 1.5
+            springStiffness = 0.
 
             self.scene_params = np.array([x, y, z, size, obj_type, draw_mesh,
-                                          radius, mass, rigidStiffness, dynamicFriction, staticFriction, viscosity])
+                                          radius, mass, rigidStiffness, dynamicFriction, staticFriction, 
+                                          viscosity, rotation, springStiffness])
             
             temp = np.array([0])
             pyflex.set_scene(25, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
@@ -585,13 +588,13 @@ class FlexEnv(gym.Env):
             z = 0. #-3.3
             size = 0.8 #0.8
             obj_type = 6 #6
-            draw_mesh = 0
+            draw_mesh = 1
 
-            radius = 0.1 #0.05
-            mass = 4.31 #431g
-            rigidStiffness = 0.5
-            dynamicFriction = 0.5
-            staticFriction = 1.
+            radius = 0.033 #0.05 granular: 0.033
+            mass = 1. #431g
+            rigidStiffness = 1.
+            dynamicFriction = 0.3
+            staticFriction = 0.
             viscosity = 0.
             
             # granular
@@ -761,7 +764,7 @@ class FlexEnv(gym.Env):
         if self.obj in ["Tshirt", "rope"]:
             speed = 1.0/300.
         else:
-            speed = 1.0/100.
+            speed = 1.0/300.
         
         self.count = prev_counts
         
@@ -802,7 +805,7 @@ class FlexEnv(gym.Env):
                     if i_p == 1:
                         close = 0
                         start = 0
-                        end = 0.7
+                        end = 0.5 #0.7
                         close_steps = 500
                         for j in range(close_steps):
                             robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper) # 9: left finger; 12: right finger
@@ -811,7 +814,7 @@ class FlexEnv(gym.Env):
                             
                             if j == 0:
                                 # fine the k pick point
-                                pick_k = 100 #rope:5
+                                pick_k = 1 #rope:5
                                 min_dist, pick_index = find_min_distance(new_finger_pos, obj_pos, pick_k)
                                 # save the original setting for restoring
                                 pick_origin = new_particle_pos[pick_index]
