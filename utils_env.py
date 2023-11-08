@@ -90,7 +90,6 @@ def find_min_distance(X, Z, k):
     """Find the top k minimum distance between point X and set of points Z using numpy."""
     Z_array = np.array(Z)
     distances = np.linalg.norm(Z_array - X, axis=1)
-    # min_index = np.argmin(distances)
     # find k minimum distance
     index = np.argsort(distances)[:k]
     min_distances = distances[index[0]]

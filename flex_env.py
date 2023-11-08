@@ -262,21 +262,21 @@ class FlexEnv(gym.Env):
     ### TODO: write the scene as a class
     def init_scene(self, obj, init=False, property = None):
         if obj == 'Tshirt':
-            cloth_dir = "assets/cloth3d/train"
-            # random choose a folder in cloth_dir
-            cloth_folder = os.path.join(cloth_dir, np.random.choice(os.listdir(cloth_dir)))
-            path = os.path.join(cloth_folder, 'Tshirt_processed.obj')
-            # path = "assets/cloth3d/Tshirt2.obj"
+            # cloth_dir = "assets/cloth3d/train"
+            # # random choose a folder in cloth_dir
+            # cloth_folder = os.path.join(cloth_dir, np.random.choice(os.listdir(cloth_dir)))
+            # path = os.path.join(cloth_folder, 'Tshirt_processed.obj')
+            path = "assets/cloth3d/Tshirt2.obj"
             
             retval = load_cloth(path)
             mesh_verts = retval[0]
             mesh_faces = retval[1]
             mesh_stretch_edges, mesh_bend_edges, mesh_shear_edges = retval[2:]
 
-            mesh_verts = mesh_verts * 3.5
+            mesh_verts = mesh_verts * 3.
             
             # cloth_pos = [rand_float(-1., 0.), rand_float(1., 3.), rand_float(-0.5, 0.5)]
-            cloth_pos = [-1., 1., 0.]
+            cloth_pos = [-0.9, 1., 0.]
             cloth_size = [20, 20]
             stretch_stiffness = rand_float(0.1, 1.0)
             bend_stiffness = rand_float(0.1, 1.0)
@@ -528,7 +528,7 @@ class FlexEnv(gym.Env):
             pyflex.set_scene(28, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
         
         # object-object interactions
-        elif obj == 'rope_rigid':
+        elif obj == 'rope_rigid': #TODO
             # rope
             radius = 0.025
             scale = np.array([rand_float(0.8, 1.5), 1.5, rand_float(1., 2.)]) * 80 # length, extension, thickness
@@ -586,28 +586,58 @@ class FlexEnv(gym.Env):
             x = -0.5
             y = 1. #3.5
             z = 0. #-3.3
-            size = 0.8 #0.8
-            obj_type = 6 #6
+            size = 0.6 #0.8
+            obj_type = 36 #36
             draw_mesh = 1
 
-            radius = 0.033 #0.05 granular: 0.033
+            radius = 0.03 #0.05 granular: 0.033
             mass = 1. #431g
             rigidStiffness = 1.
             dynamicFriction = 0.3
             staticFriction = 0.
             viscosity = 0.
+            rotation = 1.5
             
             # granular
             num_granular_ft = [5, 1, 5]
             granular_scale = 0.1
-            pos_granular = [0., 1., 0.]
+            pos_granular = [-0.5, 1., -1.]
             granular_dis = 0.
             
             self.scene_params = np.array([x, y, z, size, obj_type, draw_mesh,
                                           radius, mass, rigidStiffness, dynamicFriction, staticFriction, viscosity,
-                                          *num_granular_ft, granular_scale, *pos_granular, granular_dis])
+                                          *num_granular_ft, granular_scale, *pos_granular, granular_dis, rotation])
             temp = np.array([0])
             pyflex.set_scene(32, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+        
+        elif obj == 'cloth_rigid': #TODO
+            dimx_cloth = 17
+            dimy_cloth = 17
+            height_cloth = 2
+            px_cloth = -0.75
+            py_cloth = -1.
+            pz_cloth = -0.75
+
+            dimx_rigid = 1
+            dimy_rigid = 1
+            dimz_rigid = 1
+            numx_rigid = 1
+            numy_rigid = 1
+            numz_rigid = 1
+
+            num_banana = 0
+            draw_points = 0
+
+            scene_params = np.array([
+                dimx_cloth, dimy_cloth, height_cloth,
+                px_cloth, py_cloth, pz_cloth,
+                dimx_rigid, dimy_rigid, dimz_rigid,
+                numx_rigid, numy_rigid, numz_rigid,
+                num_banana, draw_points
+            ])
+
+            temp = np.array([0])
+            pyflex.set_scene(12, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
         
 
         else:
@@ -737,6 +767,7 @@ class FlexEnv(gym.Env):
         # pusher angle depending on x-axis #TODO
         # if (s_2d - e_2d)[0] == 0:
         #     pusher_angle = np.pi/2
+        #     # pusher_angle = np.pi
         # else:
         #     pusher_angle = np.arctan((s_2d - e_2d)[1] / (s_2d - e_2d)[0])
         pusher_angle = np.pi/2
@@ -752,10 +783,17 @@ class FlexEnv(gym.Env):
             way_points = [self.last_ee, s_2d, e_2d]
         else:
             if self.grasp:
-                way_points = [s_2d + [0., 0., 0.5], s_2d, s_2d, s_2d + [0., 0., 1.], e_2d + [0., 0., 1.]]
-                way_points.append(e_2d + [-1.5, 0., 1.])
-                way_points.append(e_2d + [-1.5, -1., 0.8])
-                way_points.append(e_2d + [0., -1., 1.])
+                # way_points = [s_2d + [0., 0., 0.5], s_2d, s_2d, s_2d + [0., 0., 1.], e_2d + [0., 0., 0.5]]
+                # way_points.append(e_2d + [-1.5, 0., 1.])
+                # way_points.append(e_2d + [-1.5, -1., 0.8])
+                # way_points.append(e_2d + [0., -1., 1.])
+                
+                way_points = [s_2d + [0., 0., 0.5], s_2d, s_2d, e_2d]
+                way_points.append(e_2d + [0., 0., 0.5])
+                way_points.append(e_2d + [1., 0.1, 0.5])
+                way_points.append(e_2d + [1., 0.1, 0.])
+                way_points.append(e_2d + [-1., 0.2, 0.])
+                
             else:
                 way_points = [s_2d, e_2d]
             self.reset_robot(self.rest_joints)
@@ -764,7 +802,7 @@ class FlexEnv(gym.Env):
         if self.obj in ["Tshirt", "rope"]:
             speed = 1.0/300.
         else:
-            speed = 1.0/300.
+            speed = 1.0/100.
         
         self.count = prev_counts
         
@@ -797,7 +835,7 @@ class FlexEnv(gym.Env):
                 
                 ## gripper control
                 if self.gripper and self.grasp and i_p >= 1:
-                    grasp_thresd = 0.1
+                    grasp_thresd = 0.1 #0.1
                     obj_pos = self.get_positions().reshape(-1, 4)[:, :3]
                     new_particle_pos = self.get_positions().reshape(-1, 4).copy()
                     
@@ -805,24 +843,48 @@ class FlexEnv(gym.Env):
                     if i_p == 1:
                         close = 0
                         start = 0
-                        end = 0.5 #0.7
-                        close_steps = 500
+                        end = 0.35 #0.3 #0.7
+                        close_steps = 500 #500
                         for j in range(close_steps):
                             robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper) # 9: left finger; 12: right finger
                             left_finger_pos, right_finger_pos = robot_shape_states[9][:3], robot_shape_states[12][:3]
+                            #print(left_finger_pos, right_finger_pos)
+                            left_finger_pos[1], right_finger_pos[1] = left_finger_pos[1] - 0.2, right_finger_pos[1] - 0.2 #0.2
                             new_finger_pos = (left_finger_pos + right_finger_pos) / 2
                             
                             if j == 0:
                                 # fine the k pick point
-                                pick_k = 1 #rope:5
-                                min_dist, pick_index = find_min_distance(new_finger_pos, obj_pos, pick_k)
+                                pick_k = 50 #wood:100 #rope:5 #cloth:80
+                                left_min_dist, left_pick_index = find_min_distance(left_finger_pos, obj_pos, pick_k)
+                                right_min_dist, right_pick_index = find_min_distance(right_finger_pos, obj_pos, pick_k)
+                                if self.obj in ['rigid_granular']:
+                                    pick_index = np.concatenate([left_pick_index, right_pick_index])
+                                    # min_dist = np.max([left_min_dist, right_min_dist])
+                                else:
+                                    min_dist, pick_index = find_min_distance(new_finger_pos, obj_pos, pick_k)
                                 # save the original setting for restoring
                                 pick_origin = new_particle_pos[pick_index]
                             
                             # connect pick pick point to the finger
-                            if min_dist <= grasp_thresd:
-                                new_particle_pos[pick_index, :3] = new_finger_pos
-                                new_particle_pos[pick_index, 3] = 0
+                            # if self.obj in ['rigid_granular']:
+                            #     if left_min_dist <= grasp_thresd or right_min_dist <= grasp_thresd:
+                            #         new_particle_pos[left_pick_index, :3] = left_finger_pos
+                            #         new_particle_pos[left_pick_index, 3] = 0
+                            #         new_particle_pos[right_pick_index, :3] = right_finger_pos
+                            #         new_particle_pos[right_pick_index, 3] = 0
+                            # else:
+                            #     if min_dist <= grasp_thresd:
+                            #         new_particle_pos[pick_index, :3] = new_finger_pos
+                            #         new_particle_pos[pick_index, 3] = 0
+                            #         # new_particle_pos[left_pick_index, :3] = left_finger_pos
+                            #         # new_particle_pos[left_pick_index, 3] = 0
+                            #         # new_particle_pos[right_pick_index, :3] = right_finger_pos
+                            #         # new_particle_pos[right_pick_index, 3] = 0
+                            if left_min_dist <= grasp_thresd or right_min_dist <= grasp_thresd:
+                                    new_particle_pos[left_pick_index, :3] = left_finger_pos
+                                    new_particle_pos[left_pick_index, 3] = 0
+                                    new_particle_pos[right_pick_index, :3] = right_finger_pos
+                                    new_particle_pos[right_pick_index, 3] = 0
                             self._set_pos(new_finger_pos, new_particle_pos)
                             
                             # close the gripper slowly 
@@ -833,11 +895,17 @@ class FlexEnv(gym.Env):
                     # find finger positions
                     robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper) # 9: left finger; 12: right finger
                     left_finger_pos, right_finger_pos = robot_shape_states[9][:3], robot_shape_states[12][:3]
+                    left_finger_pos[1], right_finger_pos[1] = left_finger_pos[1] - 0., right_finger_pos[1] - 0.
                     new_finger_pos = (left_finger_pos + right_finger_pos) / 2
-                    # connect the pick point to the finger
-                    new_particle_pos[pick_index, :3] = new_finger_pos
-                    new_particle_pos[pick_index, 3] = 0
-                        
+                    # connect pick pick point to the finger
+                    if self.obj in ['rigid_granular']:
+                        new_particle_pos[left_pick_index, :3] = left_finger_pos
+                        new_particle_pos[left_pick_index, 3] = 0
+                        new_particle_pos[right_pick_index, :3] = right_finger_pos
+                        new_particle_pos[right_pick_index, 3] = 0
+                    else:
+                        new_particle_pos[pick_index, :3] = new_finger_pos
+                        new_particle_pos[pick_index, 3] = 0
                     self._set_pos(new_finger_pos, new_particle_pos)
                 
                 # reset robot

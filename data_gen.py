@@ -74,8 +74,10 @@ def gen_data(info):
                 # u = env.sample_action()
                 # u = [0., -0.5, 0., 0.5]
                 # u = [-2., -0.3, 1., -0.3]
-                # u = [0., -0.5, 1., -0.5]
-                u = [-1., -0.3, 1., -0.3]
+                u = [-0.2, -0.2, -0.2, 1.]
+                # u = [-0.1, -1., 0., 1.] #bottle_granular
+                # u = [-0.0, 1., -0.0, -1.] #folding cloth
+                # u = [-0., 0., 1., 0.]
 
                 # step
                 prev_steps = n_steps
