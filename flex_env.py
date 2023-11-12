@@ -173,7 +173,6 @@ class FlexEnv(gym.Env):
         self.property = None
         
         # others
-        self.init = config['dataset']['init']
         self.count = 0
         
     def robot_to_shape_states(self, robot_states):
@@ -192,12 +191,14 @@ class FlexEnv(gym.Env):
         pyflex.set_positions(particle_pos)
     
     def robot_close_gripper(self, close, jointPoses=None):
+        """For gripper and grasp task."""
         for j in range(8, self.num_joints):
             pyflex.resetJointState(self.flex_robot_helper, j, close)
         
         pyflex.set_shape_states(self.robot_to_shape_states(pyflex.getRobotShapeStates(self.flex_robot_helper)))            
     
     def robot_open_gripper(self):
+        """For gripper and grasp task."""
         for j in range(8, self.num_joints):
             pyflex.resetJointState(self.flex_robot_helper, j, 0.0)
                         
@@ -260,7 +261,7 @@ class FlexEnv(gym.Env):
         self.cam_extrinsic_matrix = np.zeros([len(self.camPos_list), 4, 4]) # [R, t]
     
     ### TODO: write the scene as a class
-    def init_scene(self, obj, init=False, property = None):
+    def init_scene(self, obj):
         if obj == 'Tshirt':
             # cloth_dir = "assets/cloth3d/train"
             # # random choose a folder in cloth_dir
@@ -278,18 +279,18 @@ class FlexEnv(gym.Env):
             # cloth_pos = [rand_float(-1., 0.), rand_float(1., 3.), rand_float(-0.5, 0.5)]
             cloth_pos = [-0.9, 1., 0.]
             cloth_size = [20, 20]
-            stretch_stiffness = rand_float(0.1, 1.0)
-            bend_stiffness = rand_float(0.1, 1.0)
-            shear_stiffness = rand_float(0.1, 1.0)
+            stretch_stiffness = 1. #rand_float(0.1, 1.0)
+            bend_stiffness = 1. #rand_float(0.1, 1.0)
+            shear_stiffness = 1. #rand_float(0.1, 1.0)
             stiffness = [stretch_stiffness, bend_stiffness, shear_stiffness] # [stretch, bend, shear]
             cloth_mass = 0.5 #rand_float(1., 5.)
-            particle_r = rand_float(0.005, 0.015) #0.00625
+            particle_r = 0.00625 #rand_float(0.005, 0.015) #0.00625
             render_mode = 2
             flip_mesh = 0
             
-            dynamicFriction = rand_float(0.1, 1.) 
-            staticFriction = rand_float(0.1, 1.)
-            particleFriction = rand_float(0.1, 1.)
+            dynamicFriction = 0.5 #rand_float(0.1, 1.) 
+            staticFriction = 0.5 #rand_float(0.1, 1.)
+            particleFriction = 0.5 #rand_float(0.1, 1.)
             
             self.scene_params = np.array([
                 *cloth_pos,
@@ -323,23 +324,20 @@ class FlexEnv(gym.Env):
         
         elif obj == 'rope':
             radius = 0.025
-            if init:
-                scale = np.array([property['length'], 1.5 * 80., property['thickness']])
-                cluster_spacing = property['cluster_spacing']
-                dynamicFriction = property['dynamic_friction']
-                rot = Rotation.from_euler('xyz', [0, 0, 0], degrees=True)
-            else:
-                scale = np.array([rand_float(0.8, 1.5), 1.5, rand_float(1., 2.)]) * 80 # length, extension, thickness
-                # scale = np.array([0.8, 1.5, 2.]) * 80.
-                cluster_spacing = 4 #rand_float(4, 8) # change the stiffness of the rope
-                print('cluster_spacing:', cluster_spacing)
-                dynamicFriction = rand_float(0.1, 0.7)
-                print('dynamicFriction:', dynamicFriction)
-                # rand_float(70, 80)
-                rot = Rotation.from_euler('xyz', [0, 0, 0], degrees=True)
+            
+            length = rand_float(0.5, 1.5)
+            # thickness = rand_float(1., 2.)
+            scale = np.array([length, rand_float(1., 2.), rand_float(1., 2.)]) * 80 # length, extension, thickness
+            #scale = np.array([1.5, 1., 2.]) * 80.
+            
+            cluster_spacing = rand_float(4, 8) # change the stiffness of the rope
+            dynamicFriction = rand_float(0.1, 0.7)
             
             trans = [-1., 2., 0.]
-            # rotate_y = np.random.choice([0, 30, 45, 90, 180])
+            
+            z_rotation = rand_float(70, 80)
+            # y_rotation = np.random.choice([0, 30, 45, 90, 180])
+            rot = Rotation.from_euler('xyz', [0, 0, z_rotation], degrees=True)
             rotate = rot.as_quat()
             
             cluster_radius = 0.
@@ -586,12 +584,12 @@ class FlexEnv(gym.Env):
             x = -0.5
             y = 1. #3.5
             z = 0. #-3.3
-            size = 0.6 #0.8
-            obj_type = 36 #36
+            size = 0.8 #0.8
+            obj_type = 6 #36
             draw_mesh = 1
 
             radius = 0.03 #0.05 granular: 0.033
-            mass = 1. #431g
+            mass = 1. #431g #1.0 = 100g
             rigidStiffness = 1.
             dynamicFriction = 0.3
             staticFriction = 0.
@@ -643,10 +641,9 @@ class FlexEnv(gym.Env):
         else:
             raise ValueError('obj not defined')
     
-    def reset(self, count=0, init=False, epi=0, property=None, dir=None):
-        # self.init_scene(init, property)
+    def reset(self, count=0, dir=None):
         obj = self.obj
-        self.init_scene(obj, init, property)
+        self.init_scene(obj)
         
         # camera setting
         self.set_camera()
@@ -730,7 +727,7 @@ class FlexEnv(gym.Env):
         self.last_ee = None
         self.reset_robot()
         
-        for _ in range(50):
+        for _ in range(100):
             pyflex.step()
         # print('num_particles:', self.get_num_particles())
         
@@ -764,13 +761,12 @@ class FlexEnv(gym.Env):
         s_2d = np.concatenate([action[:2], [h]])
         e_2d = np.concatenate([action[2:], [h]])
 
-        # pusher angle depending on x-axis #TODO
-        # if (s_2d - e_2d)[0] == 0:
-        #     pusher_angle = np.pi/2
-        #     # pusher_angle = np.pi
-        # else:
-        #     pusher_angle = np.arctan((s_2d - e_2d)[1] / (s_2d - e_2d)[0])
-        pusher_angle = np.pi/2
+        # pusher angle depending on x-axis
+        if (s_2d - e_2d)[0] == 0:
+            pusher_angle = np.pi/2
+        else:
+            pusher_angle = np.arctan((s_2d - e_2d)[1] / (s_2d - e_2d)[0])
+        # pusher_angle = np.pi/2
         
         # robot orientation
         orn = np.array([0.0, np.pi, pusher_angle + np.pi/2])
@@ -795,7 +791,7 @@ class FlexEnv(gym.Env):
                 way_points.append(e_2d + [-1., 0.2, 0.])
                 
             else:
-                way_points = [s_2d, e_2d]
+                way_points = [s_2d + [0., 0., 0.2], s_2d, e_2d, e_2d + [0., 0., 0.2]]
             self.reset_robot(self.rest_joints)
 
         # set robot speed
@@ -916,7 +912,7 @@ class FlexEnv(gym.Env):
                 obj_pos = self.get_positions().reshape(-1, 4)[:, [0, 2]]
                 obj_pos[:, 1] *= -1
                 robot_obj_dist = np.min(cdist(end_effector_pos[:2].reshape(1, 2), obj_pos))
-                if dir != None and robot_obj_dist < 0.2:
+                if dir != None and robot_obj_dist < 0.2 and i % 2 == 0:
                     for j in range(len(self.camPos_list)):
                         pyflex.set_camPos(self.camPos_list[j])
                         pyflex.set_camAngle(self.camAngle_list[j])
@@ -996,8 +992,10 @@ class FlexEnv(gym.Env):
     def sample_action(self):
         if self.obj in ['mustard_bottle', 'power_drill']:
             action = self.sample_rigid_actions()
-        elif self.obj in ['rope', 'Tshirt']:
-            action = self.sample_soft_actions()
+        elif self.obj in ['rope']:
+            action = self.sample_rope_actions()
+        elif self.obj in ['Tshirt']:
+            action = self.sample_cloth_actions()
         else:
             raise ValueError('action not defined')
         return action
@@ -1039,7 +1037,7 @@ class FlexEnv(gym.Env):
         action = np.concatenate([startpoint_pos.reshape(-1), endpoint_pos.reshape(-1)], axis=0)
         return action
     
-    def sample_soft_actions(self):
+    def sample_rope_actions(self):
         positions = self.get_positions().reshape(-1, 4)
         positions[:, 2] *= -1 # align with the coordinates
         num_points = positions.shape[0]
@@ -1047,7 +1045,37 @@ class FlexEnv(gym.Env):
 
         # random choose a start point which can not be overlapped with the object
         while True:
-            startpoint_pos = np.random.uniform(-self.wkspc_w // 2 + 0.5, self.wkspc_w // 2 - 1., size=(1, 2))
+            startpoint_pos = np.random.uniform(-self.wkspc_w // 2 - 1, self.wkspc_w // 2 + 1., size=(1, 2))
+            if np.min(cdist(startpoint_pos, pos_xz)) > 0.2 and np.max(cdist(startpoint_pos, pos_xz)) < 1.5:
+                break
+        startpoint_pos = startpoint_pos.reshape(-1)
+
+        # choose end points which is the expolation of the start point and obj point
+        while True:
+            pickpoint = np.random.randint(0, num_points - 1)
+            obj_pos = positions[pickpoint, [0, 2]]
+            slope = (obj_pos[1] - startpoint_pos[1]) / (obj_pos[0] - startpoint_pos[0])
+            if obj_pos[0] < startpoint_pos[0]:
+                x_end = obj_pos[0] - rand_float(0.1, 0.2)
+            else:
+                x_end = obj_pos[0] + rand_float(0.1, 0.2)
+            y_end = slope * (x_end - startpoint_pos[0]) + startpoint_pos[1]
+            endpoint_pos = np.array([x_end, y_end])
+            if obj_pos[0] != startpoint_pos[0] and np.abs(x_end) < 1.5 and np.abs(y_end) < 1.5:
+                break
+        
+        action = np.concatenate([startpoint_pos.reshape(-1), endpoint_pos.reshape(-1)], axis=0)
+        return action
+    
+    def sample_cloth_actions(self):
+        positions = self.get_positions().reshape(-1, 4)
+        positions[:, 2] *= -1 # align with the coordinates
+        num_points = positions.shape[0]
+        pos_xz = positions[:, [0, 2]]
+
+        # random choose a start point which can not be overlapped with the object
+        while True:
+            startpoint_pos = np.random.uniform(-self.wkspc_w // 2 - 1, self.wkspc_w // 2 + 1., size=(1, 2))
             if np.min(cdist(startpoint_pos, pos_xz)) > 0.2:
                 break
         startpoint_pos = startpoint_pos.reshape(-1)

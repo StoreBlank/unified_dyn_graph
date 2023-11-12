@@ -70,15 +70,26 @@ def gen_data(info):
             
             color_diff = 0
             while color_diff < color_threshold:
-                # u = None
-                # u = env.sample_action()
+                u = None
+                u = env.sample_action()
+                
                 # u = [0., -0.5, 0., 0.5]
                 # u = [-2., -0.3, 1., -0.3]
-                u = [-0.2, -0.2, -0.2, 1.]
+                # u = [-0.2, -0.2, -0.2, 1.]
                 # u = [-0.1, -1., 0., 1.] #bottle_granular
-                # u = [-0.0, 1., -0.0, -1.] #folding cloth
+                # u = [0.0, 1., 0.0, -1.] #folding cloth
+                # u = [-1., 0., 1., 0.]
                 # u = [-0., 0., 1., 0.]
-
+                
+                # particle_positions = env.get_positions().reshape(-1, 4)
+                # # find the most bottom particle
+                # idx_min_length, idx_max_length = np.argmin(particle_positions[:, 0]), np.argmax(particle_positions[:, 0])
+                # idx_min_thick, idx_max_thick = np.argmin(particle_positions[:, 1]), np.argmax(particle_positions[:, 1])
+                # length = particle_positions[idx_max_length, 0] - particle_positions[idx_min_length, 0]
+                # thick = particle_positions[idx_max_thick, 1] - particle_positions[idx_min_thick, 1]
+                # print('length: ', length / 4.)
+                # print('thick: ', thick / 4.)
+        
                 # step
                 prev_steps = n_steps
                 if debug:
@@ -109,6 +120,8 @@ def gen_data(info):
             if not env.inside_workspace():
                 print("Object outside workspace!")
                 break
+            
+            print('episode %d timestep %d done!!! step: %d' % (idx_episode, idx_timestep, n_steps))
         
         # save actions and steps and end effector positions
         if not debug:
@@ -128,9 +141,9 @@ def gen_data(info):
             
     env.close()
 
-# multiprocessing
+###multiprocessing
 # infos=[]
-# base = 34
+# base = 18
 # for i in range(n_worker):
 #     info = {
 #         "base_epi": base+i*n_episode//n_worker,

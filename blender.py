@@ -10,7 +10,7 @@ import numpy as np
 import pyflex 
 import trimesh
 
-
+####TODO
 def grid_index(x, y, dimx):
     return y*dimx + x
 
