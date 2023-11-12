@@ -278,13 +278,14 @@ class FlexEnv(gym.Env):
             
             # cloth_pos = [rand_float(-1., 0.), rand_float(1., 3.), rand_float(-0.5, 0.5)]
             cloth_pos = [-0.9, 1., 0.]
-            cloth_size = [20, 20]
-            stretch_stiffness = 1. #rand_float(0.1, 1.0)
-            bend_stiffness = 1. #rand_float(0.1, 1.0)
-            shear_stiffness = 1. #rand_float(0.1, 1.0)
+            cloth_pos = [-0.5, 1., -0.5]
+            cloth_size = [50, 50]
+            stretch_stiffness = 0.1 #rand_float(0.1, 1.0)
+            bend_stiffness = 0.1 #rand_float(0.1, 1.0)
+            shear_stiffness = 0.1 #rand_float(0.1, 1.0)
             stiffness = [stretch_stiffness, bend_stiffness, shear_stiffness] # [stretch, bend, shear]
             cloth_mass = 0.5 #rand_float(1., 5.)
-            particle_r = 0.00625 #rand_float(0.005, 0.015) #0.00625
+            particle_r = 0.03 #0.00625 #rand_float(0.005, 0.015) #0.00625
             render_mode = 2
             flip_mesh = 0
             
@@ -302,15 +303,19 @@ class FlexEnv(gym.Env):
                 flip_mesh, 
                 dynamicFriction, staticFriction, particleFriction])
             
-            pyflex.set_scene(
-                    29,
-                    self.scene_params,
-                    mesh_verts.reshape(-1),
-                    mesh_stretch_edges.reshape(-1),
-                    mesh_bend_edges.reshape(-1),
-                    mesh_shear_edges.reshape(-1),
-                    mesh_faces.reshape(-1),
-                    0)
+            # pyflex.set_scene(
+            #         29,
+            #         self.scene_params,
+            #         mesh_verts.reshape(-1),
+            #         mesh_stretch_edges.reshape(-1),
+            #         mesh_bend_edges.reshape(-1),
+            #         mesh_shear_edges.reshape(-1),
+            #         mesh_faces.reshape(-1),
+            #         0)
+            
+            # cloth
+            temp = np.array([0])
+            pyflex.set_scene(29, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
             
             self.property = {'particle_radius': particle_r,
                              'num_particles': self.get_num_particles(),
@@ -608,35 +613,40 @@ class FlexEnv(gym.Env):
             temp = np.array([0])
             pyflex.set_scene(32, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
         
-        elif obj == 'cloth_rigid': #TODO
-            dimx_cloth = 17
-            dimy_cloth = 17
-            height_cloth = 2
-            px_cloth = -0.75
-            py_cloth = -1.
-            pz_cloth = -0.75
-
-            dimx_rigid = 1
-            dimy_rigid = 1
-            dimz_rigid = 1
-            numx_rigid = 1
-            numy_rigid = 1
-            numz_rigid = 1
-
-            num_banana = 0
-            draw_points = 0
-
-            scene_params = np.array([
-                dimx_cloth, dimy_cloth, height_cloth,
-                px_cloth, py_cloth, pz_cloth,
-                dimx_rigid, dimy_rigid, dimz_rigid,
-                numx_rigid, numy_rigid, numz_rigid,
-                num_banana, draw_points
-            ])
+        elif obj == 'rigid_cloth': #TODO
+            
+            # TODO: qualitative result on parameters
+            radius = 0.03
+            
+            rigid_type = 6
+            rigid_dim = [-0., 1.5, -0.]
+            rigid_scale = 0.6
+            rigid_mass = 1. #TODO
+            rotation = 0.
+            
+            cloth_dim = [-1., 1., -0.5]
+            stretch_stiffness = 1. #rand_float(0.1, 1.0)
+            bend_stiffness = 1. #rand_float(0.1, 1.0)
+            shear_stiffness = 1. #rand_float(0.1, 1.0)
+            stiffness = [stretch_stiffness, bend_stiffness, shear_stiffness] 
+            cloth_mass = 1. #TODO
+            cloth_size = [60., 60., 40.]
+            
+            dynamicFriction = 0.7 #0.1, 0.5, 0.7 #TODO
+            staticFriction = 0.4 #0.1, 0.3, 0.5 #TODO
+            #particleFriction (?): for object-object friction?
+            viscosity = 0.
+            draw_mesh = 1.
+            
+            print('dynamicFriction:', dynamicFriction)
+            
+            self.scene_params = np.array([radius, rigid_type, *rigid_dim, rigid_scale, rigid_mass, rotation,
+                                          *cloth_dim, *stiffness, cloth_mass, *cloth_size,
+                                          dynamicFriction, staticFriction, viscosity, draw_mesh])
+            
 
             temp = np.array([0])
-            pyflex.set_scene(12, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
-        
+            pyflex.set_scene(33, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
 
         else:
             raise ValueError('obj not defined')
@@ -765,7 +775,8 @@ class FlexEnv(gym.Env):
         if (s_2d - e_2d)[0] == 0:
             pusher_angle = np.pi/2
         else:
-            pusher_angle = np.arctan((s_2d - e_2d)[1] / (s_2d - e_2d)[0])
+            # pusher_angle = np.arctan((s_2d - e_2d)[1] / (s_2d - e_2d)[0])
+            pusher_angle = -np.arctan((s_2d - e_2d)[1] / (s_2d - e_2d)[0])
         # pusher_angle = np.pi/2
         
         # robot orientation
@@ -779,23 +790,24 @@ class FlexEnv(gym.Env):
             way_points = [self.last_ee, s_2d, e_2d]
         else:
             if self.grasp:
-                # way_points = [s_2d + [0., 0., 0.5], s_2d, s_2d, s_2d + [0., 0., 1.], e_2d + [0., 0., 0.5]]
+                way_points = [s_2d + [0., 0., 0.5], s_2d, s_2d, s_2d + [0., 0., 1.], e_2d]
                 # way_points.append(e_2d + [-1.5, 0., 1.])
                 # way_points.append(e_2d + [-1.5, -1., 0.8])
                 # way_points.append(e_2d + [0., -1., 1.])
                 
-                way_points = [s_2d + [0., 0., 0.5], s_2d, s_2d, e_2d]
-                way_points.append(e_2d + [0., 0., 0.5])
-                way_points.append(e_2d + [1., 0.1, 0.5])
-                way_points.append(e_2d + [1., 0.1, 0.])
-                way_points.append(e_2d + [-1., 0.2, 0.])
+                # way_points = [s_2d + [0., 0., 0.5], s_2d, s_2d, e_2d]
+                # way_points.append(e_2d + [0., 0., 0.5])
+                # way_points.append(e_2d + [1., 0.1, 0.5])
+                # way_points.append(e_2d + [1., 0.1, 0.])
+                # way_points.append(e_2d + [-1., 0.2, 0.])
                 
             else:
                 way_points = [s_2d + [0., 0., 0.2], s_2d, e_2d, e_2d + [0., 0., 0.2]]
             self.reset_robot(self.rest_joints)
 
         # set robot speed
-        if self.obj in ["Tshirt", "rope"]:
+        if self.obj in ["Tshirt", "rope", "rigid_cloth"]:
+            # speed = 1.0/300.
             speed = 1.0/300.
         else:
             speed = 1.0/100.
@@ -839,7 +851,7 @@ class FlexEnv(gym.Env):
                     if i_p == 1:
                         close = 0
                         start = 0
-                        end = 0.35 #0.3 #0.7
+                        end = 0.7 #wood:0.35 #0.7
                         close_steps = 500 #500
                         for j in range(close_steps):
                             robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper) # 9: left finger; 12: right finger
@@ -850,7 +862,7 @@ class FlexEnv(gym.Env):
                             
                             if j == 0:
                                 # fine the k pick point
-                                pick_k = 50 #wood:100 #rope:5 #cloth:80
+                                pick_k = 200 #wood:100 #rope:5 #cloth:80
                                 left_min_dist, left_pick_index = find_min_distance(left_finger_pos, obj_pos, pick_k)
                                 right_min_dist, right_pick_index = find_min_distance(right_finger_pos, obj_pos, pick_k)
                                 if self.obj in ['rigid_granular']:
@@ -891,7 +903,7 @@ class FlexEnv(gym.Env):
                     # find finger positions
                     robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper) # 9: left finger; 12: right finger
                     left_finger_pos, right_finger_pos = robot_shape_states[9][:3], robot_shape_states[12][:3]
-                    left_finger_pos[1], right_finger_pos[1] = left_finger_pos[1] - 0., right_finger_pos[1] - 0.
+                    left_finger_pos[1], right_finger_pos[1] = left_finger_pos[1] - 0.2, right_finger_pos[1] - 0.2
                     new_finger_pos = (left_finger_pos + right_finger_pos) / 2
                     # connect pick pick point to the finger
                     if self.obj in ['rigid_granular']:

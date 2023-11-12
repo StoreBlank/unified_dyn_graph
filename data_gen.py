@@ -59,6 +59,14 @@ def gen_data(info):
         
         actions = np.zeros((n_timestep, action_dim))
         color_threshold = 0.1
+        
+        #### actions TODO]
+        ## cloth bag rigid objects
+        us = [[1., 0.5, -1., -0.5], 
+              [-1., -1, 1., 0.],
+              [-1, -1, 1., 1.]]
+        
+        # us = [[1., 0.5, 2., 2.]]
 
         # time step
         img = env.render()
@@ -70,8 +78,8 @@ def gen_data(info):
             
             color_diff = 0
             while color_diff < color_threshold:
-                u = None
-                u = env.sample_action()
+                # u = None
+                # u = env.sample_action()
                 
                 # u = [0., -0.5, 0., 0.5]
                 # u = [-2., -0.3, 1., -0.3]
@@ -79,7 +87,16 @@ def gen_data(info):
                 # u = [-0.1, -1., 0., 1.] #bottle_granular
                 # u = [0.0, 1., 0.0, -1.] #folding cloth
                 # u = [-1., 0., 1., 0.]
-                # u = [-0., 0., 1., 0.]
+                
+                particle_positions = env.get_positions().reshape(-1, 4)
+                
+                # idx_min_x, idx_max_x = np.argmin(particle_positions[:, 0]), np.argmax(particle_positions[:, 0])
+                # idx_min_z, idx_max_z = np.argmin(particle_positions[:, 2]), np.argmax(particle_positions[:, 2])
+            
+                # u = [particle_positions[idx_max_x, 0], -particle_positions[idx_min_z, 2], particle_positions[idx_min_x, 0], -particle_positions[idx_max_z, 2]]
+                # u = [particle_positions[idx_max_x, 0], -particle_positions[idx_min_z, 2], 2., 2.]
+                
+                u = us[idx_timestep]
                 
                 # particle_positions = env.get_positions().reshape(-1, 4)
                 # # find the most bottom particle

@@ -2,8 +2,8 @@ dataset:
   folder: 'data_dense' #"/media/baoyu/sumsung/rope_2" 
   n_worker: 1
   n_episode: 1 
-  n_timestep: 1
-  obj: "Tshirt" 
+  n_timestep: 3
+  obj: "rigid_cloth" 
   wkspc_w: 4.0
   headless: False
   robot_type: 'xarm6' 
@@ -11,6 +11,5 @@ dataset:
   camera_view: 1 # 0, 1, 2, 3, 4
   camera_radius: 5.5
   dt: 0.1
-  gripper: False
-  grasp: False
-  init: False
+  gripper: True
+  grasp: True
