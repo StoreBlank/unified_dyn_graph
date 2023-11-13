@@ -332,8 +332,8 @@ class FlexEnv(gym.Env):
             
             length = rand_float(0.5, 1.5)
             # thickness = rand_float(1., 2.)
-            scale = np.array([length, rand_float(1., 2.), rand_float(1., 2.)]) * 80 # length, extension, thickness
-            #scale = np.array([1.5, 1., 2.]) * 80.
+            # scale = np.array([length, rand_float(1., 2.), rand_float(1., 2.)]) * 80 # length, extension, thickness
+            scale = np.array([1.5, 1., 2.]) * 80.
             
             cluster_spacing = rand_float(4, 8) # change the stiffness of the rope
             dynamicFriction = rand_float(0.1, 0.7)
@@ -531,56 +531,41 @@ class FlexEnv(gym.Env):
             pyflex.set_scene(28, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
         
         # object-object interactions
-        elif obj == 'rope_rigid': #TODO
-            # rope
-            radius = 0.025
-            scale = np.array([rand_float(0.8, 1.5), 1.5, rand_float(1., 2.)]) * 80 # length, extension, thickness
-            cluster_spacing = rand_float(4, 8) # change the stiffness of the rope
-            dynamicFriction = 0.7 #rand_float(0.1, 0.7)
-            # rand_float(70, 80)
-            rot = Rotation.from_euler('xyz', [0, 0, 0], degrees=True)
+        elif obj == 'rigid_rope': #TODO
+            radius = 0.03
             
-            trans = [-1., 2., 0.]
-            # rotate_y = np.random.choice([0, 30, 45, 90, 180])
-            rotate = rot.as_quat()
+            rigid_type = 6
+            rigid_dim = [0., 1., 0.]
+            rigid_scale = 0.6
+            rigid_mass = 1.
+            rotation = 0.
             
+            #length = rand_float(0.5, 1.5)
+            # thickness = rand_float(1., 2.)
+            #scale = np.array([length, rand_float(1., 2.), rand_float(1., 2.)]) * 80 # length, extension, thickness
+            rope_scale = np.array([1.5, 1., 2.]) * 80.
+            rope_trans = [-1., 2., 0.]
+            
+            cluster_spacing = 4. #rand_float(4, 8) # change the stiffness of the rope
             cluster_radius = 0.
             cluster_stiffness = 0.2
-
-            link_radius = 0. 
-            link_stiffness = 1.
-
-            global_stiffness = 0.
-
-            surface_sampling = 0.
-            volume_sampling = 4.
-
-            skinning_falloff = 5.
-            skinning_max_dist = 100.
-
-            cluster_plastic_threshold = 0.
-            cluster_plastic_creep = 0.
-
-            particleFriction = 0.25
             
-            draw_mesh = 1
+            # rope_z_rotation = rand_float(70, 80)
+            # rope_y_rotation = np.random.choice([0, 30, 45, 90, 180])
+            rot = Rotation.from_euler('xyz', [0, 0, 0], degrees=True)
+            rope_rotate = rot.as_quat()
+                        
+            dynamicFriction = 0.5 
+            staticFriction = 0.
+            #particleFriction (?): for object-object friction?
+            viscosity = 0.
+            draw_mesh = 1.
+            
+            self.scene_params = np.array([radius, rigid_type, *rigid_dim, rigid_scale, rigid_mass, rotation,
+                                          *rope_scale, *rope_trans, cluster_spacing, cluster_radius, cluster_stiffness, *rope_rotate,
+                                          dynamicFriction, staticFriction, viscosity, draw_mesh])
+            
 
-            relaxtion_factor = 1.
-            collisionDistance = radius * 0.5
-            
-            # rigid
-            x, y, z = 0., 0., 0.
-            size = 0.8
-            mass = 1.0
-            
-            self.scene_params = np.array([*scale, *trans, radius, 
-                                            cluster_spacing, cluster_radius, cluster_stiffness,
-                                            link_radius, link_stiffness, global_stiffness,
-                                            surface_sampling, volume_sampling, skinning_falloff, skinning_max_dist,
-                                            cluster_plastic_threshold, cluster_plastic_creep,
-                                            dynamicFriction, particleFriction, draw_mesh, relaxtion_factor, 
-                                            *rotate, collisionDistance])
-            
             temp = np.array([0])
             pyflex.set_scene(31, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
         
@@ -613,7 +598,7 @@ class FlexEnv(gym.Env):
             temp = np.array([0])
             pyflex.set_scene(32, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
         
-        elif obj == 'rigid_cloth': #TODO
+        elif obj == 'rigid_cloth':
             
             # TODO: qualitative result on parameters
             radius = 0.03
