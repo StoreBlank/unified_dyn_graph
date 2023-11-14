@@ -81,7 +81,7 @@ def gen_data(info):
                 # u = None
                 # u = env.sample_action()
                 
-                u = [0., 0., 0., 0.]
+                # u = [0., 0., 0., 0.]
                 
                 # u = [0., -0.5, 0., 0.5]
                 # u = [-2., -0.3, 1., -0.3]
@@ -98,7 +98,7 @@ def gen_data(info):
                 # u = [particle_positions[idx_max_x, 0], -particle_positions[idx_min_z, 2], particle_positions[idx_min_x, 0], -particle_positions[idx_max_z, 2]]
                 # u = [particle_positions[idx_max_x, 0], -particle_positions[idx_min_z, 2], 2., 2.]
                 
-                # u = us[idx_timestep]
+                u = us[idx_timestep]
                 
                 # particle_positions = env.get_positions().reshape(-1, 4)
                 # # find the most bottom particle

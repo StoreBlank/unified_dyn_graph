@@ -531,7 +531,7 @@ class FlexEnv(gym.Env):
             pyflex.set_scene(28, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
         
         # object-object interactions
-        elif obj == 'rigid_rope': #TODO
+        elif obj == 'rigid_rope': #debug
             radius = 0.03
             
             rigid_type = 6
@@ -615,13 +615,13 @@ class FlexEnv(gym.Env):
             shear_stiffness = 1. #rand_float(0.1, 1.0)
             stiffness = [stretch_stiffness, bend_stiffness, shear_stiffness] 
             cloth_mass = 1. #TODO
-            cloth_size = [60., 60., 40.]
+            cloth_size = [60., 60., 1.]
             
             dynamicFriction = 0.7 #0.1, 0.5, 0.7 #TODO
             staticFriction = 0.4 #0.1, 0.3, 0.5 #TODO
             #particleFriction (?): for object-object friction?
             viscosity = 0.
-            draw_mesh = 1.
+            draw_mesh = 0.
             
             print('dynamicFriction:', dynamicFriction)
             
@@ -632,6 +632,45 @@ class FlexEnv(gym.Env):
 
             temp = np.array([0])
             pyflex.set_scene(33, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+        
+        elif obj == 'rope_cloth': #TODO: adjust the parameters
+            radius = 0.03
+            
+            cloth_dim = [-1., 1., -0.5]
+            stretch_stiffness = 1. #rand_float(0.1, 1.0)
+            bend_stiffness = 1. #rand_float(0.1, 1.0)
+            shear_stiffness = 1. #rand_float(0.1, 1.0)
+            stiffness = [stretch_stiffness, bend_stiffness, shear_stiffness] 
+            cloth_mass = .1 #TODO
+            cloth_size = [60., 60., 1.]
+            
+            rope_scale = np.array([1.5, 1.5, 2.]) * 50.
+            rope_trans = [-1., 2., 0.]
+            
+            cluster_spacing = 4. #rand_float(4, 8) # change the stiffness of the rope
+            cluster_radius = 0.
+            cluster_stiffness = 0.2
+            
+            # rope_z_rotation = rand_float(70, 80)
+            # rope_y_rotation = np.random.choice([0, 30, 45, 90, 180])
+            rot = Rotation.from_euler('xyz', [0, 0, 0], degrees=True)
+            rope_rotate = rot.as_quat()
+            
+            dynamicFriction = 0.3 #0.1, 0.5, 0.7 #TODO
+            staticFriction = 0.3 #0.1, 0.3, 0.5 #TODO
+            particleFriction = 0.
+            #particleFriction (?): for object-object friction?
+            viscosity = 5.
+            draw_mesh = 1
+            
+            self.scene_params = np.array([radius, *cloth_dim, *stiffness, cloth_mass, *cloth_size,
+                                          *rope_scale, *rope_trans, cluster_spacing, cluster_radius, cluster_stiffness, *rope_rotate,
+                                          dynamicFriction, staticFriction, viscosity, draw_mesh, particleFriction])
+            
+            temp = np.array([0])
+            pyflex.set_scene(34, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+            
+            
 
         else:
             raise ValueError('obj not defined')
