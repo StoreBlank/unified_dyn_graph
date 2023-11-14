@@ -669,9 +669,47 @@ class FlexEnv(gym.Env):
             
             temp = np.array([0])
             pyflex.set_scene(34, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+        
+        elif obj == 'bowl_granular':
             
+            # # add bowl
+            # bowl_path = '/home/baoyu/2023/dyn-res-pile-manip/PyFleX/data/box.ply'
+            # pyflex.add_mesh(bowl_path, 1., 0, np.ones(3), False)
             
+            # global_scale = 4
+            # scale = 0.2 * global_scale / 8.0
+            # x = -0.9 * global_scale / 8.0
+            # y = 0.5
+            # z = -0.9 * global_scale / 8.0
+            # staticFriction = 0.0
+            # dynamicFriction = 1.0
+            # draw_skin = 0.
+            # num_coffee = 200 # [200, 1000]
+            # radius = 0.033
+            # self.scene_params = np.array([
+            #     scale, x, y, z, staticFriction, dynamicFriction, draw_skin, num_coffee, radius])
 
+            # temp = np.array([0])
+            # pyflex.set_scene(20, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+            
+            radius = 0.03
+            bowl_pos = [-0.3, 0.5, -0.3]
+            bowl_mass = 1e100
+            bowl_scale = 1.2
+            
+            num_granular_ft = [5, 10, 5]
+            granular_scale = 0.1
+            pos_granular = [0.1, 1., 0.1]
+            granular_dis = 0.
+            
+            draw_mesh = 1
+            
+            self.scene_params = np.array([radius, *bowl_pos, *num_granular_ft, granular_scale, *pos_granular, granular_dis, 
+                                          draw_mesh, bowl_mass, bowl_scale])
+            
+            temp = np.array([0])
+            pyflex.set_scene(35, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+            
         else:
             raise ValueError('obj not defined')
     
@@ -791,7 +829,8 @@ class FlexEnv(gym.Env):
         if self.gripper:
             h = 1.35
         else:
-            h = 0.5 + 0.5 # table + pusher
+            # h = 0.5 + 0.5 # table + pusher
+            h = 1.1
         s_2d = np.concatenate([action[:2], [h]])
         e_2d = np.concatenate([action[2:], [h]])
 
