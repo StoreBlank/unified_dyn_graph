@@ -543,7 +543,7 @@ class FlexEnv(gym.Env):
             #length = rand_float(0.5, 1.5)
             # thickness = rand_float(1., 2.)
             #scale = np.array([length, rand_float(1., 2.), rand_float(1., 2.)]) * 80 # length, extension, thickness
-            rope_scale = np.array([1.5, 1., 2.]) * 80.
+            rope_scale = np.array([1.5, 1., 2.]) * 50.
             rope_trans = [-1., 2., 0.]
             
             cluster_spacing = 4. #rand_float(4, 8) # change the stiffness of the rope
@@ -559,7 +559,7 @@ class FlexEnv(gym.Env):
             staticFriction = 0.
             #particleFriction (?): for object-object friction?
             viscosity = 0.
-            draw_mesh = 1.
+            draw_mesh = 0.
             
             self.scene_params = np.array([radius, rigid_type, *rigid_dim, rigid_scale, rigid_mass, rotation,
                                           *rope_scale, *rope_trans, cluster_spacing, cluster_radius, cluster_stiffness, *rope_rotate,
@@ -574,7 +574,7 @@ class FlexEnv(gym.Env):
             x = -0.5
             y = 1. #3.5
             z = 0. #-3.3
-            size = 0.8 #0.8
+            size = 0.6 #0.8
             obj_type = 6 #36
             draw_mesh = 1
 
