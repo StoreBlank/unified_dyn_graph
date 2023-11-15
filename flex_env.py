@@ -472,8 +472,8 @@ class FlexEnv(gym.Env):
             x = -0.
             y = 1. #3.5
             z = 0. #-3.3
-            size = 0.4
-            obj_type = 13
+            size = 0.8
+            obj_type = 20
             draw_mesh = 1
 
             radius = 0.05
@@ -523,25 +523,27 @@ class FlexEnv(gym.Env):
         
         elif obj == 'rigid_objects':
             
-            obj_types = np.range(3, 22)
+            obj_types = range(3, 21)
             obj_sizes = [0.8, 0.8, 0.7, 0.8, 0.6, 0.6, 0.6, 0.2, #3-10
-                         0.3, 0.3, 0.4, ] 
+                         0.3, 0.3, 0.4, 0.4, 0.35, 0.8, 0.8, 0.8, 0.8, 0.8] #11-20
+            
+            index = np.random.randint(0, len(obj_types))
             
             x = -0.1
             y = 1. #3.5
             z = 0.4 #-3.3
-            size = 0.25
-            obj_type = 12
+            obj_type = obj_types[index]
+            size = obj_sizes[index]
             draw_mesh = 1
 
             radius = 0.05
-            mass = 4.31 #431g
+            mass = rand_float(0.1, 10.) #10g-1000g
             rigidStiffness = 1.
-            dynamicFriction = 0.5
+            dynamicFriction = rand_float(0.1, 0.7)
             staticFriction = 0.
             viscosity = 2.
             
-            rotation = 5.
+            rotation = rand_float(0., 360.)
             springStiffness = 0.
 
             self.scene_params = np.array([x, y, z, size, obj_type, draw_mesh,
@@ -551,12 +553,11 @@ class FlexEnv(gym.Env):
             temp = np.array([0])
             pyflex.set_scene(25, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
 
-            self.property = {'particle_radius': radius,
-                             'num_particles': self.get_num_particles(),
-                             'mass': mass,
-                             'rigid_stiffness': rigidStiffness,
-                             'dynamic_friction': dynamicFriction,
-                             'viscosity': viscosity,}
+            self.property = {'object_type': obj_type,
+                            'particle_radius': radius,
+                            'num_particles': self.get_num_particles(),
+                            'mass': mass,
+                            'dynamic_friction': dynamicFriction}
         
         elif obj == 'multi_ycb':
             x = 0.
@@ -837,9 +838,8 @@ class FlexEnv(gym.Env):
         self.last_ee = None
         self.reset_robot()
         
-        for _ in range(100):
+        for _ in range(300):
             pyflex.step()
-        # print('num_particles:', self.get_num_particles())
         
         # initial render
         if dir != None:
