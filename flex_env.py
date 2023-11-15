@@ -559,7 +559,7 @@ class FlexEnv(gym.Env):
             staticFriction = 0.
             #particleFriction (?): for object-object friction?
             viscosity = 0.
-            draw_mesh = 0.
+            draw_mesh = 0
             
             self.scene_params = np.array([radius, rigid_type, *rigid_dim, rigid_scale, rigid_mass, rotation,
                                           *rope_scale, *rope_trans, cluster_spacing, cluster_radius, cluster_stiffness, *rope_rotate,
@@ -604,12 +604,12 @@ class FlexEnv(gym.Env):
             radius = 0.03
             
             rigid_type = 6
-            rigid_dim = [-0., 1.5, -0.]
+            rigid_dim = [-0., 0.7, -0.]
             rigid_scale = 0.6
             rigid_mass = 1. #TODO
             rotation = 0.
             
-            cloth_dim = [-1., 1., -0.5]
+            cloth_dim = [-1., 0.6, -0.5]
             stretch_stiffness = 1. #rand_float(0.1, 1.0)
             bend_stiffness = 1. #rand_float(0.1, 1.0)
             shear_stiffness = 1. #rand_float(0.1, 1.0)
@@ -617,8 +617,9 @@ class FlexEnv(gym.Env):
             cloth_mass = 1. #TODO
             cloth_size = [60., 60., 1.]
             
-            dynamicFriction = 0.7 #0.1, 0.5, 0.7 #TODO
-            staticFriction = 0.4 #0.1, 0.3, 0.5 #TODO
+            dynamicFriction = 0.5 #0.1, 0.5, 0.7 #TODO
+            staticFriction = 1. #0.1, 0.3, 0.5 #TODO
+            particleFriction = 1.2
             #particleFriction (?): for object-object friction?
             viscosity = 0.
             draw_mesh = 0.
@@ -660,8 +661,8 @@ class FlexEnv(gym.Env):
             staticFriction = 0.3 #0.1, 0.3, 0.5 #TODO
             particleFriction = 0.
             #particleFriction (?): for object-object friction?
-            viscosity = 5.
-            draw_mesh = 1
+            viscosity = 0.
+            draw_mesh = 0
             
             self.scene_params = np.array([radius, *cloth_dim, *stiffness, cloth_mass, *cloth_size,
                                           *rope_scale, *rope_trans, cluster_spacing, cluster_radius, cluster_stiffness, *rope_rotate,
@@ -697,12 +698,12 @@ class FlexEnv(gym.Env):
             bowl_mass = 1e100
             bowl_scale = 1.2
             
-            num_granular_ft = [5, 10, 5]
+            num_granular_ft = [5, 20, 5]
             granular_scale = 0.1
             pos_granular = [0.1, 1., 0.1]
             granular_dis = 0.
             
-            draw_mesh = 1
+            draw_mesh = 0
             
             self.scene_params = np.array([radius, *bowl_pos, *num_granular_ft, granular_scale, *pos_granular, granular_dis, 
                                           draw_mesh, bowl_mass, bowl_scale])
@@ -828,9 +829,11 @@ class FlexEnv(gym.Env):
     def step(self, action, prev_counts=0, dir=None):
         if self.gripper:
             h = 1.35
+        elif self.obj == 'bowl_granular':
+            h = 1.2
         else:
             # h = 0.5 + 0.5 # table + pusher
-            h = 1.1
+            h = 1.
         s_2d = np.concatenate([action[:2], [h]])
         e_2d = np.concatenate([action[2:], [h]])
 
@@ -853,7 +856,7 @@ class FlexEnv(gym.Env):
             way_points = [self.last_ee, s_2d, e_2d]
         else:
             if self.grasp:
-                way_points = [s_2d + [0., 0., 0.5], s_2d, s_2d, s_2d + [0., 0., 1.], e_2d]
+                way_points = [s_2d + [0., 0., 0.5], s_2d, s_2d, s_2d + [0., 0., 0.7], e_2d + [0., 0., 0.7]]
                 # way_points.append(e_2d + [-1.5, 0., 1.])
                 # way_points.append(e_2d + [-1.5, -1., 0.8])
                 # way_points.append(e_2d + [0., -1., 1.])
@@ -869,7 +872,7 @@ class FlexEnv(gym.Env):
             self.reset_robot(self.rest_joints)
 
         # set robot speed
-        if self.obj in ["Tshirt", "rope", "rigid_cloth"]:
+        if self.obj in ["Tshirt", "rope"]:
             # speed = 1.0/300.
             speed = 1.0/300.
         else:
@@ -925,7 +928,7 @@ class FlexEnv(gym.Env):
                             
                             if j == 0:
                                 # fine the k pick point
-                                pick_k = 200 #wood:100 #rope:5 #cloth:80
+                                pick_k = 50 #wood:100 #rope:5 #cloth:80
                                 left_min_dist, left_pick_index = find_min_distance(left_finger_pos, obj_pos, pick_k)
                                 right_min_dist, right_pick_index = find_min_distance(right_finger_pos, obj_pos, pick_k)
                                 if self.obj in ['rigid_granular']:
@@ -987,7 +990,8 @@ class FlexEnv(gym.Env):
                 obj_pos = self.get_positions().reshape(-1, 4)[:, [0, 2]]
                 obj_pos[:, 1] *= -1
                 robot_obj_dist = np.min(cdist(end_effector_pos[:2].reshape(1, 2), obj_pos))
-                if dir != None and robot_obj_dist < 0.2 and i % 2 == 0:
+                #if dir != None and robot_obj_dist < 0.2 and i % 2 == 0:
+                if dir != None:
                     for j in range(len(self.camPos_list)):
                         pyflex.set_camPos(self.camPos_list[j])
                         pyflex.set_camAngle(self.camAngle_list[j])

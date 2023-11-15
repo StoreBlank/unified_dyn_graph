@@ -2,7 +2,7 @@ dataset:
   folder: 'data_dense' #"/media/baoyu/sumsung/rope_2" 
   n_worker: 1
   n_episode: 1 
-  n_timestep: 1
+  n_timestep: 2
   obj: "bowl_granular" 
   wkspc_w: 4.0
   headless: False

@@ -16,7 +16,7 @@ def merge_video(image_path, video_path):
     # print(image_names)
 
     fourcc = cv2.VideoWriter_fourcc('M', 'P', '4', 'V')
-    fps = 100
+    fps = 20
 
     img = Image.open(os.path.join(image_path, image_names[0]))
 
@@ -31,14 +31,15 @@ def merge_video(image_path, video_path):
     video_writer.release()
 
 if __name__ == '__main__':
-    for n in range(100):
-        i = np.random.randint(0, 200)
-        j = np.random.randint(0, 4)
-        epi_path = f"/media/baoyu/sumsung/Tshirt/episode_{i}/camera_{j}"
-        image_path = f"/media/baoyu/sumsung/Tshirt/episode_{i}/camera_{j}"
-        video_path = f"/media/baoyu/sumsung/video/Tshirt/video_{i}.mp4" 
+    # for n in range(100):
+    #     i = np.random.randint(0, 200)
+    #     j = np.random.randint(0, 4)
+    #     epi_path = f"/media/baoyu/sumsung/Tshirt/episode_{i}/camera_{j}"
+    #     image_path = f"/media/baoyu/sumsung/Tshirt/episode_{i}/camera_{j}"
+    #     video_path = f"/media/baoyu/sumsung/video/Tshirt/video_{i}.mp4" 
+    #     merge_video(image_path, video_path)
+    
+    for i in range(4):
+        image_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/rope_cloth/episode_0/camera_{i}"
+        video_path = f"videos/rope_cloth_granular_{i}.mp4" 
         merge_video(image_path, video_path)
-        # open json file
-        # with open(os.path.join(epi_path, 'property.json'), 'r') as f:
-        #     property = json.load(f)
-        # print(i, property['cluster_spacing'])
