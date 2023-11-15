@@ -2,8 +2,8 @@ dataset:
   folder: 'data_dense' #"/media/baoyu/sumsung/rope_2" 
   n_worker: 1
   n_episode: 1 
-  n_timestep: 2
-  obj: "bowl_granular" 
+  n_timestep: 20
+  obj: "mustard_bottle" 
   wkspc_w: 4.0
   headless: False
   robot_type: 'xarm6' 

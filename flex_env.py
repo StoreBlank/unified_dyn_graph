@@ -469,21 +469,21 @@ class FlexEnv(gym.Env):
             pyflex.set_scene(20, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
 
         elif obj == 'mustard_bottle':
-            x = -0.1
+            x = -0.
             y = 1. #3.5
-            z = 0.4 #-3.3
-            size = 0.8
-            obj_type = 6
+            z = 0. #-3.3
+            size = 0.4
+            obj_type = 13
             draw_mesh = 1
 
-            radius = 0.033
+            radius = 0.05
             mass = 4.31 #431g
             rigidStiffness = 1.
             dynamicFriction = 0.5
             staticFriction = 0.
             viscosity = 2.
             
-            rotation = 1.5
+            rotation = rand_float(0., 360.)
             springStiffness = 0.
 
             self.scene_params = np.array([x, y, z, size, obj_type, draw_mesh,
@@ -520,6 +520,43 @@ class FlexEnv(gym.Env):
     
             temp = np.array([0])
             pyflex.set_scene(25, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+        
+        elif obj == 'rigid_objects':
+            
+            obj_types = np.range(3, 22)
+            obj_sizes = [0.8, 0.8, 0.7, 0.8, 0.6, 0.6, 0.6, 0.2, #3-10
+                         0.3, 0.3, 0.4, ] 
+            
+            x = -0.1
+            y = 1. #3.5
+            z = 0.4 #-3.3
+            size = 0.25
+            obj_type = 12
+            draw_mesh = 1
+
+            radius = 0.05
+            mass = 4.31 #431g
+            rigidStiffness = 1.
+            dynamicFriction = 0.5
+            staticFriction = 0.
+            viscosity = 2.
+            
+            rotation = 5.
+            springStiffness = 0.
+
+            self.scene_params = np.array([x, y, z, size, obj_type, draw_mesh,
+                                          radius, mass, rigidStiffness, dynamicFriction, staticFriction, 
+                                          viscosity, rotation, springStiffness])
+            
+            temp = np.array([0])
+            pyflex.set_scene(25, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+
+            self.property = {'particle_radius': radius,
+                             'num_particles': self.get_num_particles(),
+                             'mass': mass,
+                             'rigid_stiffness': rigidStiffness,
+                             'dynamic_friction': dynamicFriction,
+                             'viscosity': viscosity,}
         
         elif obj == 'multi_ycb':
             x = 0.
@@ -754,7 +791,7 @@ class FlexEnv(gym.Env):
         else:
             robot_base_pos = [-3., 0., 0.5]
             robot_base_orn = [0, 0, 0, 1]
-            self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'assets/xarm/xarm6_with_gripper.urdf', robot_base_pos, robot_base_orn, globalScaling=5) 
+            self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'assets/xarm/xarm6_with_gripper.urdf', robot_base_pos, robot_base_orn, globalScaling=7) 
             self.rest_joints = np.zeros(8)
 
         pyflex.set_shape_states(self.robot_to_shape_states(pyflex.getRobotShapeStates(self.flex_robot_helper)))
@@ -828,12 +865,12 @@ class FlexEnv(gym.Env):
         
     def step(self, action, prev_counts=0, dir=None):
         if self.gripper:
-            h = 1.35
+            h = 1.55
         elif self.obj == 'bowl_granular':
-            h = 1.2
+            h = 1.4
         else:
             # h = 0.5 + 0.5 # table + pusher
-            h = 1.
+            h = 1.2
         s_2d = np.concatenate([action[:2], [h]])
         e_2d = np.concatenate([action[2:], [h]])
 
@@ -1069,7 +1106,7 @@ class FlexEnv(gym.Env):
         pyflex.clean()
     
     def sample_action(self):
-        if self.obj in ['mustard_bottle', 'power_drill']:
+        if self.obj in ['mustard_bottle', 'power_drill', 'rigid_objects']:
             action = self.sample_rigid_actions()
         elif self.obj in ['rope']:
             action = self.sample_rope_actions()
@@ -1177,8 +1214,8 @@ class FlexEnv(gym.Env):
         return action
     
     def inside_workspace(self):
-        pos = self.get_positions().reshape(-1, 4)[:, [0, 2]]
-        if np.abs(pos[0]).any() > 2 or np.abs(pos[1]).any() > 2:
+        pos = self.get_positions().reshape(-1, 4)
+        if (pos[:, 1] < 0.4).any():
             return False
         else:
             return True
