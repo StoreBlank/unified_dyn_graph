@@ -1,11 +1,11 @@
 dataset:
-  folder: /media/baoyu/sumsung/rope_2 #'data_dense' #"/media/baoyu/sumsung/rope_2" 
-  n_worker: 40
-  n_episode: 40
-  n_timestep: 20
-  obj: "rigid_objects" 
+  folder: 'data_dense' #"/media/baoyu/sumsung/rope_2" 
+  n_worker: 1
+  n_episode: 1
+  n_timestep: 1
+  obj: "rope" 
   wkspc_w: 4.0
-  headless: True
+  headless: False
   robot_type: 'xarm6' 
   cont_motion: False
   camera_view: 1 # 0, 1, 2, 3, 4

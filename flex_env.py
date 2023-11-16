@@ -328,17 +328,17 @@ class FlexEnv(gym.Env):
                              'particle_friction': particleFriction,}
         
         elif obj == 'rope':
-            radius = 0.025
+            radius = 0.03
             
-            length = rand_float(0.5, 1.5)
-            # thickness = rand_float(1., 2.)
-            # scale = np.array([length, rand_float(1., 2.), rand_float(1., 2.)]) * 80 # length, extension, thickness
-            scale = np.array([1.5, 1., 2.]) * 80.
+            length = 4. #rand_float(0.5, 4.)
+            thickness = 1. #rand_float(1., 4.)
+            scale = np.array([length, thickness, thickness]) * 50 # length, extension, thickness
+            # scale = np.array([1.5, 1., 2.]) * 80.
             
-            cluster_spacing = rand_float(4, 8) # change the stiffness of the rope
+            cluster_spacing = 4 #rand_float(4, 8) # change the stiffness of the rope
             dynamicFriction = rand_float(0.1, 0.7)
             
-            trans = [-1., 2., 0.]
+            trans = [-0.5, 2., 0.]
             
             z_rotation = rand_float(70, 80)
             # y_rotation = np.random.choice([0, 30, 45, 90, 180])
@@ -838,7 +838,7 @@ class FlexEnv(gym.Env):
         self.last_ee = None
         self.reset_robot()
         
-        for _ in range(300):
+        for _ in range(400):
             pyflex.step()
         
         # initial render
@@ -1027,8 +1027,8 @@ class FlexEnv(gym.Env):
                 obj_pos = self.get_positions().reshape(-1, 4)[:, [0, 2]]
                 obj_pos[:, 1] *= -1
                 robot_obj_dist = np.min(cdist(end_effector_pos[:2].reshape(1, 2), obj_pos))
-                #if dir != None and robot_obj_dist < 0.2 and i % 2 == 0:
-                if dir != None:
+                if dir != None and robot_obj_dist < 0.2 and i % 2 == 0:
+                # if dir != None:
                     for j in range(len(self.camPos_list)):
                         pyflex.set_camPos(self.camPos_list[j])
                         pyflex.set_camAngle(self.camAngle_list[j])

@@ -31,15 +31,17 @@ def merge_video(image_path, video_path):
     video_writer.release()
 
 if __name__ == '__main__':
-    # for n in range(100):
-    #     i = np.random.randint(0, 200)
-    #     j = np.random.randint(0, 4)
-    #     epi_path = f"/media/baoyu/sumsung/Tshirt/episode_{i}/camera_{j}"
-    #     image_path = f"/media/baoyu/sumsung/Tshirt/episode_{i}/camera_{j}"
-    #     video_path = f"/media/baoyu/sumsung/video/Tshirt/video_{i}.mp4" 
-    #     merge_video(image_path, video_path)
-    
-    for i in range(4):
-        image_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/rope_cloth/episode_0/camera_{i}"
-        video_path = f"videos/rope_cloth_granular_{i}.mp4" 
+    epi_num = 24
+    for n in range(epi_num):
+        # i = np.random.randint(0, epi_num)
+        i = n
+        j = np.random.randint(0, 4)
+        epi_path = f"/media/baoyu/sumsung/rigid_objects/episode_{i}/camera_{j}"
+        image_path = f"/media/baoyu/sumsung/rigid_objects/episode_{i}/camera_{j}"
+        video_path = f"/media/baoyu/sumsung/video/rigid_objects/video_{i}.mp4" 
         merge_video(image_path, video_path)
+    
+    # for i in range(4):
+    #     image_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/rope_cloth/episode_0/camera_{i}"
+    #     video_path = f"videos/rope_cloth_granular_{i}.mp4" 
+    #     merge_video(image_path, video_path)
