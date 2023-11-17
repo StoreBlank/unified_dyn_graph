@@ -405,13 +405,13 @@ class FlexEnv(gym.Env):
             inter_space = space_scale * max_scale
             
             num_x = int(abs(x/1.5) / max_scale + 1) * 2
-            num_y = 2 #np.random.randint(1, 4)
+            num_y = np.random.randint(1, 4)
             num_z = int(abs(z/1.5) / max_scale + 1) * 2
             x_off = np.random.uniform(-1./100., 1./100.)
             z_off = np.random.uniform(-1./100., 1./100.)
             x += x_off
             z += z_off
-            num_carrots = (num_x * num_z - 1) * 3
+            num_carrots = num_x * num_z * num_y 
 
             add_singular = 0.0
             add_sing_x = -1
@@ -422,7 +422,7 @@ class FlexEnv(gym.Env):
             radius = 0.03
 
             staticFriction = 1.0
-            dynamicFriction = 0.9 #rand_float(0.1, 1.0)
+            dynamicFriction = rand_float(0.1, 1.0)
             draw_skin = 1 # 0: point; 1: mesh
             min_dist = 5.0
             max_dist = 20.0
@@ -435,6 +435,14 @@ class FlexEnv(gym.Env):
 
             temp = np.array([0])
             pyflex.set_scene(22, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+            
+            self.property = {'particle_radius': radius,
+                             'num_particles': self.get_num_particles(),
+                             'rand_scale': rand_scale,
+                             'blob_r': blob_r,
+                             'num_carrots': num_carrots,
+                             'dynamic_friction': dynamicFriction,
+                             'mass': mass}
         
         elif obj == 'coffee':
             global_scale = 4
