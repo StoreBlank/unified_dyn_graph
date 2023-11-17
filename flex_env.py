@@ -389,7 +389,7 @@ class FlexEnv(gym.Env):
         
         elif obj == 'carrots':
             global_scale = 5
-            rand_scale = rand_float(0.09, 0.2) * global_scale / 7.0
+            rand_scale = rand_float(0.1, 0.2) * global_scale / 7.0
             max_scale = rand_scale
             min_scale = rand_scale
             blob_r = rand_float(0.2, 1.0)
@@ -445,18 +445,46 @@ class FlexEnv(gym.Env):
                              'mass': mass}
         
         elif obj == 'coffee':
+            radius = 0.03
+            
             global_scale = 4
             scale = 0.2 * global_scale / 8.0
+            max_scale = scale
+            min_scale = scale
+            blob_r = 0.5 #rand_float(0.2, 1.0)
+            
+            # x = - blob_r * global_scale / 8.0
+            # y = 0.5
+            # z = - blob_r * global_scale / 8.0
+            
+            # if 0.8 <= blob_r < 1.0 or (0.15 * global_scale / 7.0) <= scale < (0.2 * global_scale / 7.0):
+            #     space_scale = rand_float(1.1, 2.)
+            # else:
+            #     space_scale = rand_float(1.1, 3.)
+            inter_space = scale
+            
             x = -0.9 * global_scale / 8.0
             y = 0.5
             z = -0.9 * global_scale / 8.0
+            
+            num_x = 8 #int(abs(x/1.5) / max_scale + 1) * 2
+            num_y = 2 #np.random.randint(1, 4)
+            num_z = 8 #int(abs(z/1.5) / max_scale + 1) * 2
+            # x_off = np.random.uniform(-1./100., 1./100.)
+            # z_off = np.random.uniform(-1./100., 1./100.)
+            # x += x_off
+            # z += z_off
+            num_coffee = num_x * num_z * num_y 
+            
+            mass = 1/0.2
+            
             staticFriction = 0.0
             dynamicFriction = 1.0
             draw_skin = 0.
-            num_coffee = 200 # [200, 1000]
-            radius = 0.033
+           
             self.scene_params = np.array([
-                scale, x, y, z, staticFriction, dynamicFriction, draw_skin, num_coffee, radius])
+                scale, x, y, z, staticFriction, dynamicFriction, draw_skin, num_coffee, radius,
+                num_x, num_y, num_z, inter_space, mass])
 
             temp = np.array([0])
             pyflex.set_scene(20, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
