@@ -42,6 +42,6 @@ if __name__ == '__main__':
     #     merge_video(image_path, video_path)
     
     for i in range(1):
-        image_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/carrots/episode_0/camera_{i}"
-        video_path = f"videos/carrots_friction_1.mp4" 
+        image_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/rope/episode_0/camera_{i}"
+        video_path = f"videos/rope_rigidness_8.mp4" 
         merge_video(image_path, video_path)

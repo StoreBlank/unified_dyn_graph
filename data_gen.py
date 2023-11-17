@@ -66,8 +66,8 @@ def gen_data(info):
         #       [-1., -1, 1., 0.],
         #       [-1, -1, 1., 1.]]
         
-        us = [[0., -0.1, 0.5, -0.1],
-              [0.2, -0.5, 0.2, 0.]]
+        # us = [[0., -0.1, 0.5, -0.1],
+        #       [0.2, -0.5, 0.2, 0.]]
 
         # time step
         img = env.render()
@@ -79,17 +79,15 @@ def gen_data(info):
             
             color_diff = 0
             while color_diff < color_threshold:
-                # u = None
-                # u = env.sample_action()
+                u = None
+                u = env.sample_action()
                 
                 # u = [2., 2., -2., -2.]
-                
-                # u = [0., -0.5, 0., 0.5]
-                # u = [-2., -0.3, 1., -0.3]
-                # u = [-0.2, -0.2, -0.2, 1.]
+            
                 # u = [-0.1, -1., 0., 1.] #bottle_granular
                 # u = [0.0, 1., 0.0, -1.] #folding cloth
-                u = [-1., 0., 1., 0.]
+                # u = [-1., 0., 1., 0.] #-x -> +x
+                # u = [0., 0.5, 0., -0.5] #-z -> +z
                 
                 # particle_positions = env.get_positions().reshape(-1, 4)
                 
@@ -162,28 +160,28 @@ def gen_data(info):
     env.close()
 
 ###multiprocessing
-# infos=[]
-# base = 42
-# for i in range(n_worker):
-#     info = {
-#         "base_epi": base+i*n_episode//n_worker,
-#         "n_epi_per_worker": n_episode//n_worker,
-#         "thread_idx": i,
-#         "verbose": False,
-#         "debug": False,
-#     }
-#     infos.append(info)
+infos=[]
+base = 0
+for i in range(n_worker):
+    info = {
+        "base_epi": base+i*n_episode//n_worker,
+        "n_epi_per_worker": n_episode//n_worker,
+        "thread_idx": i,
+        "verbose": False,
+        "debug": False,
+    }
+    infos.append(info)
 
-# pool = mp.Pool(processes=n_worker)
-# pool.map(gen_data, infos)
+pool = mp.Pool(processes=n_worker)
+pool.map(gen_data, infos)
 
 
-info = {
-    "base_epi": 0,
-    "n_epi_per_worker": n_episode,
-    "thread_idx": 1,
-    "verbose": False,
-    "debug": False,
-}
-gen_data(info)
+# info = {
+#     "base_epi": 0,
+#     "n_epi_per_worker": n_episode,
+#     "thread_idx": 1,
+#     "verbose": False,
+#     "debug": True,
+# }
+# gen_data(info)
 
