@@ -79,8 +79,8 @@ def gen_data(info):
             
             color_diff = 0
             while color_diff < color_threshold:
-                u = None
-                u = env.sample_action()
+                # u = None
+                # u = env.sample_action()
                 
                 # u = [2., 2., -2., -2.]
                 
@@ -89,7 +89,7 @@ def gen_data(info):
                 # u = [-0.2, -0.2, -0.2, 1.]
                 # u = [-0.1, -1., 0., 1.] #bottle_granular
                 # u = [0.0, 1., 0.0, -1.] #folding cloth
-                # u = [-1., 0., 1., 0.]
+                u = [-1., 0., 1., 0.]
                 
                 # particle_positions = env.get_positions().reshape(-1, 4)
                 
@@ -163,7 +163,7 @@ def gen_data(info):
 
 ###multiprocessing
 # infos=[]
-# base = 23
+# base = 42
 # for i in range(n_worker):
 #     info = {
 #         "base_epi": base+i*n_episode//n_worker,
