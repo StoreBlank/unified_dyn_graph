@@ -140,8 +140,9 @@ class FlexEnv(gym.Env):
         self.gripper = config['dataset']['gripper']
         self.grasp = config['dataset']['grasp']
         if self.gripper:   
-            self.end_idx = 6 # 6(arm) + 1 base_link + 6(gripper; 9-left finger, 12-right finger)
-            self.num_dofs = 12
+            # 6(arm) + 1 base_link + 6(gripper; 9-left finger, 12-right finger)
+            self.end_idx = 6 #6
+            self.num_dofs = 12 
             self.gripper_state = 0
         else:
             self.end_idx = 6
@@ -657,7 +658,7 @@ class FlexEnv(gym.Env):
             particleFriction = 1.2
             #particleFriction (?): for object-object friction?
             viscosity = 0.
-            draw_mesh = 0.
+            draw_mesh = 1
             
             print('dynamicFriction:', dynamicFriction)
             
@@ -681,7 +682,7 @@ class FlexEnv(gym.Env):
             cloth_size = [60., 60., 1.]
             
             rope_scale = np.array([1.5, 1.5, 2.]) * 50.
-            rope_trans = [-1., 2., 0.]
+            rope_trans = [-1.2, 2., 0.]
             
             cluster_spacing = 2. #rand_float(4, 8) # change the stiffness of the rope
             cluster_radius = 0.
@@ -862,7 +863,7 @@ class FlexEnv(gym.Env):
         
     def step(self, action, prev_counts=0, dir=None):
         if self.gripper:
-            h = 1.55
+            h = 1.35
         elif self.obj == 'bowl_granular':
             h = 1.4
         else:
@@ -876,7 +877,8 @@ class FlexEnv(gym.Env):
             pusher_angle = np.pi/2
         else:
             # pusher_angle = np.arctan((s_2d - e_2d)[1] / (s_2d - e_2d)[0])
-            pusher_angle = -np.arctan((s_2d - e_2d)[1] / (s_2d - e_2d)[0])
+            # pusher_angle = -np.arctan((s_2d - e_2d)[1] / (s_2d - e_2d)[0])
+            pusher_angle = -np.pi/4
         # pusher_angle = np.pi/2
         
         # robot orientation
@@ -890,7 +892,7 @@ class FlexEnv(gym.Env):
             way_points = [self.last_ee, s_2d, e_2d]
         else:
             if self.grasp:
-                way_points = [s_2d + [0., 0., 0.5], s_2d, s_2d, s_2d + [0., 0., 0.7], e_2d + [0., 0., 0.7]]
+                way_points = [s_2d + [0., 0., 0.5], s_2d, s_2d, s_2d + [0., 0., 0.7], e_2d + [0., 0., 0.7], e_2d + [0., 0., 0.2]]
                 # way_points.append(e_2d + [-1.5, 0., 1.])
                 # way_points.append(e_2d + [-1.5, -1., 0.8])
                 # way_points.append(e_2d + [0., -1., 1.])
@@ -1023,8 +1025,8 @@ class FlexEnv(gym.Env):
                 obj_pos = self.get_positions().reshape(-1, 4)[:, [0, 2]]
                 obj_pos[:, 1] *= -1
                 robot_obj_dist = np.min(cdist(end_effector_pos[:2].reshape(1, 2), obj_pos))
-                if dir != None and robot_obj_dist < 0.2 and i % 2 == 0:
-                # if dir != None:
+                # if dir != None and robot_obj_dist < 0.2 and i % 2 == 0:
+                if dir != None:
                     for j in range(len(self.camPos_list)):
                         pyflex.set_camPos(self.camPos_list[j])
                         pyflex.set_camAngle(self.camAngle_list[j])

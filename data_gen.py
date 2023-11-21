@@ -62,9 +62,9 @@ def gen_data(info):
         
         #### actions TODO]
         ## cloth bag rigid objects
-        # us = [[1., 0.5, -1., -0.5], 
-        #       [-1., -1, 1., 0.],
-        #       [-1, -1, 1., 1.]]
+        us = [[1.3, 0.55, -1., -0.3], 
+              [-1., -1, 1., 0.],
+              [-1, -1, 1., 1.]]
         
         # us = [[0., -0.1, 0.5, -0.1],
         #       [0.2, -0.5, 0.2, 0.]]
@@ -79,8 +79,8 @@ def gen_data(info):
             
             color_diff = 0
             while color_diff < color_threshold:
-                u = None
-                u = env.sample_action()
+                # u = None
+                # u = env.sample_action()
                 
                 # u = [2., 2., -2., -2.]
             
@@ -97,7 +97,7 @@ def gen_data(info):
                 # u = [particle_positions[idx_max_x, 0], -particle_positions[idx_min_z, 2], particle_positions[idx_min_x, 0], -particle_positions[idx_max_z, 2]]
                 # u = [particle_positions[idx_max_x, 0], -particle_positions[idx_min_z, 2], 2., 2.]
                 
-                # u = us[idx_timestep]
+                u = us[idx_timestep]
                 
                 # particle_positions = env.get_positions().reshape(-1, 4)
                 # # find the most bottom particle
@@ -160,28 +160,28 @@ def gen_data(info):
     env.close()
 
 ###multiprocessing
-infos=[]
-base = 0
-for i in range(n_worker):
-    info = {
-        "base_epi": base+i*n_episode//n_worker,
-        "n_epi_per_worker": n_episode//n_worker,
-        "thread_idx": i,
-        "verbose": False,
-        "debug": False,
-    }
-    infos.append(info)
+# infos=[]
+# base = 0
+# for i in range(n_worker):
+#     info = {
+#         "base_epi": base+i*n_episode//n_worker,
+#         "n_epi_per_worker": n_episode//n_worker,
+#         "thread_idx": i,
+#         "verbose": False,
+#         "debug": False,
+#     }
+#     infos.append(info)
 
-pool = mp.Pool(processes=n_worker)
-pool.map(gen_data, infos)
+# pool = mp.Pool(processes=n_worker)
+# pool.map(gen_data, infos)
 
 
-# info = {
-#     "base_epi": 0,
-#     "n_epi_per_worker": n_episode,
-#     "thread_idx": 1,
-#     "verbose": False,
-#     "debug": True,
-# }
-# gen_data(info)
+info = {
+    "base_epi": 0,
+    "n_epi_per_worker": n_episode,
+    "thread_idx": 1,
+    "verbose": False,
+    "debug":True,
+}
+gen_data(info)
 

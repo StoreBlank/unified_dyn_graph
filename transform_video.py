@@ -36,12 +36,12 @@ if __name__ == '__main__':
     #     # i = np.random.randint(0, epi_num)
     #     i = n
     #     j = np.random.randint(0, 4)
-    #     epi_path = f"/media/baoyu/sumsung/rigid_objects/episode_{i}/camera_{j}"
-    #     image_path = f"/media/baoyu/sumsung/rigid_objects/episode_{i}/camera_{j}"
-    #     video_path = f"/media/baoyu/sumsung/video/rigid_objects/video_{i}.mp4" 
+    #     epi_path = f"/media/baoyu/sumsung/granular/coffee/episode_{i}/camera_{j}"
+    #     image_path = f"/media/baoyu/sumsung/granular/coffee/episode_{i}/camera_{j}"
+    #     video_path = f"/media/baoyu/sumsung/video/granular/coffee/video_{i}.mp4" 
     #     merge_video(image_path, video_path)
     
-    for i in range(1):
-        image_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/rope/episode_0/camera_{i}"
-        video_path = f"videos/rope_rigidness_8.mp4" 
+    for i in range(4):
+        image_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/rope_cloth/episode_0/camera_{i}"
+        video_path = f"videos/rope_cloth_{i}.mp4" 
         merge_video(image_path, video_path)
