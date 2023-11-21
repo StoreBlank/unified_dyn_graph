@@ -390,7 +390,7 @@ class FlexEnv(gym.Env):
         
         elif obj == 'carrots':
             global_scale = 5
-            rand_scale = rand_float(0.09, 0.2) * global_scale / 7.0
+            rand_scale = rand_float(0.1, 0.2) * global_scale / 7.0
             max_scale = rand_scale
             min_scale = rand_scale
             blob_r = rand_float(0.2, 1.0)
@@ -446,6 +446,8 @@ class FlexEnv(gym.Env):
                              'mass': mass}
         
         elif obj == 'coffee':
+            radius = 0.03
+            
             global_scale = 4
             scale = rand_float(0.2, 0.3) * global_scale / 8.0
             

@@ -16,7 +16,7 @@ def merge_video(image_path, video_path):
     # print(image_names)
 
     fourcc = cv2.VideoWriter_fourcc('M', 'P', '4', 'V')
-    fps = 10
+    fps = 20
 
     img = Image.open(os.path.join(image_path, image_names[0]))
 
@@ -45,3 +45,4 @@ if __name__ == '__main__':
         image_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/rope_cloth/episode_0/camera_{i}"
         video_path = f"videos/rope_cloth_{i}.mp4" 
         merge_video(image_path, video_path)
+
