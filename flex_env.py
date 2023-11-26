@@ -331,7 +331,7 @@ class FlexEnv(gym.Env):
         elif obj == 'rope':
             radius = 0.03
             
-            length = rand_float(0.5, 3.)
+            length = rand_float(0.5, 2.5)
             thickness = rand_float(1., 3.)
             scale = np.array([length, thickness, thickness]) * 50 # length, extension, thickness
             
@@ -340,9 +340,9 @@ class FlexEnv(gym.Env):
             
             trans = [-0.5, 2., 0.]
             
-            z_rotation = rand_float(70, 80)
-            # y_rotation = np.random.choice([0, 30, 45, 90, 180])
-            rot = Rotation.from_euler('xyz', [0, 0, z_rotation], degrees=True)
+            # z_rotation = rand_float(70, 80)
+            y_rotation = 0. #np.random.choice([0, 30, 45, 60])
+            rot = Rotation.from_euler('xyz', [0, y_rotation, 0.], degrees=True)
             rotate = rot.as_quat()
             
             cluster_radius = 0.
@@ -612,7 +612,7 @@ class FlexEnv(gym.Env):
             x = -0.5
             y = 1. #3.5
             z = 0. #-3.3
-            size = 0.6 #0.8
+            size = 0.8 #0.8
             obj_type = 6 #36
             draw_mesh = 1
 
@@ -736,12 +736,12 @@ class FlexEnv(gym.Env):
             bowl_mass = 1e100
             bowl_scale = 1.2
             
-            num_granular_ft = [5, 20, 5]
+            num_granular_ft = [5, 20, 5] # low 5, medium 10, high 20
             granular_scale = 0.1
             pos_granular = [0.1, 1., 0.1]
             granular_dis = 0.
             
-            draw_mesh = 0
+            draw_mesh = 1
             
             self.scene_params = np.array([radius, *bowl_pos, *num_granular_ft, granular_scale, *pos_granular, granular_dis, 
                                           draw_mesh, bowl_mass, bowl_scale])
@@ -766,7 +766,7 @@ class FlexEnv(gym.Env):
         if self.obj == 'multi_ycb':
             halfEdge = np.array([self.wkspc_w, wall_height, self.wkspc_w])
         else:
-            halfEdge = np.array([2., wall_height, 2.])
+            halfEdge = np.array([4., wall_height, 4.])
         center = np.array([0.0, 0.0, 0.0])
         quats = quatFromAxisAngle(axis=np.array([0., 1., 0.]), angle=0.)
         hideShape = 0
@@ -910,12 +910,13 @@ class FlexEnv(gym.Env):
             self.reset_robot(self.rest_joints)
 
         # set robot speed
-        if self.obj in ["Tshirt", "rope", "rope_cloth"]:
+        if self.obj in ["Tshirt", "rope_cloth", "rope"]:
             speed = 1.0/300.
         else:
             speed = 1.0/100.
         
         self.count = prev_counts
+        self.contact = []
         
         # set up gripper
         if self.gripper:
@@ -950,7 +951,7 @@ class FlexEnv(gym.Env):
                     obj_pos = self.get_positions().reshape(-1, 4)[:, :3]
                     new_particle_pos = self.get_positions().reshape(-1, 4).copy()
                     
-                    # grasping 
+                    ### grasping 
                     if i_p == 1:
                         close = 0
                         start = 0
@@ -1027,26 +1028,46 @@ class FlexEnv(gym.Env):
                 obj_pos = self.get_positions().reshape(-1, 4)[:, [0, 2]]
                 obj_pos[:, 1] *= -1
                 robot_obj_dist = np.min(cdist(end_effector_pos[:2].reshape(1, 2), obj_pos))
-                # if dir != None and robot_obj_dist < 0.2 and i % 2 == 0:
+                
                 if dir != None:
-                    for j in range(len(self.camPos_list)):
-                        pyflex.set_camPos(self.camPos_list[j])
-                        pyflex.set_camAngle(self.camAngle_list[j])
+                    if robot_obj_dist < 0.2 and i % 2 == 0: #contact
+                        for j in range(len(self.camPos_list)):
+                            pyflex.set_camPos(self.camPos_list[j])
+                            pyflex.set_camAngle(self.camAngle_list[j])
 
-                        # create dir with cameras
-                        cam_dir = os.path.join(dir, 'camera_%d' % (j))
-                        os.system('mkdir -p %s' % (cam_dir))
+                            # create dir with cameras
+                            cam_dir = os.path.join(dir, 'camera_%d' % (j))
+                            os.system('mkdir -p %s' % (cam_dir))
 
-                        img = self.render()
-                        cv2.imwrite(os.path.join(cam_dir, '%d_color.jpg' % self.count), img[:, :, :3][..., ::-1])
-                        cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % self.count), (img[:, :, -1]*1000).astype(np.uint16))
-                        if j == 0:
-                            with open(os.path.join(cam_dir, '%d_particles.npy' % self.count), 'wb') as f:
-                                np.save(f, self.get_positions().reshape(-1, 4))
-                            with open(os.path.join(cam_dir, '%d_endeffector.npy' % self.count), 'wb') as f:
-                                np.save(f, end_effector_pos)
-                    self.count += 1
+                            img = self.render()
+                            cv2.imwrite(os.path.join(cam_dir, '%d_color.jpg' % self.count), img[:, :, :3][..., ::-1])
+                            cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % self.count), (img[:, :, -1]*1000).astype(np.uint16))
+                            if j == 0:
+                                with open(os.path.join(cam_dir, '%d_particles.npy' % self.count), 'wb') as f:
+                                    np.save(f, self.get_positions().reshape(-1, 4))
+                                with open(os.path.join(cam_dir, '%d_endeffector.npy' % self.count), 'wb') as f:
+                                    np.save(f, end_effector_pos)
+                        self.count += 1
+                        self.contact.append(self.count)
+                    elif i % 10 == 0:
+                        for j in range(len(self.camPos_list)):
+                            pyflex.set_camPos(self.camPos_list[j])
+                            pyflex.set_camAngle(self.camAngle_list[j])
 
+                            # create dir with cameras
+                            cam_dir = os.path.join(dir, 'camera_%d' % (j))
+                            os.system('mkdir -p %s' % (cam_dir))
+
+                            img = self.render()
+                            cv2.imwrite(os.path.join(cam_dir, '%d_color.jpg' % self.count), img[:, :, :3][..., ::-1])
+                            cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % self.count), (img[:, :, -1]*1000).astype(np.uint16))
+                            if j == 0:
+                                with open(os.path.join(cam_dir, '%d_particles.npy' % self.count), 'wb') as f:
+                                    np.save(f, self.get_positions().reshape(-1, 4))
+                                with open(os.path.join(cam_dir, '%d_endeffector.npy' % self.count), 'wb') as f:
+                                    np.save(f, end_effector_pos)
+                        self.count += 1
+                    
                 self.reset_robot()
 
                 if math.isnan(self.get_positions().reshape(-1, 4)[:, 0].max()):
@@ -1093,7 +1114,7 @@ class FlexEnv(gym.Env):
             self.count += 1
         
         obs = self.render()
-        return obs, self.count
+        return obs, self.count, self.contact
     
     def render(self, no_return=False):
         pyflex.step()
@@ -1246,6 +1267,13 @@ class FlexEnv(gym.Env):
     
     def get_num_particles(self):
         return self.get_positions().reshape(-1, 4).shape[0]
+    
+    def get_obj_center(self):
+        particle_pos = self.get_positions().reshape(-1, 4)
+        particle_x = particle_pos[:, 0]
+        particle_z = particle_pos[:, 2]
+        center_x, center_z = np.median(particle_x), np.median(particle_z)
+        return center_x, center_z
     
     def grasp_action(self):
         pass

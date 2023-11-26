@@ -16,7 +16,7 @@ def load_yaml(filename):
     return yaml.safe_load(open(filename, 'r'))
 
 # load config
-config = load_yaml("config/data_gen/gnn_dyn.yaml")
+config = load_yaml("config/data_gen/gnn_dyn_grid.yaml")
 data_dir = config['dataset']['folder']
 n_worker = config['dataset']['n_worker']
 n_episode = config['dataset']['n_episode']
@@ -61,15 +61,6 @@ def gen_data(info):
         
         actions = np.zeros((n_timestep, action_dim))
         color_threshold = 0.1
-        
-        #### actions TODO]
-        ## cloth bag rigid objects
-        # us = [[1.3, 0.55, -1., -0.3], 
-        #       [-1., -1, 1., 0.],
-        #       [-1, -1, 1., 1.]]
-        
-        # us = [[0., -0.1, 0.5, -0.1],
-        #       [0.2, -0.5, 0.2, 0.]]
 
         # time step
         img = env.render()
@@ -84,24 +75,9 @@ def gen_data(info):
             while color_diff < color_threshold:
                 # u = None
                 # u = env.sample_action()
-            
-                # u = [-0.2, -1., 0., 1.] #bottle_granular
-                # u = [0.0, 1., 0.0, -1.] #folding cloth
-                
-                # u = [-1., 0., 1., 0.] #-x -> +x
                 
                 center_x, center_z = env.get_obj_center()
                 u = [center_x, 2.0, center_x, -1.5] #-z -> +z
-                
-                # particle_positions = env.get_positions().reshape(-1, 4)
-                
-                # idx_min_x, idx_max_x = np.argmin(particle_positions[:, 0]), np.argmax(particle_positions[:, 0])
-                # idx_min_z, idx_max_z = np.argmin(particle_positions[:, 2]), np.argmax(particle_positions[:, 2])
-            
-                # u = [particle_positions[idx_max_x, 0], -particle_positions[idx_min_z, 2], particle_positions[idx_min_x, 0], -particle_positions[idx_max_z, 2]]
-                # u = [particle_positions[idx_max_x, 0], -particle_positions[idx_min_z, 2], 2., 2.]
-                
-                # u = us[idx_timestep]
         
                 # step
                 prev_steps = n_steps
