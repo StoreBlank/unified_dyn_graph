@@ -5,11 +5,12 @@ dataset:
   n_timestep: 1
   obj: "rope" 
   wkspc_w: 4.0
-  headless: True
+  headless: False
   robot_type: 'xarm6' 
   cont_motion: False
   camera_view: 1 # 0, 1, 2, 3, 4
   camera_radius: 5.5
   dt: 0.1
   gripper: False
-  grasp: False
+  grasp: False  
+  physics: "random" # "random" or "grid"

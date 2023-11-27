@@ -172,6 +172,7 @@ class FlexEnv(gym.Env):
 
         # define property space
         self.property = None
+        self.physics = config['dataset']['physics']
         
         # others
         self.count = 0
@@ -218,8 +219,6 @@ class FlexEnv(gym.Env):
         pyflex.set_shape_states(self.robot_to_shape_states(pyflex.getRobotShapeStates(self.flex_robot_helper)))
     
     def set_camera(self):
-        # cam_height = np.sqrt(2)/2 * self.camera_radius
-        # cam_dis = np.sqrt(2)/2 * self.camera_radius
         cam_dis = 3.
         cam_height = 4.5
         if self.camera_view == 0:
@@ -262,7 +261,7 @@ class FlexEnv(gym.Env):
         self.cam_extrinsic_matrix = np.zeros([len(self.camPos_list), 4, 4]) # [R, t]
     
     ### TODO: write the scene as a class
-    def init_scene(self, obj):
+    def init_scene(self, obj, property_params):
         if obj == 'Tshirt':
             # cloth_dir = "assets/cloth3d/train"
             # # random choose a folder in cloth_dir
@@ -331,12 +330,18 @@ class FlexEnv(gym.Env):
         elif obj == 'rope':
             radius = 0.03
             
-            length = rand_float(0.5, 2.5)
-            thickness = rand_float(1., 3.)
-            scale = np.array([length, thickness, thickness]) * 50 # length, extension, thickness
-            
-            cluster_spacing = rand_float(2, 8) # change the stiffness of the rope
-            dynamicFriction = rand_float(0.1, 0.7)
+            if self.physics == "random":
+                length = 0.5 #rand_float(0.5, 2.5)
+                thickness = 1.0 #rand_float(1., 3.)
+                scale = np.array([length, thickness, thickness]) * 50 # length, extension, thickness
+                cluster_spacing = 4 #rand_float(2, 8) # change the stiffness of the rope
+                dynamicFriction = 0.7 #rand_float(0.1, 0.7)
+            elif self.physics == "grid":
+                length = property_params['length']
+                thickness = property_params['thickness']
+                scale = np.array([length, thickness, thickness]) * 50 # length, extension, thickness
+                cluster_spacing = property_params['cluster_spacing']
+                dynamicFriction = property_params['dynamic_friction']
             
             trans = [-0.5, 2., 0.]
             
@@ -752,9 +757,9 @@ class FlexEnv(gym.Env):
         else:
             raise ValueError('obj not defined')
     
-    def reset(self, count=0, dir=None):
+    def reset(self, count=0, dir=None, property_params=None):
         obj = self.obj
-        self.init_scene(obj)
+        self.init_scene(obj, property_params)
         
         # camera setting
         self.set_camera()
@@ -1030,7 +1035,7 @@ class FlexEnv(gym.Env):
                 robot_obj_dist = np.min(cdist(end_effector_pos[:2].reshape(1, 2), obj_pos))
                 
                 if dir != None:
-                    if robot_obj_dist < 0.2 and i % 2 == 0: #contact
+                    if robot_obj_dist < 0.2 and i % 3 == 0: #contact
                         for j in range(len(self.camPos_list)):
                             pyflex.set_camPos(self.camPos_list[j])
                             pyflex.set_camAngle(self.camAngle_list[j])

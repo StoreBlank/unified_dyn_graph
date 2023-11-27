@@ -4,10 +4,9 @@ import numpy as np
 import time
 import yaml
 from flex_env import FlexEnv
-import trimesh
 import json
-import pickle
 import multiprocessing as mp
+import itertools
 
 from utils_env import rand_float, rand_int, quatFromAxisAngle, find_min_distance
 
@@ -28,32 +27,41 @@ cam_view = config['dataset']['camera_view']
 
 os.system("mkdir -p %s" % data_dir)
 
-def gen_data(info):
+def gen_data_grid(info):
     base_epi = info["base_epi"]
     n_epi_per_worker = info["n_epi_per_worker"]
     thread_idx = info["thread_idx"]
     verbose = info["verbose"]
     debug = info["debug"]
+    combination = info["combination"]
+    
+    # set env 
+    env = FlexEnv(config)
+    np.random.seed(round(time.time() * 1000 + thread_idx) % 2 ** 32)
 
     # create folder
     folder_dir = os.path.join(data_dir, obj)
     os.system('mkdir -p ' + folder_dir)
 
-    # set env 
-    env = FlexEnv(config)
-    np.random.seed(round(time.time() * 1000 + thread_idx) % 2 ** 32)
-
     idx_episode = base_epi
     while idx_episode < base_epi + n_epi_per_worker:
         start_epi_time = time.time()
-        print('episode:', idx_episode)
+        
+        length, thickness, cluster_spacing, dynamic_friction = combination
+        property_params = {
+            "length": length,
+            "thickness": thickness,
+            "cluster_spacing": cluster_spacing,
+            "dynamic_friction": dynamic_friction,
+        }
+        print("episode: ", idx_episode, "; property_params: ", property_params)
         
         if debug:
-            n_steps = env.reset() 
+            n_steps = env.reset(property_params=property_params) 
         else:
             epi_dir = os.path.join(folder_dir, "episode_%d" % idx_episode)
             os.system("mkdir -p %s" % epi_dir)
-            n_steps = env.reset(dir=epi_dir)
+            n_steps = env.reset(dir=epi_dir, property_params=property_params)
             # save property
             property = env.get_property()
             with open(os.path.join(epi_dir, 'property.json'), 'w') as f:
@@ -132,30 +140,48 @@ def gen_data(info):
             
     env.close()
 
+
 ###multiprocessing
-bases = [210, 240, 270, 300, 330, 360, 390, 420, 450, 480]
-infos=[]
+
+## rope grid
+length_list = [0.5, 1.0, 2.0, 2.5] 
+thickness_list = [1.0, 1.5, 2.0, 2.5] 
+cluster_spacing_list = [2.0, 4.0, 6.0, 8.0]
+dynamic_friction_list = [0.1, 0.3, 0.5, 0.7]
+# Generate all combinations of the rope properties
+property_combinations = list(itertools.product(length_list, thickness_list, cluster_spacing_list, dynamic_friction_list))
+# print("property_combinations: ", property_combinations)
+
+total_episode = len(property_combinations)
+print("total_episode: ", total_episode)
+
+n_bases = total_episode // n_worker
+# bases = [i*n_worker for i in range(n_bases+1)]
+# print("bases: ", bases)
+bases = [231]
+
 for base in bases:
-    # base = 210
+    
+    # if base == bases[-1] and total_episode % n_worker != 0:
+    #     n_worker = total_episode - base
+    #     n_episode = n_worker
+    # elif base == bases[-1] and total_episode % n_worker == 0:
+    #     break
+    
+    infos = []
     for i in range(n_worker):
         info = {
             "base_epi": base+i*n_episode//n_worker,
             "n_epi_per_worker": n_episode//n_worker,
             "thread_idx": i,
+            "combination": property_combinations[base+i],
             "verbose": False,
             "debug": False,
         }
         infos.append(info)
     pool = mp.Pool(processes=n_worker)
-    pool.map(gen_data, infos)
+    pool.map(gen_data_grid, infos)
 
 
-# info = {
-#     "base_epi": 0,
-#     "n_epi_per_worker": n_episode,
-#     "thread_idx": 1,
-#     "verbose": False,
-#     "debug":True,
-# }
-# gen_data(info)
+
 

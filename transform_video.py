@@ -31,7 +31,7 @@ def merge_video(image_path, video_path):
     video_writer.release()
 
 if __name__ == '__main__':
-    epi_num = 30
+    epi_num = 256
     for n in range(epi_num):
         #i = np.random.randint(0, 100)
         i = n
@@ -39,7 +39,7 @@ if __name__ == '__main__':
         j = 0
         epi_path = f"/media/baoyu/sumsung/rope/episode_{i}/camera_{j}"
         image_path = f"/media/baoyu/sumsung/rope/episode_{i}/camera_{j}"
-        video_path = f"/media/baoyu/sumsung/video/rope_simple/video_{i}.mp4" 
+        video_path = f"/media/baoyu/sumsung/video/rope_grid/video_{i}.mp4" 
         merge_video(image_path, video_path)
     
     # for i in range(1):
