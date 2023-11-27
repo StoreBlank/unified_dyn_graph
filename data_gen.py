@@ -68,8 +68,12 @@ def gen_data(info):
         #       [-1., -1, 1., 0.],
         #       [-1, -1, 1., 1.]]
         
+        ## stirring
         # us = [[0., -0.1, 0.5, -0.1],
         #       [0.2, -0.5, 0.2, 0.]]
+        
+        ## scooping
+        us = [[0., 1.3, 0.1, -0.2],]
 
         # time step
         img = env.render()
@@ -90,18 +94,10 @@ def gen_data(info):
                 
                 # u = [-1., 0., 1., 0.] #-x -> +x
                 
-                center_x, center_z = env.get_obj_center()
-                u = [center_x, 2.0, center_x, -1.5] #-z -> +z
+                # center_x, center_z = env.get_obj_center()
+                # u = [center_x, 2.0, center_x, -1.5] #-z -> +z
                 
-                # particle_positions = env.get_positions().reshape(-1, 4)
-                
-                # idx_min_x, idx_max_x = np.argmin(particle_positions[:, 0]), np.argmax(particle_positions[:, 0])
-                # idx_min_z, idx_max_z = np.argmin(particle_positions[:, 2]), np.argmax(particle_positions[:, 2])
-            
-                # u = [particle_positions[idx_max_x, 0], -particle_positions[idx_min_z, 2], particle_positions[idx_min_x, 0], -particle_positions[idx_max_z, 2]]
-                # u = [particle_positions[idx_max_x, 0], -particle_positions[idx_min_z, 2], 2., 2.]
-                
-                # u = us[idx_timestep]
+                u = us[idx_timestep]
         
                 # step
                 prev_steps = n_steps
@@ -157,29 +153,29 @@ def gen_data(info):
     env.close()
 
 ###multiprocessing
-bases = [210, 240, 270, 300, 330, 360, 390, 420, 450, 480]
-infos=[]
-for base in bases:
-    # base = 210
-    for i in range(n_worker):
-        info = {
-            "base_epi": base+i*n_episode//n_worker,
-            "n_epi_per_worker": n_episode//n_worker,
-            "thread_idx": i,
-            "verbose": False,
-            "debug": False,
-        }
-        infos.append(info)
-    pool = mp.Pool(processes=n_worker)
-    pool.map(gen_data, infos)
+# bases = [210, 240, 270, 300, 330, 360, 390, 420, 450, 480]
+# infos=[]
+# for base in bases:
+#     # base = 210
+#     for i in range(n_worker):
+#         info = {
+#             "base_epi": base+i*n_episode//n_worker,
+#             "n_epi_per_worker": n_episode//n_worker,
+#             "thread_idx": i,
+#             "verbose": False,
+#             "debug": False,
+#         }
+#         infos.append(info)
+#     pool = mp.Pool(processes=n_worker)
+#     pool.map(gen_data, infos)
 
 
-# info = {
-#     "base_epi": 0,
-#     "n_epi_per_worker": n_episode,
-#     "thread_idx": 1,
-#     "verbose": False,
-#     "debug":True,
-# }
-# gen_data(info)
+info = {
+    "base_epi": 0,
+    "n_epi_per_worker": n_episode,
+    "thread_idx": 1,
+    "verbose": False,
+    "debug":True,
+}
+gen_data(info)
 

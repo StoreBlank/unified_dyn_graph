@@ -6,6 +6,7 @@ import math
 import cv2
 from scipy.spatial.distance import cdist
 from scipy.spatial.transform import Rotation
+from scipy.spatial import KDTree
 
 # robot
 import pybullet as p
@@ -16,6 +17,7 @@ from transformations import quaternion_from_matrix, quaternion_matrix
 # utils
 from utils_env import load_cloth
 from utils_env import rand_float, rand_int, quatFromAxisAngle, find_min_distance
+from utils_env import fps_rad, recenter
 
 # Robot Arm
 class FlexRobotHelper:
@@ -176,10 +178,13 @@ class FlexEnv(gym.Env):
         
         # others
         self.count = 0
+        self.fps = config['dataset']['fps']
+        self.particle_num_threshold = 0
         
     def robot_to_shape_states(self, robot_states):
         return np.concatenate([self.wall_shape_states, robot_states], axis=0)
     
+    ###TODO: action class
     def _set_pos(self, picker_pos, particle_pos):
         """For gripper and grasp task."""
         shape_states = np.array(pyflex.get_shape_states()).reshape(-1, 14)
@@ -328,6 +333,9 @@ class FlexEnv(gym.Env):
                              'particle_friction': particleFriction,}
         
         elif obj == 'rope':
+            
+            self.particle_num_threshold = 500 # for fps
+            
             radius = 0.03
             
             if self.physics == "random":
@@ -741,15 +749,19 @@ class FlexEnv(gym.Env):
             bowl_mass = 1e100
             bowl_scale = 1.2
             
-            num_granular_ft = [5, 20, 5] # low 5, medium 10, high 20
+            num_granular_ft = [5, 10, 5] # low 5, medium 10, high 20
             granular_scale = 0.1
             pos_granular = [0.1, 1., 0.1]
             granular_dis = 0.
             
+            spoon_scale = 1.
+            spoon_mass = 10.
+            spoon_rotation = 0.1
+            
             draw_mesh = 1
             
             self.scene_params = np.array([radius, *bowl_pos, *num_granular_ft, granular_scale, *pos_granular, granular_dis, 
-                                          draw_mesh, bowl_mass, bowl_scale])
+                                          draw_mesh, bowl_mass, bowl_scale, spoon_scale, spoon_mass, spoon_rotation])
             
             temp = np.array([0])
             pyflex.set_scene(35, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
@@ -804,10 +816,9 @@ class FlexEnv(gym.Env):
         
         for _ in range(30):
             pyflex.step()
-        # print('num_particles:', self.get_num_particles())
         
         self.count = count
-        # initial pose render
+        ### initial pose render
         if dir != None:
             for j in range(len(self.camPos_list)):
                 pyflex.set_camPos(self.camPos_list[j])
@@ -818,14 +829,21 @@ class FlexEnv(gym.Env):
                 os.system('mkdir -p %s' % (cam_dir))
 
                 img = self.render()
+                # rgb and depth images
                 cv2.imwrite(os.path.join(cam_dir, '%d_color.jpg' % self.count), img[:, :, :3][..., ::-1])
                 cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % self.count), (img[:, :, -1]*1000).astype(np.uint16))
+                
+                # particles
                 if j == 0:
+                    particles = self.get_positions().reshape(-1, 4)
+                    # if self.fps and particles.shape[0] < self.particle_num_threshold:
+                    #     # sample points
+                        
                     with open(os.path.join(cam_dir, '%d_particles.npy' % self.count), 'wb') as f:
-                        np.save(f, self.get_positions().reshape(-1, 4))
+                        np.save(f, particles)
             self.count += 1
             
-        # update robot actions
+        # update robot shape states
         for idx, joint in enumerate(self.rest_joints):
             pyflex.set_shape_states(self.robot_to_shape_states(pyflex.resetJointState(self.flex_robot_helper, idx, joint)))
         
@@ -866,6 +884,7 @@ class FlexEnv(gym.Env):
                         self.cam_intrinsic_params[j] = self.get_camera_intrinsics()
                         self.cam_extrinsic_matrix[j] = self.get_camera_extrinsics()
             self.count += 1
+        
         return self.count
         
     def step(self, action, prev_counts=0, dir=None):
@@ -899,16 +918,13 @@ class FlexEnv(gym.Env):
             way_points = [self.last_ee, s_2d, e_2d]
         else:
             if self.grasp:
-                way_points = [s_2d + [0., 0., 0.5], s_2d, s_2d, s_2d + [0., 0., 0.7], e_2d + [0., 0., 0.7], e_2d + [0., 0., 0.2]]
-                # way_points.append(e_2d + [-1.5, 0., 1.])
-                # way_points.append(e_2d + [-1.5, -1., 0.8])
-                # way_points.append(e_2d + [0., -1., 1.])
-                
-                # way_points = [s_2d + [0., 0., 0.5], s_2d, s_2d, e_2d]
-                # way_points.append(e_2d + [0., 0., 0.5])
-                # way_points.append(e_2d + [1., 0.1, 0.5])
-                # way_points.append(e_2d + [1., 0.1, 0.])
-                # way_points.append(e_2d + [-1., 0.2, 0.])
+                # way_points = [s_2d + [0., 0., 0.5], s_2d, s_2d, s_2d + [0., 0., 0.7], e_2d + [0., 0., 0.7], e_2d + [0., 0., 0.2]]
+                way_points = [s_2d + [0., 0., 0.5], s_2d, s_2d, s_2d + [0., 0., 1.3], e_2d + [0., 0., 1.3], e_2d + [0., 0., 0.5], e_2d + [0., 0., 1.3]]
+                # way_points.append([e_2d + [0., 0., 1.3]])
+                # way_points.append(e_2d + [0.2, -0.2, 0.5])
+                # way_points.append(e_2d + [0.2, 0.2, 0.5])
+                # way_points.append(e_2d + [0.2, 0.2, 1.3])
+       
                 
             else:
                 way_points = [s_2d + [0., 0., 0.2], s_2d, e_2d, e_2d + [0., 0., 0.2]]
@@ -961,7 +977,7 @@ class FlexEnv(gym.Env):
                         close = 0
                         start = 0
                         end = 0.7 #wood:0.35 #0.7
-                        close_steps = 500 #500
+                        close_steps = 50 #500
                         for j in range(close_steps):
                             robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper) # 9: left finger; 12: right finger
                             left_finger_pos, right_finger_pos = robot_shape_states[9][:3], robot_shape_states[12][:3]
@@ -971,7 +987,7 @@ class FlexEnv(gym.Env):
                             
                             if j == 0:
                                 # fine the k pick point
-                                pick_k = 50 #wood:100 #rope:5 #cloth:80
+                                pick_k = 500 #wood:100 #rope:5 #cloth:80
                                 left_min_dist, left_pick_index = find_min_distance(left_finger_pos, obj_pos, pick_k)
                                 right_min_dist, right_pick_index = find_min_distance(right_finger_pos, obj_pos, pick_k)
                                 if self.obj in ['rigid_granular']:

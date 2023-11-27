@@ -21,6 +21,10 @@ import open3d as o3d
 
 from PIL import Image, ImageEnhance
 
+"""
+From Yixuan Wang: Dyn-res-pile-manip: https://github.com/WangYixuan12/dyn-res-pile-manip 
+"""
+
 def rect_from_coord(uxi, uyi, uxf, uyf, bar_width):
     # transform into angular coordinates
     theta = np.arctan2(uyf - uyi, uxf - uxi)
