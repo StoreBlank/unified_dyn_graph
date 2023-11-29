@@ -3,6 +3,9 @@ import numpy as np
 import pyflex
 import time
 
+def rand_float(lo, hi):
+    return np.random.rand() * (hi - lo) + lo
+
 def quatFromAxisAngle(axis, angle):
     axis /= np.linalg.norm(axis)
 
@@ -21,12 +24,12 @@ time_step = 500 # 120
 
 pyflex.init(False)
 
-radius = 0.03
+radius = 0.01
 bowl_pos = [-0.3, 0.5, -0.3]
 bowl_mass = 1e100
-bowl_scale = 1.2
+bowl_scale = 1.5
 
-num_granular_ft = [5, 5, 5] # low 5, medium 10, high 20
+num_granular_ft = [5, 2, 5] # low 5, medium 10, high 20
 granular_scale = 0.1
 pos_granular = [0.1, 1., 0.1]
 granular_dis = 0.
@@ -35,7 +38,7 @@ spoon_scale = 1.
 spoon_mass = 10.
 spoon_rotation = 0.1
 
-draw_mesh = 1
+draw_mesh = 0
 
 scene_params = np.array([radius, *bowl_pos, *num_granular_ft, granular_scale, *pos_granular, granular_dis, 
                                 draw_mesh, bowl_mass, bowl_scale, spoon_scale, spoon_mass, spoon_rotation])
@@ -64,19 +67,19 @@ pyflex.add_mesh('/home/baoyu/2023/unified_dyn_graph/assets/mesh/bowl.obj', bowl_
                 bowl_color, bowl_trans, bowl_quat, False)
 obj_shape_states[0] = np.concatenate([bowl_trans, bowl_trans, bowl_quat, bowl_quat])
 
-spoon_scale = 8.
-spoon_trans = np.array([0.5, table_height+0.1, -1.])
+spoon_scale = 12.
+spoon_trans = np.array([0.5, table_height+0.1, -0.5])
 spoon_quat = quatFromAxisAngle(np.array([1., 0., 0.]), np.deg2rad(270.))
 spoon_color = np.array([204/255, 204/255, 1.])
 pyflex.add_mesh('/home/baoyu/2023/unified_dyn_graph/assets/mesh/spoon.obj', spoon_scale, 0,
                 spoon_color, spoon_trans, spoon_quat, False)
-obj_shape_states[1] = np.concatenate([spoon_trans, spoon_trans, spoon_quat, spoon_quat])
+# obj_shape_states[1] = np.concatenate([spoon_trans, spoon_trans, spoon_quat, spoon_quat])
+spoon_prev = spoon_trans
 
-
-shape_states = np.zeros((3, 14))
-shape_states[0] = table_shape_states
-shape_states[1:] = obj_shape_states
-pyflex.set_shape_states(shape_states)
+# shape_states = np.zeros((3, 14))
+# shape_states[0] = table_shape_states
+# shape_states[1:] = obj_shape_states
+# pyflex.set_shape_states(shape_states)
 
 ## Light setting
 pyflex.set_screenWidth(720)
@@ -94,13 +97,60 @@ camAngle = np.array([np.deg2rad(45.), -np.deg2rad(45.), 0.])
 pyflex.set_camPos(camPos)
 pyflex.set_camAngle(camAngle)
 
-for i in range(100):
-    # pyflex.step(capture=1, path=os.path.join(des_dir, 'render_%d.tga' % i))
-    pyflex.step()
+pyflex.step()
+
+lim_y = 2.
+lim_z = 0.5
+lim_x = 0.6
 
 # update the shape states for each time step
-for i in range(300):
+for i in range(800):
+    n_stay_still = 40
+    if i < n_stay_still:
+        angle_cur = 0.
+        spoon_angle_delta = 0.
+        spoon_pos_delta = np.zeros(3)
+    else:
+        # spoon y position
+        scale = 0.00001
+        spoon_pos_delta[1] += scale
+        spoon_trans[1] += spoon_pos_delta[1]
+        spoon_trans[1] = np.clip(spoon_trans[1], 0., lim_y)
+        
+        # spoon z position
+        scale = 0.00005
+        spoon_pos_delta[2] += scale
+        spoon_trans[2] += spoon_pos_delta[2]
+        spoon_trans[2] = np.clip(spoon_trans[2], -lim_z, lim_z)
+        
+        # spoon x position
+        scale = 0.00001
+        spoon_pos_delta[0] -= scale
+        spoon_trans[0] += spoon_pos_delta[0]
+        spoon_trans[0] = np.clip(spoon_trans[0], -lim_x, lim_x)
+        
+        # spoon angle 
+        
     
+    # set shape states
+    shape_states = np.zeros((3, 14))
+    shape_states[0] = table_shape_states
+    
+    # set shape state for table
+    shape_states[0] = table_shape_states
+    
+    # set shape state for bowl
+    shape_states[1] = obj_shape_states[0]
+    
+    # set shape state for spoon
+    shape_states[2, :3] = spoon_trans
+    shape_states[2, 3:6] = spoon_prev
+    shape_states[2, 6:10] = spoon_quat
+    shape_states[2, 10:] = spoon_quat
+    
+    pyflex.set_shape_states(shape_states)
+    
+    pyflex.step()
     
 
 pyflex.clean()
