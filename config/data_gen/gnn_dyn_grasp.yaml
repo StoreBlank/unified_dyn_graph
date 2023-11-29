@@ -1,0 +1,17 @@
+dataset:
+  folder: 'data_dense' #"/media/baoyu/sumsung"  #'data_dense' #"/media/baoyu/sumsung/granular"
+  n_worker: 1
+  n_episode: 1
+  n_timestep: 1
+  obj: "bowl_granular" 
+  wkspc_w: 4.0
+  headless: False
+  robot_type: 'xarm6' 
+  cont_motion: False
+  camera_view: 2 # 0, 1, 2, 3, 4
+  camera_radius: 5.5
+  dt: 0.1
+  gripper: False
+  grasp: False
+  physics: "random" # "random" or "grid"
+  fps: True

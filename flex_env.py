@@ -209,12 +209,12 @@ class FlexEnv(gym.Env):
         for j in range(8, self.num_joints):
             pyflex.resetJointState(self.flex_robot_helper, j, 0.0)
     
-    ### robot
+    ### shape states
     def robot_to_shape_states(self, robot_states):
         n_robot_links = robot_states.shape[0]
         n_table = 1
         
-        if (self.obj_shape_states == None).all():
+        if self.obj_shape_states == None:
             shape_states = np.zeros((n_table + n_robot_links, 14))
             shape_states[:n_table] = self.table_shape_states # set shape states for table
             shape_states[n_table:] = robot_states # set shape states for robot

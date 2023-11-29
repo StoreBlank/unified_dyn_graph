@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import time
 import yaml
-from flex_env import FlexEnv
+from flex_env_grasp import FlexEnv
 import trimesh
 import json
 import pickle
@@ -16,7 +16,7 @@ def load_yaml(filename):
     return yaml.safe_load(open(filename, 'r'))
 
 # load config
-config = load_yaml("config/data_gen/gnn_dyn.yaml")
+config = load_yaml("config/data_gen/gnn_dyn_grasp.yaml")
 data_dir = config['dataset']['folder']
 n_worker = config['dataset']['n_worker']
 n_episode = config['dataset']['n_episode']

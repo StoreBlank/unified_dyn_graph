@@ -209,7 +209,8 @@ class FlexEnv(gym.Env):
         for j in range(8, self.num_joints):
             pyflex.resetJointState(self.flex_robot_helper, j, 0.0)
     
-    ### robot
+    
+    ### shape state
     def robot_to_shape_states(self, robot_states):
         n_robot_links = robot_states.shape[0]
         n_table = 1
@@ -240,6 +241,8 @@ class FlexEnv(gym.Env):
                 index = index + 1
                 
         pyflex.set_shape_states(self.robot_to_shape_states(pyflex.getRobotShapeStates(self.flex_robot_helper)))
+    
+    
     
     ### cameras 
     def set_camera(self):
@@ -284,362 +287,11 @@ class FlexEnv(gym.Env):
         self.cam_intrinsic_params = np.zeros([len(self.camPos_list), 4]) # [fx, fy, cx, cy]
         self.cam_extrinsic_matrix = np.zeros([len(self.camPos_list), 4, 4]) # [R, t]
     
+    
+    
     ### TODO: write the scene as a class
     def init_scene(self, obj, property_params):
-        if obj == 'Tshirt':
-            # cloth_dir = "assets/cloth3d/train"
-            # # random choose a folder in cloth_dir
-            # cloth_folder = os.path.join(cloth_dir, np.random.choice(os.listdir(cloth_dir)))
-            # path = os.path.join(cloth_folder, 'Tshirt_processed.obj')
-            path = "assets/cloth3d/Tshirt2.obj"
-            
-            retval = load_cloth(path)
-            mesh_verts = retval[0]
-            mesh_faces = retval[1]
-            mesh_stretch_edges, mesh_bend_edges, mesh_shear_edges = retval[2:]
-
-            mesh_verts = mesh_verts * 3.
-            
-            # cloth_pos = [rand_float(-1., 0.), rand_float(1., 3.), rand_float(-0.5, 0.5)]
-            cloth_pos = [-0.9, 1., 0.]
-            cloth_pos = [-0.5, 1., -0.5]
-            cloth_size = [50, 50]
-            stretch_stiffness = 0.1 #rand_float(0.1, 1.0)
-            bend_stiffness = 0.1 #rand_float(0.1, 1.0)
-            shear_stiffness = 0.1 #rand_float(0.1, 1.0)
-            stiffness = [stretch_stiffness, bend_stiffness, shear_stiffness] # [stretch, bend, shear]
-            cloth_mass = 0.5 #rand_float(1., 5.)
-            particle_r = 0.03 #0.00625 #rand_float(0.005, 0.015) #0.00625
-            render_mode = 2
-            flip_mesh = 0
-            
-            dynamicFriction = 0.5 #rand_float(0.1, 1.) 
-            staticFriction = 0.5 #rand_float(0.1, 1.)
-            particleFriction = 0.5 #rand_float(0.1, 1.)
-            
-            self.scene_params = np.array([
-                *cloth_pos,
-                *cloth_size,
-                *stiffness,
-                cloth_mass,
-                particle_r,
-                render_mode,
-                flip_mesh, 
-                dynamicFriction, staticFriction, particleFriction])
-            
-            pyflex.set_scene(
-                    29,
-                    self.scene_params,
-                    mesh_verts.reshape(-1),
-                    mesh_stretch_edges.reshape(-1),
-                    mesh_bend_edges.reshape(-1),
-                    mesh_shear_edges.reshape(-1),
-                    mesh_faces.reshape(-1),
-                    0)
-            
-            # cloth
-            # temp = np.array([0])
-            # pyflex.set_scene(29, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
-            
-            self.property = {'particle_radius': particle_r,
-                             'num_particles': self.get_num_particles(),
-                             'cloth_mass': cloth_mass,
-                             'stretch_stiffness': stretch_stiffness,
-                             'bend_stiffness': bend_stiffness,
-                             'shear_stiffness': shear_stiffness,
-                             'dynamic_friction': dynamicFriction,
-                             'static_friction': staticFriction,
-                             'particle_friction': particleFriction,}
-        
-        elif obj == 'rope':
-            
-            self.particle_num_threshold = 500 # for fps
-            
-            radius = 0.03
-            
-            if self.physics == "random":
-                length = 0.5 #rand_float(0.5, 2.5)
-                thickness = 1.0 #rand_float(1., 3.)
-                scale = np.array([length, thickness, thickness]) * 50 # length, extension, thickness
-                cluster_spacing = 4 #rand_float(2, 8) # change the stiffness of the rope
-                dynamicFriction = 0.7 #rand_float(0.1, 0.7)
-            elif self.physics == "grid":
-                length = property_params['length']
-                thickness = property_params['thickness']
-                scale = np.array([length, thickness, thickness]) * 50 # length, extension, thickness
-                cluster_spacing = property_params['cluster_spacing']
-                dynamicFriction = property_params['dynamic_friction']
-            
-            trans = [-0.5, 2., 0.]
-            
-            # z_rotation = rand_float(70, 80)
-            y_rotation = 0. #np.random.choice([0, 30, 45, 60])
-            rot = Rotation.from_euler('xyz', [0, y_rotation, 0.], degrees=True)
-            rotate = rot.as_quat()
-            
-            cluster_radius = 0.
-            cluster_stiffness = 0.2
-
-            link_radius = 0. 
-            link_stiffness = 1.
-
-            global_stiffness = 0.
-
-            surface_sampling = 0.
-            volume_sampling = 4.
-
-            skinning_falloff = 5.
-            skinning_max_dist = 100.
-
-            cluster_plastic_threshold = 0.
-            cluster_plastic_creep = 0.
-
-            particleFriction = 0.25
-            
-            draw_mesh = 1
-
-            relaxtion_factor = 1.
-            collisionDistance = radius * 0.5
-            
-            self.scene_params = np.array([*scale, *trans, radius, 
-                                            cluster_spacing, cluster_radius, cluster_stiffness,
-                                            link_radius, link_stiffness, global_stiffness,
-                                            surface_sampling, volume_sampling, skinning_falloff, skinning_max_dist,
-                                            cluster_plastic_threshold, cluster_plastic_creep,
-                                            dynamicFriction, particleFriction, draw_mesh, relaxtion_factor, 
-                                            *rotate, collisionDistance])
-            
-            temp = np.array([0])
-            pyflex.set_scene(26, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
-
-            self.property = {'particle_radius': radius,
-                             'num_particles': self.get_num_particles(),
-                             'length': scale[0],
-                             'thickness': scale[2],
-                             'dynamic_friction': dynamicFriction,
-                             'cluster_spacing': cluster_spacing,
-                             'global_stiffness': global_stiffness,}
-        
-        elif obj == 'carrots':
-            global_scale = 5
-            rand_scale = rand_float(0.1, 0.2) * global_scale / 7.0
-            max_scale = rand_scale
-            min_scale = rand_scale
-            blob_r = rand_float(0.2, 1.0)
-           
-            x = - blob_r * global_scale / 8.0
-            y = 0.5
-            z = - blob_r * global_scale / 8.0
-            
-            if 0.8 <= blob_r < 1.0 or (0.15 * global_scale / 7.0) <= rand_scale < (0.2 * global_scale / 7.0):
-                space_scale = rand_float(1.1, 2.)
-            else:
-                space_scale = rand_float(1.1, 3.)
-            inter_space = space_scale * max_scale
-            
-            num_x = int(abs(x/1.5) / max_scale + 1) * 2
-            num_y = np.random.randint(1, 4)
-            num_z = int(abs(z/1.5) / max_scale + 1) * 2
-            x_off = np.random.uniform(-1./100., 1./100.)
-            z_off = np.random.uniform(-1./100., 1./100.)
-            x += x_off
-            z += z_off
-            num_carrots = num_x * num_z * num_y 
-
-            add_singular = 0.0
-            add_sing_x = -1
-            add_sing_y = -1
-            add_sing_z = -1
-            add_noise = 0.0
-            
-            radius = 0.03
-
-            staticFriction = 1.0
-            dynamicFriction = rand_float(0.1, 1.0)
-            draw_skin = 1 # 0: point; 1: mesh
-            min_dist = 5.0
-            max_dist = 20.0
-            
-            mass = rand_float(0.1, 10.) #10g-1000g
-
-            self.scene_params = np.array([max_scale, min_scale, x, y, z, staticFriction, dynamicFriction,
-                        draw_skin, num_carrots, min_dist, max_dist, num_x, num_y, num_z, inter_space,
-                        add_singular, add_sing_x, add_sing_y, add_sing_z, add_noise, radius, mass])
-
-            temp = np.array([0])
-            pyflex.set_scene(22, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
-            
-            self.property = {'particle_radius': radius,
-                             'num_particles': self.get_num_particles(),
-                             'rand_scale': rand_scale,
-                             'blob_r': blob_r,
-                             'num_carrots': num_carrots,
-                             'dynamic_friction': dynamicFriction,
-                             'mass': mass}
-        
-        elif obj == 'coffee':
-            radius = 0.03
-            
-            global_scale = 4
-            scale = rand_float(0.2, 0.3) * global_scale / 8.0
-            
-            blob_r = rand_float(0.2, 0.8)
-            x = - blob_r * global_scale / 8.0
-            y = 0.5
-            z = - blob_r * global_scale / 8.0
-            
-            if 0.5 <= blob_r < 0.8:
-                space_scale = rand_float(1.1, 2.)
-            else:
-                space_scale = rand_float(1.1, 3.)
-            inter_space = space_scale * scale
-            
-            num_x = int(abs(x/1.) / scale + 1) * 2
-            num_y = np.random.randint(1, 4)
-            num_z = int(abs(z/1.) / scale + 1) * 2
-            num_coffee = num_x * num_z * num_y 
-            
-            mass = rand_float(0.1, 10.) #10g-1000g
-            
-            staticFriction = 0.0
-            dynamicFriction = rand_float(0.1, 1.0)
-            draw_skin = 1
-            radius = 0.03
-            
-            self.scene_params = np.array([
-                scale, x, y, z, staticFriction, dynamicFriction, draw_skin, radius,
-                num_x, num_y, num_z, inter_space, mass])
-
-            temp = np.array([0])
-            pyflex.set_scene(20, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
-            
-            self.property = {'particle_radius': radius,
-                             'num_particles': self.get_num_particles(),
-                             'rand_scale': scale,
-                             'blob_r': blob_r,
-                             'num_coffee': num_coffee,
-                             'dynamic_friction': dynamicFriction,
-                             'mass': mass}
-
-        elif obj == 'mustard_bottle':
-            x = -0.
-            y = 1. #3.5
-            z = 0. #-3.3
-            size = 0.8
-            obj_type = 20
-            draw_mesh = 1
-
-            radius = 0.05
-            mass = 4.31 #431g
-            rigidStiffness = 1.
-            dynamicFriction = 0.5
-            staticFriction = 0.
-            viscosity = 2.
-            
-            rotation = rand_float(0., 360.)
-            springStiffness = 0.
-
-            self.scene_params = np.array([x, y, z, size, obj_type, draw_mesh,
-                                          radius, mass, rigidStiffness, dynamicFriction, staticFriction, 
-                                          viscosity, rotation, springStiffness])
-            
-            temp = np.array([0])
-            pyflex.set_scene(25, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
-
-            self.property = {'particle_radius': radius,
-                             'num_particles': self.get_num_particles(),
-                             'mass': mass,
-                             'rigid_stiffness': rigidStiffness,
-                             'dynamic_friction': dynamicFriction,
-                             'viscosity': viscosity,}
-        
-        elif obj == 'rigid_objects':
-            
-            obj_types = range(3, 21)
-            obj_sizes = [0.8, 0.8, 0.7, 0.8, 0.6, 0.6, 0.6, 0.2, #3-10
-                         0.3, 0.3, 0.4, 0.4, 0.35, 0.8, 0.8, 0.8, 0.8, 0.8] #11-20
-            
-            index = np.random.randint(0, len(obj_types))
-            
-            x = -0.1
-            y = 1. #3.5
-            z = 0.4 #-3.3
-            obj_type = obj_types[index]
-            size = obj_sizes[index]
-            draw_mesh = 1
-
-            radius = 0.05
-            mass = rand_float(0.1, 10.) #10g-1000g
-            rigidStiffness = 1.
-            dynamicFriction = rand_float(0.1, 0.7)
-            staticFriction = 0.
-            viscosity = 2.
-            
-            rotation = rand_float(0., 360.)
-            springStiffness = 0.
-
-            self.scene_params = np.array([x, y, z, size, obj_type, draw_mesh,
-                                          radius, mass, rigidStiffness, dynamicFriction, staticFriction, 
-                                          viscosity, rotation, springStiffness])
-            
-            temp = np.array([0])
-            pyflex.set_scene(25, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
-
-            self.property = {'object_type': obj_type,
-                            'particle_radius': radius,
-                            'num_particles': self.get_num_particles(),
-                            'mass': mass,
-                            'dynamic_friction': dynamicFriction}
-        
-        elif obj == 'multi_ycb':
-            x = 0.
-            y = 0.
-            z = 0.
-            size = 1.
-            self.scene_params = np.array([x, y, z, size])
-            temp = np.array([0])
-            pyflex.set_scene(28, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
-        
-        ### object-object interactions
-        elif obj == 'rigid_rope': #debug
-            radius = 0.03
-            
-            rigid_type = 6
-            rigid_dim = [0., 1., 0.]
-            rigid_scale = 0.6
-            rigid_mass = 1.
-            rotation = 0.
-            
-            #length = rand_float(0.5, 1.5)
-            # thickness = rand_float(1., 2.)
-            #scale = np.array([length, rand_float(1., 2.), rand_float(1., 2.)]) * 80 # length, extension, thickness
-            rope_scale = np.array([1.5, 1., 2.]) * 50.
-            rope_trans = [-1., 2., 0.]
-            
-            cluster_spacing = 4. #rand_float(4, 8) # change the stiffness of the rope
-            cluster_radius = 0.
-            cluster_stiffness = 0.2
-            
-            # rope_z_rotation = rand_float(70, 80)
-            # rope_y_rotation = np.random.choice([0, 30, 45, 90, 180])
-            rot = Rotation.from_euler('xyz', [0, 0, 0], degrees=True)
-            rope_rotate = rot.as_quat()
-                        
-            dynamicFriction = 0.5 
-            staticFriction = 0.
-            #particleFriction (?): for object-object friction?
-            viscosity = 0.
-            draw_mesh = 0
-            
-            self.scene_params = np.array([radius, rigid_type, *rigid_dim, rigid_scale, rigid_mass, rotation,
-                                          *rope_scale, *rope_trans, cluster_spacing, cluster_radius, cluster_stiffness, *rope_rotate,
-                                          dynamicFriction, staticFriction, viscosity, draw_mesh])
-            
-
-            temp = np.array([0])
-            pyflex.set_scene(31, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
-        
-        elif obj == 'rigid_granular':
+        if obj == 'rigid_granular':
             # rigid
             x = -0.5
             y = 1. #3.5
@@ -668,79 +320,6 @@ class FlexEnv(gym.Env):
             temp = np.array([0])
             pyflex.set_scene(32, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
         
-        elif obj == 'rigid_cloth':
-            
-            # TODO: qualitative result on parameters
-            radius = 0.03
-            
-            rigid_type = 6
-            rigid_dim = [-0., 0.7, -0.]
-            rigid_scale = 0.6
-            rigid_mass = 1. #TODO
-            rotation = 0.
-            
-            cloth_dim = [-1., 0.6, -0.5]
-            stretch_stiffness = 1. #rand_float(0.1, 1.0)
-            bend_stiffness = 1. #rand_float(0.1, 1.0)
-            shear_stiffness = 1. #rand_float(0.1, 1.0)
-            stiffness = [stretch_stiffness, bend_stiffness, shear_stiffness] 
-            cloth_mass = 1. #TODO
-            cloth_size = [60., 60., 1.]
-            
-            dynamicFriction = 0.5 #0.1, 0.5, 0.7 #TODO
-            staticFriction = 1. #0.1, 0.3, 0.5 #TODO
-            particleFriction = 1.2
-            #particleFriction (?): for object-object friction?
-            viscosity = 0.
-            draw_mesh = 1
-            
-            print('dynamicFriction:', dynamicFriction)
-            
-            self.scene_params = np.array([radius, rigid_type, *rigid_dim, rigid_scale, rigid_mass, rotation,
-                                          *cloth_dim, *stiffness, cloth_mass, *cloth_size,
-                                          dynamicFriction, staticFriction, viscosity, draw_mesh])
-            
-
-            temp = np.array([0])
-            pyflex.set_scene(33, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
-        
-        elif obj == 'rope_cloth': #TODO: adjust the parameters
-            radius = 0.03
-            
-            cloth_dim = [-1., 1., -0.5]
-            stretch_stiffness = 1. #rand_float(0.1, 1.0)
-            bend_stiffness = 1. #rand_float(0.1, 1.0)
-            shear_stiffness = 1. #rand_float(0.1, 1.0)
-            stiffness = [stretch_stiffness, bend_stiffness, shear_stiffness] 
-            cloth_mass = .1 #TODO
-            cloth_size = [60., 60., 1.]
-            
-            rope_scale = np.array([1.5, 1.5, 2.]) * 50.
-            rope_trans = [-1.2, 2., 0.]
-            
-            cluster_spacing = 2. #rand_float(4, 8) # change the stiffness of the rope
-            cluster_radius = 0.
-            cluster_stiffness = 0.2
-            
-            # rope_z_rotation = rand_float(70, 80)
-            # rope_y_rotation = np.random.choice([0, 30, 45, 90, 180])
-            rot = Rotation.from_euler('xyz', [0, 0, 0], degrees=True)
-            rope_rotate = rot.as_quat()
-            
-            dynamicFriction = 0.3 #0.1, 0.5, 0.7 #TODO
-            staticFriction = 0.3 #0.1, 0.3, 0.5 #TODO
-            particleFriction = 0.
-            #particleFriction (?): for object-object friction?
-            viscosity = 0.
-            draw_mesh = 1
-            
-            self.scene_params = np.array([radius, *cloth_dim, *stiffness, cloth_mass, *cloth_size,
-                                          *rope_scale, *rope_trans, cluster_spacing, cluster_radius, cluster_stiffness, *rope_rotate,
-                                          dynamicFriction, staticFriction, viscosity, draw_mesh, particleFriction])
-            
-            temp = np.array([0])
-            pyflex.set_scene(34, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
-        
         elif obj == 'bowl_granular':
             
             radius = 0.03
@@ -763,7 +342,7 @@ class FlexEnv(gym.Env):
                                           draw_mesh, bowl_mass, bowl_scale, spoon_scale, spoon_mass, spoon_rotation])
             
             temp = np.array([0])
-            pyflex.set_scene(35, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+            pyflex.set_scene(35, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0)
             
         else:
             raise ValueError('obj not defined')
@@ -793,7 +372,7 @@ class FlexEnv(gym.Env):
         bowl_trans = np.array([0.5, table_height+0.4, 0.5])
         bowl_quat = quatFromAxisAngle(np.array([1., 0., 0.]), np.deg2rad(270.))
         bowl_color = np.array([204/255, 204/255, 1.])
-        pyflex.add_mesh('/home/baoyu/2023/unified_dyn_graph/assets/mesh/bowl_2.obj', bowl_scale, 0, 
+        pyflex.add_mesh('/home/baoyu/2023/unified_dyn_graph/assets/mesh/bowl.obj', bowl_scale, 0, 
                         bowl_color, bowl_trans, bowl_quat, False)
         self.obj_shape_states[0] = np.concatenate([bowl_trans, bowl_trans, bowl_quat, bowl_quat])
         
