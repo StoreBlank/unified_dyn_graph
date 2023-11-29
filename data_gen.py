@@ -73,7 +73,7 @@ def gen_data(info):
         #       [0.2, -0.5, 0.2, 0.]]
         
         ## scooping
-        us = [[0., 1.3, 0.1, -0.2],]
+        # us = [[0., 1.3, 0.1, -0.2],]
 
         # time step
         img = env.render()
@@ -94,10 +94,10 @@ def gen_data(info):
                 
                 # u = [-1., 0., 1., 0.] #-x -> +x
                 
-                # center_x, center_z = env.get_obj_center()
-                # u = [center_x, 2.0, center_x, -1.5] #-z -> +z
+                center_x, center_z = env.get_obj_center()
+                u = [center_x, 2.0, center_x, -1.5] #-z -> +z
                 
-                u = us[idx_timestep]
+                # u = us[idx_timestep]
         
                 # step
                 prev_steps = n_steps

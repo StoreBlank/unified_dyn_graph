@@ -62,7 +62,7 @@ class FlexRobotHelper:
             link = links[i]
             if link.find_all('geometry'):
                 mesh_name = link.find_all('geometry')[0].find_all('mesh')[0].get('filename')
-                pyflex.add_mesh(os.path.join(robot_path_par, mesh_name), globalScaling, 0, np.ones(3), False)
+                pyflex.add_mesh(os.path.join(robot_path_par, mesh_name), globalScaling, 0, np.ones(3), np.zeros(3), np.zeros(4), False)
                 self.num_meshes += 1
             else:
                 self.has_mesh[i] = False
@@ -180,9 +180,9 @@ class FlexEnv(gym.Env):
         self.count = 0
         self.fps = config['dataset']['fps']
         self.particle_num_threshold = 0
+        self.obj_shape_states = None
         
-    def robot_to_shape_states(self, robot_states):
-        return np.concatenate([self.wall_shape_states, robot_states], axis=0)
+    
     
     ###TODO: action class
     def _set_pos(self, picker_pos, particle_pos):
@@ -208,6 +208,24 @@ class FlexEnv(gym.Env):
         """For gripper and grasp task."""
         for j in range(8, self.num_joints):
             pyflex.resetJointState(self.flex_robot_helper, j, 0.0)
+    
+    ### robot
+    def robot_to_shape_states(self, robot_states):
+        n_robot_links = robot_states.shape[0]
+        n_table = 1
+        
+        if (self.obj_shape_states == None).all():
+            shape_states = np.zeros((n_table + n_robot_links, 14))
+            shape_states[:n_table] = self.table_shape_states # set shape states for table
+            shape_states[n_table:] = robot_states # set shape states for robot
+        else:
+            n_objs = self.obj_shape_states.shape[0]
+            shape_states = np.zeros((n_table + n_objs + n_robot_links, 14))
+            shape_states[:n_table] = self.table_shape_states # set shape states for table
+            shape_states[n_table:n_table+n_objs] = self.obj_shape_states # set shape states for objects
+            shape_states[n_table+n_objs:] = robot_states # set shape states for robot
+        
+        return shape_states
                         
     def reset_robot(self, jointPositions = np.zeros(13).tolist()):  
         index = 0
@@ -223,6 +241,7 @@ class FlexEnv(gym.Env):
                 
         pyflex.set_shape_states(self.robot_to_shape_states(pyflex.getRobotShapeStates(self.flex_robot_helper)))
     
+    ### cameras 
     def set_camera(self):
         cam_dis = 3.
         cam_height = 4.5
@@ -724,32 +743,12 @@ class FlexEnv(gym.Env):
         
         elif obj == 'bowl_granular':
             
-            # # add bowl
-            # bowl_path = '/home/baoyu/2023/dyn-res-pile-manip/PyFleX/data/box.ply'
-            # pyflex.add_mesh(bowl_path, 1., 0, np.ones(3), False)
-            
-            # global_scale = 4
-            # scale = 0.2 * global_scale / 8.0
-            # x = -0.9 * global_scale / 8.0
-            # y = 0.5
-            # z = -0.9 * global_scale / 8.0
-            # staticFriction = 0.0
-            # dynamicFriction = 1.0
-            # draw_skin = 0.
-            # num_coffee = 200 # [200, 1000]
-            # radius = 0.033
-            # self.scene_params = np.array([
-            #     scale, x, y, z, staticFriction, dynamicFriction, draw_skin, num_coffee, radius])
-
-            # temp = np.array([0])
-            # pyflex.set_scene(20, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
-            
             radius = 0.03
             bowl_pos = [-0.3, 0.5, -0.3]
             bowl_mass = 1e100
             bowl_scale = 1.2
             
-            num_granular_ft = [5, 10, 5] # low 5, medium 10, high 20
+            num_granular_ft = [5, 5, 5] # low 5, medium 10, high 20
             granular_scale = 0.1
             pos_granular = [0.1, 1., 0.1]
             granular_dis = 0.
@@ -773,34 +772,21 @@ class FlexEnv(gym.Env):
         obj = self.obj
         self.init_scene(obj, property_params)
         
-        # camera setting
+        ## camera setting
         self.set_camera()
         self.init_multiview_camera()
         
-        # add table board
-        self.wall_shape_states = np.zeros((1, 14))
-        wall_height = 0.5
-        if self.obj == 'multi_ycb':
-            halfEdge = np.array([self.wkspc_w, wall_height, self.wkspc_w])
-        else:
-            halfEdge = np.array([4., wall_height, 4.])
+        ## add table board
+        table_height = 0.5
+        halfEdge = np.array([4., table_height, 4.])
         center = np.array([0.0, 0.0, 0.0])
         quats = quatFromAxisAngle(axis=np.array([0., 1., 0.]), angle=0.)
         hideShape = 0
         color = np.ones(3) * (160. / 255.)
         pyflex.add_box(halfEdge, center, quats, hideShape, color)
-        self.wall_shape_states[0] = np.concatenate([center, center, quats, quats])
-
-        # add slope for random initial configurations 
-        # halfEdge = np.array([1., 0.0001, 1.])
-        # center = np.array([0., 1., -2.6])
-        # quats = quatFromAxisAngle(axis=np.array([1., 0., 0.]), angle=np.deg2rad(40.))
-        # hideShape = 1
-        # color = np.ones(3) * (160. / 255.)
-        # pyflex.add_box(halfEdge, center, quats, hideShape, color)
-        # self.wall_shape_states[1] = np.concatenate([center, center, quats, quats])
-
-        # add robot
+        self.table_shape_states = np.concatenate([center, center, quats, quats])
+        
+        ## add robot
         if self.gripper:
             robot_base_pos = [-3., 0., 1.]
             robot_base_orn = [0, 0, 0, 1]
