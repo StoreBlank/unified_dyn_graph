@@ -21,30 +21,27 @@ def quatFromAxisAngle(axis, angle):
 
 pyflex.init(False)
 
-radius = 0.02
-bowl_pos = [-0.3, 0.5, -0.3]
-bowl_mass = 1e100
-bowl_scale = 1.5
+# water pos
+lower_x = 0.5
+lower_y = 1.
+lower_z = 0.5 
+# water cube size
+dim_x = 15
+dim_y = 40
+dim_z = 15
 
-num_granular_ft = [5, 50, 5] # low 5, medium 10, high 20
-granular_scale = 0.15
-pos_granular = [0., 1., 0.]
-granular_dis = 0.
+lower = np.array([lower_x, lower_y, lower_z])
+fluid_pos = np.array([dim_x, dim_y, dim_z])
 
-spoon_scale = 1.
-spoon_mass = 10.
-spoon_rotation = 0.1
-
-draw_mesh = 0
-
-scene_params = np.array([radius, *bowl_pos, *num_granular_ft, granular_scale, *pos_granular, granular_dis, 
-                                draw_mesh, bowl_mass, bowl_scale, spoon_scale, spoon_mass, spoon_rotation])
+viscosity = 100
+cohesion = 0.02
+draw_mesh = 1
+scene_params = np.array([*lower, *fluid_pos, viscosity, cohesion, draw_mesh])
 
 temp = np.array([0])
-pyflex.set_scene(35, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0)
+pyflex.set_scene(36, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0)
 
-
-# add box
+## add box
 table_height = 0.5
 halfEdge = np.array([4., table_height, 4.])
 center = np.array([0.0, 0.0, 0.0])
@@ -55,6 +52,7 @@ pyflex.add_box(halfEdge, center, quats, hideShape, color)
 table_shape_states = np.concatenate([center, center, quats, quats])
 # print('table_shape_states', table_shape_states.shape) # (14,)
 
+## add bowl
 obj_shape_states = np.zeros((2, 14))
 bowl_scale = 15.
 bowl_trans = np.array([0.5, table_height+0.6, 0.5])
@@ -64,6 +62,7 @@ pyflex.add_mesh('/home/baoyu/2023/unified_dyn_graph/assets/mesh/bowl.obj', bowl_
                 bowl_color, bowl_trans, bowl_quat, False)
 obj_shape_states[0] = np.concatenate([bowl_trans, bowl_trans, bowl_quat, bowl_quat])
 
+## add spoon
 spoon_scale = 12.
 spoon_trans = np.array([0.5, table_height+0.1, -1.])
 spoon_quat_axis = np.array([1., 0., 0.])
@@ -103,7 +102,7 @@ lim_z = 0.6
 lim_x = 0.5
 
 # update the shape states for each time step
-for i in range(2800):
+for i in range(4000):
     n_stay_still = 40
     n_up = 1500
     n_scoop = 2000
@@ -153,13 +152,13 @@ for i in range(2800):
         
     elif n_scoop <= i:
         # spoon y position
-        scale = 0.003
+        scale = 0.0003
         spoon_pos_delta[1] = scale
         spoon_trans[1] += spoon_pos_delta[1]
         spoon_trans[1] = np.clip(spoon_trans[1], table_height+0.4, lim_y)
         
         # spoon angle
-        scale = 0.001
+        scale = 0.0001
         # spoon_angle_delta[2] = scale
         spoon_quat_axis -= np.array([0., 0., scale])
         spoon_quat_axis[2] = np.clip(spoon_quat_axis[2], 0.1, 0.4)

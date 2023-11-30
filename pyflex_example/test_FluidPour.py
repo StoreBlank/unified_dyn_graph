@@ -16,6 +16,7 @@ np.random.seed(47)
 parser = argparse.ArgumentParser()
 parser.add_argument('--cam_idx', type=int, default=0, help='choose from 0 to 20')
 parser.add_argument('--viscosity', default=0.2, help='set fluid viscosity')
+parser.add_argument('--cohesion', type=float, default=0.02, help='set fluid cohesion')
 parser.add_argument('--draw_mesh', type=float, default=1, help='visualize particles or mesh')
 args = parser.parse_args()
 
@@ -186,6 +187,9 @@ z_fluid_catcher = z_catcher
 
 draw_mesh = args.draw_mesh
 viscosity = args.viscosity
+cohesion = args.cohesion
+
+print("viscosity:", viscosity, "; cohesion:", cohesion)
 
 scene_params = np.array([
     x_fluid_pourer - (dim_x_fluid_pourer - 1) / 2. * radius,
@@ -201,8 +205,8 @@ scene_params = np.array([
     dim_y_fluid_catcher,
     dim_z_fluid_catcher,
     draw_mesh,
-    viscosity])
-# print("scene_params", scene_params)
+    viscosity, cohesion])
+print("scene_params", scene_params)
 
 temp = np.array([0])
 pyflex.set_scene(17, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
@@ -226,7 +230,7 @@ for i in range(len(boxes_pourer)):
     halfEdge = boxes_pourer[i][0]
     center = boxes_pourer[i][1]
     quat = boxes_pourer[i][2]
-    print(i, halfEdge, center, quat)
+    # print(i, halfEdge, center, quat)
     hideShape = 0 
     color = np.ones(3) * 0.9
     pyflex.add_box(halfEdge, center, quat, hideShape, color)
@@ -246,7 +250,7 @@ for i in range(len(boxes_catcher)):
     halfEdge = boxes_catcher[i][0]
     center = boxes_catcher[i][1]
     quat = boxes_catcher[i][2]
-    print(i, halfEdge, center, quat)
+    # print(i, halfEdge, center, quat)
     hideShape = 0 
     color = np.ones(3) * 0.9
     pyflex.add_box(halfEdge, center, quat, hideShape, color)
@@ -267,8 +271,8 @@ camAngle = np.array([rad, np.deg2rad(0.), 0.])
 pyflex.set_camPos(camPos)
 pyflex.set_camAngle(camAngle)
 
-print('camPos', pyflex.get_camPos())
-print('camAngle', pyflex.get_camAngle())
+# print('camPos', pyflex.get_camPos())
+# print('camAngle', pyflex.get_camAngle())
 
 
 # ### read scene info
@@ -283,51 +287,51 @@ for i in range(2):
 
 for i in range(time_step):
 
-    # n_stay_still = 40
-    # max_angle = 110
-    # if i < n_stay_still:
-    #     angle_cur = 0
-    #     pourer_angle_delta = 0.
-    #     pourer_pos_delta = np.zeros(3)
-    # else:
-    #     # pourer x position
-    #     scale = 0.002
-    #     pourer_pos_delta[0] += rand_float(-scale, scale) - (pourer_pos[0] - np.sum(pourer_lim_x) / 2.) * scale
-    #     pourer_pos_delta[0] = np.clip(pourer_pos_delta[0], -0.01, 0.01)
-    #     pourer_pos[0] += pourer_pos_delta[0]
-    #     pourer_pos[0] = np.clip(pourer_pos[0], pourer_lim_x[0], pourer_lim_x[1])
+    n_stay_still = 40
+    max_angle = 110
+    if i < n_stay_still:
+        angle_cur = 0
+        pourer_angle_delta = 0.
+        pourer_pos_delta = np.zeros(3)
+    else:
+        # pourer x position
+        scale = 0.002
+        pourer_pos_delta[0] += rand_float(-scale, scale) - (pourer_pos[0] - np.sum(pourer_lim_x) / 2.) * scale
+        pourer_pos_delta[0] = np.clip(pourer_pos_delta[0], -0.01, 0.01)
+        pourer_pos[0] += pourer_pos_delta[0]
+        pourer_pos[0] = np.clip(pourer_pos[0], pourer_lim_x[0], pourer_lim_x[1])
 
-    #     # pourer z position
-    #     scale = 0.003
-    #     pourer_pos_delta[2] += rand_float(-scale, scale) - (pourer_pos[2] - np.sum(pourer_lim_z) / 2.) * scale
-    #     pourer_pos_delta[2] = np.clip(pourer_pos_delta[2], -0.01, 0.01)
-    #     pourer_pos[2] += pourer_pos_delta[2]
-    #     pourer_pos[2] = np.clip(pourer_pos[2], pourer_lim_z[0], pourer_lim_z[1])
+        # pourer z position
+        scale = 0.003
+        pourer_pos_delta[2] += rand_float(-scale, scale) - (pourer_pos[2] - np.sum(pourer_lim_z) / 2.) * scale
+        pourer_pos_delta[2] = np.clip(pourer_pos_delta[2], -0.01, 0.01)
+        pourer_pos[2] += pourer_pos_delta[2]
+        pourer_pos[2] = np.clip(pourer_pos[2], pourer_lim_z[0], pourer_lim_z[1])
 
-    #     # pourer angle
-    #     scale = 0.2
-    #     angle_idx_cur = i - n_stay_still
-    #     pourer_angle_delta += rand_float(-scale, scale) - (angle_cur - angle_idx_cur * 0.6) * scale * 0.1
-    #     pourer_angle_delta = np.clip(pourer_angle_delta, -1.2, 1.2)
-    #     angle_cur += pourer_angle_delta
+        # pourer angle
+        scale = 0.2
+        angle_idx_cur = i - n_stay_still
+        pourer_angle_delta += rand_float(-scale, scale) - (angle_cur - angle_idx_cur * 0.6) * scale * 0.1
+        pourer_angle_delta = np.clip(pourer_angle_delta, -1.2, 1.2)
+        angle_cur += pourer_angle_delta
 
-    # pourer_angle = np.deg2rad(max(-angle_cur, -max_angle))
+    pourer_angle = np.deg2rad(max(-angle_cur, -max_angle))
 
     pourer_prev = boxes_pourer
-    # boxes_pourer, _ = calc_container_boxes(
-    #     pourer_pos,
-    #     angle=pourer_angle,
-    #     direction=np.array([0., 0., 1.]),
-    #     size=pourer_size,
-    #     border=border)
+    boxes_pourer, _ = calc_container_boxes(
+        pourer_pos,
+        angle=pourer_angle,
+        direction=np.array([0., 0., 1.]),
+        size=pourer_size,
+        border=border)
 
     catcher_prev = boxes_catcher
-    # boxes_catcher, _ = calc_container_boxes(
-    #     catcher_pos,
-    #     angle=np.deg2rad(0),
-    #     direction=np.array([0., 0., 1.]),
-    #     size=catcher_size,
-    #     border=border)
+    boxes_catcher, _ = calc_container_boxes(
+        catcher_pos,
+        angle=np.deg2rad(0),
+        direction=np.array([0., 0., 1.]),
+        size=catcher_size,
+        border=border)
 
     shape_states = np.zeros((len(boxes_pourer) + len(boxes_catcher), 14))
 
