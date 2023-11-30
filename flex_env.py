@@ -358,11 +358,11 @@ class FlexEnv(gym.Env):
             radius = 0.03
             
             if self.physics == "random":
-                length = 0.5 #rand_float(0.5, 2.5)
-                thickness = 1.0 #rand_float(1., 3.)
+                length = rand_float(0.5, 2.5)
+                thickness = rand_float(1., 2.5)
                 scale = np.array([length, thickness, thickness]) * 50 # length, extension, thickness
-                cluster_spacing = 4 #rand_float(2, 8) # change the stiffness of the rope
-                dynamicFriction = 0.7 #rand_float(0.1, 0.7)
+                cluster_spacing = rand_float(2, 8) # change the stiffness of the rope
+                dynamicFriction = rand_float(0.1, 0.7)
             elif self.physics == "grid":
                 length = property_params['length']
                 thickness = property_params['thickness']
@@ -372,9 +372,9 @@ class FlexEnv(gym.Env):
             
             trans = [-0.5, 2., 0.]
             
-            # z_rotation = rand_float(70, 80)
+            z_rotation = rand_float(70, 80)
             y_rotation = 0. #np.random.choice([0, 30, 45, 60])
-            rot = Rotation.from_euler('xyz', [0, y_rotation, 0.], degrees=True)
+            rot = Rotation.from_euler('xyz', [0, y_rotation, z_rotation], degrees=True)
             rotate = rot.as_quat()
             
             cluster_radius = 0.
@@ -1037,7 +1037,7 @@ class FlexEnv(gym.Env):
                 robot_obj_dist = np.min(cdist(end_effector_pos[:2].reshape(1, 2), obj_pos))
                 
                 if dir != None:
-                    if robot_obj_dist < 0.2 and i % 3 == 0: #contact
+                    if robot_obj_dist < 0.3 and i % 4 == 0: #contact
                         for j in range(len(self.camPos_list)):
                             pyflex.set_camPos(self.camPos_list[j])
                             pyflex.set_camAngle(self.camAngle_list[j])
@@ -1056,7 +1056,7 @@ class FlexEnv(gym.Env):
                                     np.save(f, end_effector_pos)
                         self.count += 1
                         self.contact.append(self.count)
-                    elif i % 10 == 0:
+                    elif i % 20 == 0:
                         for j in range(len(self.camPos_list)):
                             pyflex.set_camPos(self.camPos_list[j])
                             pyflex.set_camAngle(self.camAngle_list[j])
@@ -1097,7 +1097,8 @@ class FlexEnv(gym.Env):
         
         
         self.reset_robot()
-        for i in range(200):
+        
+        for i in range(2):
             pyflex.step()
         
         # save final rendering
@@ -1187,25 +1188,23 @@ class FlexEnv(gym.Env):
         num_points = positions.shape[0]
         pos_xz = positions[:, [0, 2]]
 
-        # random choose a start point which can not be overlapped with the object
         while True:
+            # random choose a start point which can not be overlapped with the object
             startpoint_pos = np.random.uniform(-self.wkspc_w // 2 - 1, self.wkspc_w // 2 + 1., size=(1, 2))
-            if np.min(cdist(startpoint_pos, pos_xz)) > 0.2 and np.max(cdist(startpoint_pos, pos_xz)) < 1.5:
-                break
-        startpoint_pos = startpoint_pos.reshape(-1)
-
-        # choose end points which is the expolation of the start point and obj point
-        while True:
+            startpoint_pos_ = startpoint_pos.reshape(-1)
+            # choose end points which is the expolation of the start point and obj point
             pickpoint = np.random.randint(0, num_points - 1)
             obj_pos = positions[pickpoint, [0, 2]]
-            slope = (obj_pos[1] - startpoint_pos[1]) / (obj_pos[0] - startpoint_pos[0])
-            if obj_pos[0] < startpoint_pos[0]:
-                x_end = obj_pos[0] - rand_float(0.1, 0.2)
+            slope = (obj_pos[1] - startpoint_pos_[1]) / (obj_pos[0] - startpoint_pos_[0])
+            if obj_pos[0] < startpoint_pos_[0]:
+                x_end = obj_pos[0] - rand_float(0.4, 0.6)
             else:
-                x_end = obj_pos[0] + rand_float(0.1, 0.2)
-            y_end = slope * (x_end - startpoint_pos[0]) + startpoint_pos[1]
-            endpoint_pos = np.array([x_end, y_end])
-            if obj_pos[0] != startpoint_pos[0] and np.abs(x_end) < 1.5 and np.abs(y_end) < 1.5:
+                x_end = obj_pos[0] + rand_float(0.4, 0.6)
+            z_end = slope * (x_end - startpoint_pos_[0]) + startpoint_pos_[1]
+            endpoint_pos = np.array([x_end, z_end])
+            # check the start point should not be too close to the object
+            # check the end point should not be exceed the workspace
+            if np.min(cdist(startpoint_pos, pos_xz)) > 0.2 and np.abs(x_end) < 2.5 and np.abs(z_end) < 2.5:
                 break
         
         action = np.concatenate([startpoint_pos.reshape(-1), endpoint_pos.reshape(-1)], axis=0)
@@ -1243,7 +1242,7 @@ class FlexEnv(gym.Env):
     
     def inside_workspace(self):
         pos = self.get_positions().reshape(-1, 4)
-        if (pos[:, 1] < 0.4).any():
+        if (pos[:, 0] > 3.0).any() or (pos[:, 2] > 3.0).any():
             return False
         else:
             return True

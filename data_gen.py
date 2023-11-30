@@ -86,17 +86,17 @@ def gen_data(info):
             
             color_diff = 0
             while color_diff < color_threshold:
-                # u = None
-                # u = env.sample_action()
+                u = None
+                u = env.sample_action()
             
                 # u = [-0.2, -1., 0., 1.] #bottle_granular
                 # u = [0.0, 1., 0.0, -1.] #folding cloth
                 
                 # u = [-1., 0., 1., 0.] #-x -> +x
                 
-                center_x, center_z = env.get_obj_center()
-                u = [center_x, 2.0, center_x, -1.5] #-z -> +z
-                
+                # center_x, center_z = env.get_obj_center()
+                # u = [center_x, 2.0, center_x, -1.5] #-z -> +z
+                  
                 # u = us[idx_timestep]
         
                 # step
@@ -114,8 +114,7 @@ def gen_data(info):
                     steps_list.append(n_steps)
                     contacts_list.append(contact)
                 
-                if verbose:
-                    print('color_diff:', color_diff)
+               
 
             actions[idx_timestep] = u
             last_img = img.copy()
@@ -131,13 +130,13 @@ def gen_data(info):
                 print("Object outside workspace!")
                 break
             
-            print('episode %d timestep %d done!!! step: %d' % (idx_episode, idx_timestep, n_steps))
+            print('episode %d timestep %d done!!! step: %d' % (idx_episode, idx_timestep, n_steps))       
         
         # save actions and steps and end effector positions
         if not debug:
             np.save(os.path.join(epi_dir, 'actions.npy'), actions)
             np.save(os.path.join(epi_dir, 'steps.npy'), np.array(steps_list))
-            np.save(os.path.join(epi_dir, 'contacts.npy'), np.array(contacts_list))
+            # np.save(os.path.join(epi_dir, 'contacts.npy'), np.array(contacts_list))
 
         end_epi_time = time.time()
         print("Finish episode %d!!!!" % idx_episode)
@@ -154,28 +153,30 @@ def gen_data(info):
 
 ###multiprocessing
 # bases = [210, 240, 270, 300, 330, 360, 390, 420, 450, 480]
-# infos=[]
-# for base in bases:
-#     # base = 210
-#     for i in range(n_worker):
-#         info = {
-#             "base_epi": base+i*n_episode//n_worker,
-#             "n_epi_per_worker": n_episode//n_worker,
-#             "thread_idx": i,
-#             "verbose": False,
-#             "debug": False,
-#         }
-#         infos.append(info)
-#     pool = mp.Pool(processes=n_worker)
-#     pool.map(gen_data, infos)
+bases = [207, 281,  327, 331, 353, 364, 391]
+# bases = [203]
+for base in bases:
+    print("base:", base)
+    infos=[]
+    for i in range(n_worker):
+        info = {
+            "base_epi": base+i*n_episode//n_worker,
+            "n_epi_per_worker": n_episode//n_worker,
+            "thread_idx": i,
+            "verbose": False,
+            "debug": False,
+        }
+        infos.append(info)
+    pool = mp.Pool(processes=n_worker)
+    pool.map(gen_data, infos)
 
 
-info = {
-    "base_epi": 0,
-    "n_epi_per_worker": n_episode,
-    "thread_idx": 1,
-    "verbose": False,
-    "debug":True,
-}
-gen_data(info)
+# info = {
+#     "base_epi": 0,
+#     "n_epi_per_worker": n_episode,
+#     "thread_idx": 1,
+#     "verbose": False,
+#     "debug":True,
+# }
+# gen_data(info)
 
