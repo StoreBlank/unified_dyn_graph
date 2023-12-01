@@ -35,7 +35,7 @@ spoon_scale = 1.
 spoon_mass = 10.
 spoon_rotation = 0.1
 
-draw_mesh = 0
+draw_mesh = 1
 
 scene_params = np.array([radius, *bowl_pos, *num_granular_ft, granular_scale, *pos_granular, granular_dis, 
                                 draw_mesh, bowl_mass, bowl_scale, spoon_scale, spoon_mass, spoon_rotation])

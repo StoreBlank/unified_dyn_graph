@@ -16,7 +16,7 @@ def merge_video(image_path, video_path):
     # print(image_names)
 
     fourcc = cv2.VideoWriter_fourcc('M', 'P', '4', 'V')
-    fps = 20
+    fps = 40
 
     img = Image.open(os.path.join(image_path, image_names[0]))
 
@@ -31,19 +31,23 @@ def merge_video(image_path, video_path):
     video_writer.release()
 
 if __name__ == '__main__':
-    epi_num = 10
-    for n in range(epi_num):
-        #i = np.random.randint(0, 100)
-        i = n
-        #j = np.random.randint(0, 4)
-        j = 0
-        epi_path = f"/media/baoyu/sumsung/rope/episode_{i}/camera_{j}"
-        image_path = f"/media/baoyu/sumsung/rope/episode_{i}/camera_{j}"
-        video_path = f"/media/baoyu/sumsung/video/rope/video_{i}.mp4" 
-        merge_video(image_path, video_path)
+    # epi_num = 10
+    # for n in range(epi_num):
+    #     #i = np.random.randint(0, 100)
+    #     i = n
+    #     #j = np.random.randint(0, 4)
+    #     j = 0
+    #     epi_path = f"/media/baoyu/sumsung/rope/episode_{i}/camera_{j}"
+    #     image_path = f"/media/baoyu/sumsung/rope/episode_{i}/camera_{j}"
+    #     video_path = f"/media/baoyu/sumsung/video/rope/video_{i}.mp4" 
+    #     merge_video(image_path, video_path)
     
     # for i in range(1):
-    #     image_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/bowl_granular/episode_0/camera_{i}"
+    #     image_path = f"/data_dense/granular_scooping/episode_0/camera_{i}"
     #     video_path = f"videos/bowl_granular_{i}.mp4" 
     #     merge_video(image_path, video_path)
 
+    for i in range(1):
+        image_path = f"data_dense/granular_scooping/camera_{i}"
+        video_path = f"videos/granular_scooping_big.mp4" 
+        merge_video(image_path, video_path)

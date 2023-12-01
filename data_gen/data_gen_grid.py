@@ -8,11 +8,8 @@ import json
 import multiprocessing as mp
 import itertools
 
+from utils_env import load_yaml
 from utils_env import rand_float, rand_int, quatFromAxisAngle, find_min_distance
-
-def load_yaml(filename):
-    # load YAML file
-    return yaml.safe_load(open(filename, 'r'))
 
 # load config
 config = load_yaml("config/data_gen/gnn_dyn_grid.yaml")

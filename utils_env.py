@@ -1,5 +1,10 @@
 import numpy as np
 import scipy
+import yaml
+
+def load_yaml(filename):
+    # load YAML file
+    return yaml.safe_load(open(filename, 'r'))
 
 def load_cloth(path):
     """Load .obj of cloth mesh. Only quad-mesh is acceptable!
