@@ -136,7 +136,7 @@ def gen_data(info):
         if not debug:
             np.save(os.path.join(epi_dir, 'actions.npy'), actions)
             np.save(os.path.join(epi_dir, 'steps.npy'), np.array(steps_list))
-            # np.save(os.path.join(epi_dir, 'contacts.npy'), np.array(contacts_list))
+            np.save(os.path.join(epi_dir, 'contacts.npy'), np.array(contacts_list))
 
         end_epi_time = time.time()
         print("Finish episode %d!!!!" % idx_episode)
