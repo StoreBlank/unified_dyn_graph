@@ -48,8 +48,8 @@ def data_gen_scooping(info):
     bowl_mass = 1e100
     bowl_scale = 1.5
 
-    num_granular_ft = [5, 10, 5] # low 5, medium 10, high 20
-    granular_scale = 0.13
+    num_granular_ft = [5, 5, 5] 
+    granular_scale = 0.15
     pos_granular = [0., 1., 0.]
     granular_dis = 0.
 
@@ -78,8 +78,8 @@ def data_gen_scooping(info):
     # print('table_shape_states', table_shape_states.shape) # (14,)
 
     obj_shape_states = np.zeros((2, 14))
-    bowl_scale = 15.
-    bowl_trans = np.array([0.5, table_height+0.6, 0.5])
+    bowl_scale = 20
+    bowl_trans = np.array([0.5, table_height+0.8, 0.5])
     bowl_quat = quatFromAxisAngle(np.array([1., 0., 0.]), np.deg2rad(270.))
     bowl_color = np.array([204/255, 204/255, 1.])
     pyflex.add_mesh('assets/mesh/bowl.obj', bowl_scale, 0, 
@@ -87,7 +87,7 @@ def data_gen_scooping(info):
     obj_shape_states[0] = np.concatenate([bowl_trans, bowl_trans, bowl_quat, bowl_quat])
 
     spoon_scale = 12.
-    spoon_trans = np.array([0.5, table_height+0.1, -1.])
+    spoon_trans = np.array([0.5, table_height+0.1, -2.0])
     spoon_quat_axis = np.array([1., 0., 0.])
     spoon_quat = quatFromAxisAngle(spoon_quat_axis, np.deg2rad(270.))
     spoon_color = np.array([204/255, 204/255, 1.])
@@ -120,9 +120,9 @@ def data_gen_scooping(info):
     lim_y = 2.
     lim_z = 0.4
     lim_x = 0.5
-    lim_angle = 0.6
+    lim_angle = 0.5
     count = 0
-    for i in range(2300):
+    for i in range(2000):
         n_stay_still = 40
         n_up = 200
         n_scoop = 1200
@@ -152,10 +152,10 @@ def data_gen_scooping(info):
             
         elif n_up <= i < n_scoop:
             # spoon y position
-            scale = 0.0025 / 2
+            scale = 0.002 / 2
             spoon_pos_delta[1] = -scale
             spoon_trans[1] += spoon_pos_delta[1]
-            spoon_trans[1] = np.clip(spoon_trans[1], table_height+0.5, lim_y)
+            spoon_trans[1] = np.clip(spoon_trans[1], table_height+0.8, lim_y)
             
             # spoon x position
             scale = 0.003 / 2
@@ -164,13 +164,13 @@ def data_gen_scooping(info):
             spoon_trans[0] = np.clip(spoon_trans[0], -0.3, 0.2)
             
             # spoon z position
-            scale = 0.001 / 2
+            scale = 0.002 / 2
             spoon_pos_delta[2] = scale
             spoon_trans[2] -= spoon_pos_delta[2]
             spoon_trans[2] = np.clip(spoon_trans[2], 0.1, lim_z)
             
             # spoon angle
-            scale = 0.002 / 2
+            scale = 0.004 / 2
             # spoon_angle_delta[2] = scale
             spoon_quat_axis += np.array([0., 0., scale])
             spoon_quat_axis[2] = np.clip(spoon_quat_axis[2], 0., lim_angle)
@@ -187,16 +187,16 @@ def data_gen_scooping(info):
             scale = 0.003 / 2
             spoon_pos_delta[0] = scale
             spoon_trans[0] += spoon_pos_delta[0]
-            spoon_trans[0] = np.clip(spoon_trans[0], -0.3, 0.3)
+            spoon_trans[0] = np.clip(spoon_trans[0], -0.3, 0.4)
             
             # spoon z position
             scale = 0.001 / 2
             spoon_pos_delta[2] = scale
             spoon_trans[2] += spoon_pos_delta[2]
-            spoon_trans[2] = np.clip(spoon_trans[2], 0.1, lim_z)
+            spoon_trans[2] = np.clip(spoon_trans[2], 0.1, lim_z-0.1)
             
             # spoon angle
-            scale = 0.002 / 2
+            scale = 0.001 / 2
             # spoon_angle_delta[2] = scale
             spoon_quat_axis -= np.array([0., 0., scale])
             spoon_quat_axis[2] = np.clip(spoon_quat_axis[2], 0.3, lim_angle)

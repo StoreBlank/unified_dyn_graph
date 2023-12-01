@@ -49,5 +49,5 @@ if __name__ == '__main__':
 
     for i in range(1):
         image_path = f"data_dense/granular_scooping/camera_{i}"
-        video_path = f"videos/granular_scooping_big.mp4" 
+        video_path = f"videos/granular_scooping_4.mp4" 
         merge_video(image_path, video_path)
