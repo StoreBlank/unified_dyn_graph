@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import time
 import yaml
-from flex_env import FlexEnv
+from env.flex_env import FlexEnv
 import json
 import multiprocessing as mp
 import itertools
