@@ -43,24 +43,19 @@ def data_gen_scooping(info):
     ## set scene
     pyflex.init(headless)
      
-    radius = 0.02
-    bowl_pos = [-0.3, 0.5, -0.3]
-    bowl_mass = 1e100
-    bowl_scale = 1.5
+    radius = 0.05
 
-    num_granular_ft = [5, 5, 5] 
-    granular_scale = 0.15
+    num_granular_ft = [5, 10, 5] 
+    granular_scale = 0.3
     pos_granular = [0., 1., 0.]
     granular_dis = 0.
 
-    spoon_scale = 1.
-    spoon_mass = 10.
-    spoon_rotation = 0.1
-
     draw_mesh = 0
+    
+    shapeCollisionMargin = 1e-100
 
-    scene_params = np.array([radius, *bowl_pos, *num_granular_ft, granular_scale, *pos_granular, granular_dis, 
-                                    draw_mesh, bowl_mass, bowl_scale, spoon_scale, spoon_mass, spoon_rotation])
+    scene_params = np.array([radius, *num_granular_ft, granular_scale, *pos_granular, granular_dis, 
+                            draw_mesh, shapeCollisionMargin])
 
     temp = np.array([0])
     pyflex.set_scene(35, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0)
@@ -78,7 +73,7 @@ def data_gen_scooping(info):
     # print('table_shape_states', table_shape_states.shape) # (14,)
 
     obj_shape_states = np.zeros((2, 14))
-    bowl_scale = 20
+    bowl_scale = 30
     bowl_trans = np.array([0.5, table_height+0.8, 0.5])
     bowl_quat = quatFromAxisAngle(np.array([1., 0., 0.]), np.deg2rad(270.))
     bowl_color = np.array([204/255, 204/255, 1.])
@@ -86,8 +81,8 @@ def data_gen_scooping(info):
                     bowl_color, bowl_trans, bowl_quat, False)
     obj_shape_states[0] = np.concatenate([bowl_trans, bowl_trans, bowl_quat, bowl_quat])
 
-    spoon_scale = 12.
-    spoon_trans = np.array([0.5, table_height+0.1, -2.0])
+    spoon_scale = 20
+    spoon_trans = np.array([0.5, table_height+0.2, -2.0])
     spoon_quat_axis = np.array([1., 0., 0.])
     spoon_quat = quatFromAxisAngle(spoon_quat_axis, np.deg2rad(270.))
     spoon_color = np.array([204/255, 204/255, 1.])
@@ -105,8 +100,8 @@ def data_gen_scooping(info):
     pyflex.set_light_fov(70.)
     
     ## camera setting
-    cam_dis = 4.
-    cam_height = 6.
+    cam_dis = 6.
+    cam_height = 10.
     camPos = np.array([cam_dis, cam_height, cam_dis])
     camAngle = np.array([np.deg2rad(45.), -np.deg2rad(45.), 0.])
     pyflex.set_camPos(camPos)
@@ -155,7 +150,7 @@ def data_gen_scooping(info):
             scale = 0.002 / 2
             spoon_pos_delta[1] = -scale
             spoon_trans[1] += spoon_pos_delta[1]
-            spoon_trans[1] = np.clip(spoon_trans[1], table_height+0.8, lim_y)
+            spoon_trans[1] = np.clip(spoon_trans[1], table_height+0.9, lim_y)
             
             # spoon x position
             scale = 0.003 / 2
@@ -247,7 +242,7 @@ def data_gen_scooping(info):
 info = {
     "headless": False,
     "data_root_dir": "data_dense",
-    "debug": False,
+    "debug": True,
 }
 
 data_gen_scooping(info)

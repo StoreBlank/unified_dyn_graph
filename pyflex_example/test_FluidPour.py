@@ -13,6 +13,9 @@ from transformations import rotation_matrix, quaternion_from_matrix
 
 np.random.seed(47)
 
+des_dir = 'data_dense/fluid_pouring'
+os.makedirs(des_dir, exist_ok=True)
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--cam_idx', type=int, default=0, help='choose from 0 to 20')
 parser.add_argument('--viscosity', default=0.2, help='set fluid viscosity')
@@ -364,7 +367,7 @@ for i in range(time_step):
     pyflex.set_shape_states(shape_states)
 
     img = pyflex.render().reshape(screenHeight, screenWidth, 4)
-    # cv2.imwrite(os.path.join(des_dir, 'step_%d.png' % i), img[..., :3][..., ::-1])
+    cv2.imwrite(os.path.join(des_dir, '%d_color.png' % i), img[..., :3][..., ::-1])
 
     pyflex.step()
 

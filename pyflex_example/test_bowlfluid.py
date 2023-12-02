@@ -21,22 +21,25 @@ def quatFromAxisAngle(axis, angle):
 
 pyflex.init(False)
 
+radius = 0.2
 # water pos
 lower_x = 0.5
 lower_y = 1.
 lower_z = 0.5 
 # water cube size
 dim_x = 15
-dim_y = 40
+dim_y = 500
 dim_z = 15
 
 lower = np.array([lower_x, lower_y, lower_z])
 fluid_pos = np.array([dim_x, dim_y, dim_z])
 
-viscosity = 100
+viscosity = 0.2
 cohesion = 0.02
+shapeCollisionMargin = 1e-100
 draw_mesh = 1
-scene_params = np.array([*lower, *fluid_pos, viscosity, cohesion, draw_mesh])
+scene_params = np.array([radius, *lower, *fluid_pos, draw_mesh, 
+                         viscosity, cohesion, shapeCollisionMargin])
 
 temp = np.array([0])
 pyflex.set_scene(36, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0)
@@ -54,8 +57,8 @@ table_shape_states = np.concatenate([center, center, quats, quats])
 
 ## add bowl
 obj_shape_states = np.zeros((2, 14))
-bowl_scale = 15.
-bowl_trans = np.array([0.5, table_height+0.6, 0.5])
+bowl_scale = 20.
+bowl_trans = np.array([0.5, table_height+0.5, 0.5])
 bowl_quat = quatFromAxisAngle(np.array([1., 0., 0.]), np.deg2rad(270.))
 bowl_color = np.array([204/255, 204/255, 1.])
 pyflex.add_mesh('/home/baoyu/2023/unified_dyn_graph/assets/mesh/bowl.obj', bowl_scale, 0, 
