@@ -45,8 +45,8 @@ def data_gen_scooping(info):
      
     radius = 0.03
 
-    num_granular_ft = [5, 10, 5] 
-    granular_scale = 0.3
+    num_granular_ft = [5, 20, 5] 
+    granular_scale = 0.25
     pos_granular = [0., 1., 0.]
     granular_dis = 0.
 
@@ -112,15 +112,15 @@ def data_gen_scooping(info):
     pyflex.step()
 
     ## update the shape states for each time step
-    lim_y = 2.
+    lim_y = 3.
     lim_z = 0.4
     lim_x = 0.5
     lim_angle = 0.5
     count = 0
-    for i in range(2000):
+    for i in range(3000):
         n_stay_still = 40
         n_up = 200
-        n_scoop = 1200
+        n_scoop = 1500
         
         if i < n_stay_still:
             angle_cur = 0.
@@ -128,13 +128,13 @@ def data_gen_scooping(info):
             spoon_pos_delta = np.zeros(3, dtype=np.float32)
         elif n_stay_still <= i < n_up:
             # spoon y position
-            scale = 0.035
+            scale = 0.04
             spoon_pos_delta[1] = scale
             spoon_trans[1] += spoon_pos_delta[1]
             spoon_trans[1] = np.clip(spoon_trans[1], 0., lim_y)
             
             # spoon z position
-            scale = 0.015
+            scale = 0.01
             spoon_pos_delta[2] = scale
             spoon_trans[2] += spoon_pos_delta[2]
             spoon_trans[2] = np.clip(spoon_trans[2], -2.0, lim_z)
@@ -147,10 +147,10 @@ def data_gen_scooping(info):
             
         elif n_up <= i < n_scoop:
             # spoon y position
-            scale = 0.002 / 2
+            scale = 0.003 / 2
             spoon_pos_delta[1] = -scale
             spoon_trans[1] += spoon_pos_delta[1]
-            spoon_trans[1] = np.clip(spoon_trans[1], table_height+0.9, lim_y)
+            spoon_trans[1] = np.clip(spoon_trans[1], table_height+0.8, lim_y)
             
             # spoon x position
             scale = 0.003 / 2

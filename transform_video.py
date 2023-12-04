@@ -8,7 +8,7 @@ def merge_video(image_path, video_path):
     f_names = os.listdir(image_path)
     image_names = []
     for f_name in f_names:
-        if '_color.png' in f_name:
+        if '_color.jpg' in f_name:
             image_names.append(f_name)
 
     image_names.sort(key=lambda x: int(x.split('_')[0]))
@@ -16,7 +16,7 @@ def merge_video(image_path, video_path):
     # print(image_names)
 
     fourcc = cv2.VideoWriter_fourcc('M', 'P', '4', 'V')
-    fps = 20
+    fps = 40
 
     img = Image.open(os.path.join(image_path, image_names[0]))
 
@@ -42,12 +42,12 @@ if __name__ == '__main__':
     #     video_path = f"/media/baoyu/sumsung/video/rope/video_{i}.mp4" 
     #     merge_video(image_path, video_path)
     
-    # for i in range(1):
-    #     image_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/rigid_granular/episode_0/camera_0"
-    #     video_path = f"videos/rigid_granular_4.mp4" 
-    #     merge_video(image_path, video_path)
-
     for i in range(1):
-        image_path = f"data_dense/fluid_pouring"
-        video_path = f"videos/fluid_poruing_3.mp4" 
+        image_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/granular_scooping/camera_0"
+        video_path = f"videos/granular_scooping_failure.mp4" 
         merge_video(image_path, video_path)
+
+    # for i in range(1):
+    #     image_path = f"data_dense/fluid_pouring"
+    #     video_path = f"videos/fluid_poruing_3.mp4" 
+    #     merge_video(image_path, video_path)
