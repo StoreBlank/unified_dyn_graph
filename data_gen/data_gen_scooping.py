@@ -43,7 +43,7 @@ def data_gen_scooping(info):
     ## set scene
     pyflex.init(headless)
      
-    radius = 0.05
+    radius = 0.03
 
     num_granular_ft = [5, 10, 5] 
     granular_scale = 0.3

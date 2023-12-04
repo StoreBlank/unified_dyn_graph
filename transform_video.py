@@ -49,5 +49,5 @@ if __name__ == '__main__':
 
     for i in range(1):
         image_path = f"data_dense/fluid_pouring"
-        video_path = f"videos/fluid_poruing_1.mp4" 
+        video_path = f"videos/fluid_poruing_3.mp4" 
         merge_video(image_path, video_path)
