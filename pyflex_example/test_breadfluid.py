@@ -1,9 +1,13 @@
 import os
 import numpy as np
 import pyflex
-import time
+import cv2
 
 from utils_env import rand_float, quatFromAxisAngle, degs_to_quat
+
+des_dir = "/home/baoyu/2023/unified_dyn_graph/data_dense/breadslice/epi_0"
+if not os.path.exists(des_dir):
+    os.makedirs(des_dir)
 
 pyflex.init(False)
 
@@ -20,8 +24,12 @@ dim_z = 10
 lower = np.array([lower_x, lower_y, lower_z])
 fluid_pos = np.array([dim_x, dim_y, dim_z])
 
-viscosity = 200 #TODO
-cohesion = 0.05 #TODO
+viscosity_list = np.array([10, 50, 100, 150, 200])
+cohesion_list = np.array([0.02, 0.05, 0.1, 0.2, 0.5])
+viscosity = np.random.choice(viscosity_list) #TODO
+cohesion = np.random.choice(cohesion_list) #TODO
+print("viscosity", viscosity, "; cohesion", cohesion)
+
 shapeCollisionMargin = 1e-100
 draw_mesh = 1
 
@@ -77,8 +85,9 @@ knife_pos_prev = knife_pos
 knife_quat_prev = knife_quat
 
 ## Light setting
-pyflex.set_screenWidth(720)
-pyflex.set_screenHeight(720)
+screenWidth, screenHeight = 720, 720
+pyflex.set_screenWidth(screenWidth)
+pyflex.set_screenHeight(screenHeight)
 pyflex.set_light_dir(np.array([0.1, 5.0, 0.1]))
 pyflex.set_light_fov(70.)
 
@@ -93,9 +102,6 @@ pyflex.set_camPos(camPos)
 pyflex.set_camAngle(camAngle)
 
 pyflex.step()
-
-
-
 
 # update the shape states for each time step
 for i in range(4000):
@@ -213,7 +219,11 @@ for i in range(4000):
     
     pyflex.set_shape_states(shape_states)
     
+    img = pyflex.render().reshape(screenHeight, screenWidth, 4)
+    cv2.imwrite(os.path.join(des_dir, '%d_color.png' % i), img[..., :3][..., ::-1])
+    
     pyflex.step()
+    
     
 
 pyflex.clean()
