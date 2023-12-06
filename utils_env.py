@@ -90,6 +90,41 @@ def quatFromAxisAngle(axis, angle):
 
     return quat
 
+def rotation_to_quaternion(rot):
+    # Ensure the rotation matrix is in the correct shape (3x3)
+    if rot.shape != (3, 3):
+        raise ValueError("Rotation matrix must be a 3x3 matrix")
+
+    # Allocate space for the quaternion
+    q = np.zeros(4)
+
+    # Calculate each component of the quaternion
+    q[0] = np.sqrt(max(0, 1 + rot[0, 0] + rot[1, 1] + rot[2, 2])) / 2
+    q[1] = np.sqrt(max(0, 1 + rot[0, 0] - rot[1, 1] - rot[2, 2])) / 2
+    q[2] = np.sqrt(max(0, 1 - rot[0, 0] + rot[1, 1] - rot[2, 2])) / 2
+    q[3] = np.sqrt(max(0, 1 - rot[0, 0] - rot[1, 1] + rot[2, 2])) / 2
+
+    # Determine the sign of each quaternion component
+    q[1] *= np.sign(rot[2, 1] - rot[1, 2])
+    q[2] *= np.sign(rot[0, 2] - rot[2, 0])
+    q[3] *= np.sign(rot[1, 0] - rot[0, 1])
+
+    return q
+
+def degs_to_quat(deg_xyz):
+    deg_x, deg_y, deg_z = deg_xyz
+    rad_x, rad_y, rad_z = np.deg2rad(deg_x), np.deg2rad(deg_y), np.deg2rad(deg_z)
+    
+    rot = np.array([[0., 0., 1.], [1., 0., 0.], [0., 1., 0.]])
+    rot_y = np.array([[np.cos(rad_x), 0., np.sin(rad_x)], [0., 1., 0.], [-np.sin(rad_x), 0., np.cos(rad_x)]])
+    rot_x = np.array([[1., 0., 0.], [0., np.cos(rad_y), -np.sin(rad_y)], [0., np.sin(rad_y), np.cos(rad_y)]])
+    rot_z = np.array([[np.cos(rad_z), -np.sin(rad_z), 0.], [np.sin(rad_z), np.cos(rad_z), 0.], [0., 0., 1.]])
+    rot = rot @ rot_z @ rot_y @ rot_x
+    
+    quat = rotation_to_quaternion(rot)
+    return quat
+    
+
 def find_min_distance(X, Z, k):
     """Find the top k minimum distance between point X and set of points Z using numpy."""
     Z_array = np.array(Z)
