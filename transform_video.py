@@ -42,9 +42,11 @@ if __name__ == '__main__':
     #     video_path = f"/media/baoyu/sumsung/video/rope/video_{i}.mp4" 
     #     merge_video(image_path, video_path)
     
-    for i in range(1):
-        image_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/granular_scooping/camera_0"
-        video_path = f"videos/granular_scooping_failure.mp4" 
+    for i in range(10):
+        if i == 8:
+            continue
+        image_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/rigid_granular/episode_{i}/camera_0"
+        video_path = f"videos/rigid_granular_{i}.mp4" 
         merge_video(image_path, video_path)
 
     # for i in range(1):

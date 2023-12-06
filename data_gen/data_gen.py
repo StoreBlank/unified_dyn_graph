@@ -94,7 +94,7 @@ def gen_data(info):
                 center_x, center_z = env.get_obj_center()
                 # u = [center_x, 2.0, center_x, -1.5] #-z -> +z
                 # center_x += 0.1
-                u = [center_x, -1.5, center_x, 1.5]
+                u = [center_x, -2, center_x, 2.]
                   
                 # u = us[idx_timestep]
         
@@ -153,29 +153,29 @@ def gen_data(info):
 ###multiprocessing
 # bases = [210, 240, 270, 300, 330, 360, 390, 420, 450, 480]
 # bases = [207, 281,  327, 331, 353, 364, 391]
-# # bases = [203]
-# for base in bases:
-#     print("base:", base)
-#     infos=[]
-#     for i in range(n_worker):
-#         info = {
-#             "base_epi": base+i*n_episode//n_worker,
-#             "n_epi_per_worker": n_episode//n_worker,
-#             "thread_idx": i,
-#             "verbose": False,
-#             "debug": False,
-#         }
-#         infos.append(info)
-#     pool = mp.Pool(processes=n_worker)
-#     pool.map(gen_data, infos)
+bases = [0]
+for base in bases:
+    print("base:", base)
+    infos=[]
+    for i in range(n_worker):
+        info = {
+            "base_epi": base+i*n_episode//n_worker,
+            "n_epi_per_worker": n_episode//n_worker,
+            "thread_idx": i,
+            "verbose": False,
+            "debug": False,
+        }
+        infos.append(info)
+    pool = mp.Pool(processes=n_worker)
+    pool.map(gen_data, infos)
 
 
-info = {
-    "base_epi": 0,
-    "n_epi_per_worker": n_episode,
-    "thread_idx": 1,
-    "verbose": False,
-    "debug":False,
-}
-gen_data(info)
+# info = {
+#     "base_epi": 0,
+#     "n_epi_per_worker": n_episode,
+#     "thread_idx": 1,
+#     "verbose": False,
+#     "debug":True,
+# }
+# gen_data(info)
 
