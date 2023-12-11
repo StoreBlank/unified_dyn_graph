@@ -53,9 +53,10 @@ def data_gen_scooping(info):
     draw_mesh = 0
     
     shapeCollisionMargin = 1e-100
+    collisionDistance = 0.026
 
     scene_params = np.array([radius, *num_granular_ft, granular_scale, *pos_granular, granular_dis, 
-                            draw_mesh, shapeCollisionMargin])
+                            draw_mesh, shapeCollisionMargin, collisionDistance])
 
     temp = np.array([0])
     pyflex.set_scene(35, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0)

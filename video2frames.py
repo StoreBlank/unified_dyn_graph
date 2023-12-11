@@ -29,6 +29,6 @@ def video_to_frames(video_file, output_dir):
 ### video to frames
 video_list = [0]
 for i in video_list:
-    video_path = f"/home/baoyu/2023/unified_dyn_graph/videos/rigid_cloth_{i}.mp4"
-    output_dir = f"/home/baoyu/2023/unified_dyn_graph/videos/frames/rigid_cloth_{i}"
+    video_path = f"/home/baoyu/2023/unified_dyn_graph/videos/rope_grid/video_16.mp4"
+    output_dir = f"/home/baoyu/2023/unified_dyn_graph/videos/frames/rope_grid"
     video_to_frames(video_path, output_dir)
