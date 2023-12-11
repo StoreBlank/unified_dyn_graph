@@ -47,11 +47,11 @@ def data_gen_scooping(info):
      
     radius = 0.03
     
-    num_granular_ft_x = 3
+    num_granular_ft_x = 10
     num_granular_ft_y = 1
-    num_granular_ft_z = 3
+    num_granular_ft_z = 10
     num_granular_ft = [num_granular_ft_x, num_granular_ft_y, num_granular_ft_z] 
-    granular_scale = 0.4
+    granular_scale = 0.2
     pos_granular = [0., 1., 0.]
     granular_dis = 0.
 
@@ -79,29 +79,29 @@ def data_gen_scooping(info):
     table_shape_states = np.concatenate([center, center, quats, quats])
     # print('table_shape_states', table_shape_states.shape) # (14,)
     
-    ## add bowl 
-    # obj_shape_states = np.zeros((2, 14))
-    # bowl_scale = 20
-    # bowl_trans = np.array([0.5, table_height+0.5, -2.0])
-    # bowl_quat = quatFromAxisAngle(np.array([1., 0., 0.]), np.deg2rad(270.))
-    # bowl_color = np.array([204/255, 204/255, 1.])
-    # pyflex.add_mesh('assets/mesh/bowl.obj', bowl_scale, 0, 
-    #                 bowl_color, bowl_trans, bowl_quat, False)
-    # obj_shape_states[0] = np.concatenate([bowl_trans, bowl_trans, bowl_quat, bowl_quat])
+    ## add sponge
+    sponge_scale = 0.15
+    sponge_pos_x = 3.0
+    sponge_pos_y = table_height+0.3
+    sponge_pos_z = 0.5
+    sponge_pos = np.array([sponge_pos_x, sponge_pos_y, sponge_pos_z])
+    sponge_quat_axis = np.array([1., 0., 0.])
+    sponge_quat = quatFromAxisAngle(sponge_quat_axis, np.deg2rad(90.))
+    sponge_color = np.array([204/255, 102/255, 0.])
+    pyflex.add_mesh('assets/mesh/sponge.obj', sponge_scale, 0,
+                    sponge_color, sponge_pos, sponge_quat, False)
+    sponge_pos_prev = sponge_pos
+    sponge_quat_prev = sponge_quat
     
-    ## add spatula
-    spoon_scale = 0.4
-    spoon_pos_x = 4.0
-    spoon_pos_y = table_height+0.9
-    spoon_pos_z = 0.5
-    spoon_pos = np.array([spoon_pos_x, spoon_pos_y, spoon_pos_z])
-    spoon_quat_axis = np.array([0., 0., 1.])
-    spoon_quat = quatFromAxisAngle(spoon_quat_axis, np.deg2rad(30.))
-    spoon_color = np.array([204/255, 204/255, 1.])
-    pyflex.add_mesh('assets/mesh/spatula.obj', spoon_scale, 0,
-                    spoon_color, spoon_pos, spoon_quat, False)
-    spoon_pos_prev = spoon_pos
-    spoon_quat_prev = spoon_quat
+    ## add dustpan
+    obj_shape_states = np.zeros((1, 14))
+    dustpan_scale = 1.5
+    dustpan_pos = np.array([-2.0, table_height+0.45, 0.5])
+    dustpan_quat = quatFromAxisAngle(np.array([0., 1., 0.]), np.deg2rad(90.))
+    dustpan_color = np.array([204/255, 204/255, 1.])
+    pyflex.add_mesh('assets/mesh/dustpan.obj',dustpan_scale, 0, 
+                   dustpan_color,dustpan_pos,dustpan_quat, False)
+    obj_shape_states[0] = np.concatenate([dustpan_pos,dustpan_pos,dustpan_quat,dustpan_quat])
     
 
     ## Light setting
@@ -136,54 +136,72 @@ def data_gen_scooping(info):
 
     ## update the shape states for each time step
     count = 0
-    for i in range(1200):
+    for i in range(2000):
         angle = 30
         
         n_stay_still = 40
-        n_scoop = 300
-        n_up = 600
+        n_first_move = 500
+        n_first_up = 600
         
-        n_move = 2000
+        n_second_still = 700
+        n_second_move = 1200
+        n_second_up = 1300
         
-        if n_stay_still < i < n_scoop:
-            # change spoon x position
-            spoon_pos[0] -= 0.01
-            spoon_pos[0] = np.clip(spoon_pos[0], 2.0, spoon_pos_x) 
-        if n_scoop < i < n_up:
-            # change spoon y position
-            spoon_pos[1] += 0.01
-            spoon_pos[1] = np.clip(spoon_pos[1], spoon_pos_y, spoon_pos_y+1.5)
-        if n_up < i:
-            # change spoon z position
-            # spoon_pos[2] -= 0.01
-            # spoon_pos[2] = np.clip(spoon_pos[2], -0.5, spoon_pos_z)
-            # change spoon angle
-            spoon_quat_axis[2] += 0.001
-            spoon_quat_axis[2] = np.clip(spoon_quat_axis[2], -2.0, 2.0)
-            spoon_quat_axis[0] += 0.005
-            spoon_quat_axis[0] = np.clip(spoon_quat_axis[0], -2.0, 5.0)
-            spoon_quat = quatFromAxisAngle(spoon_quat_axis, np.deg2rad(angle))
+        n_third_still = 1400
+        n_third_move = 1900
         
+        if n_stay_still < i < n_first_move:
+            # change sponge x position
+            sponge_pos[0] -= 0.01
+            sponge_pos[0] = np.clip(sponge_pos[0], -1, sponge_pos_x) 
+        elif n_first_move < i < n_first_up:
+            # change sponge y position
+            sponge_pos[1] += 0.01
+            sponge_pos[1] = np.clip(sponge_pos[1], sponge_pos_y, sponge_pos_y+0.2)
+        
+        elif n_first_up < i < n_second_still:
+            # change sponge initial position
+            sponge_pos_x = 3.0
+            sponge_pos_z = -0.1
+            sponge_pos = np.array([sponge_pos_x, sponge_pos_y, sponge_pos_z])
+        elif n_first_move < i < n_second_move:
+            # change sponge x position
+            sponge_pos[0] -= 0.01
+            sponge_pos[0] = np.clip(sponge_pos[0], -1, sponge_pos_x)   
+        elif n_second_move < i < n_second_up:
+            # change sponge y position
+            sponge_pos[1] += 0.01
+            sponge_pos[1] = np.clip(sponge_pos[1], sponge_pos_y, sponge_pos_y+0.2)
+        
+        elif n_second_up < i < n_third_still:
+            # change sponge initial position
+            sponge_pos_x = 3.0
+            sponge_pos_z = 1.0
+            sponge_pos = np.array([sponge_pos_x, sponge_pos_y, sponge_pos_z])   
+        elif n_second_move < i < n_third_move:
+            # change sponge x position
+            sponge_pos[0] -= 0.01
+            sponge_pos[0] = np.clip(sponge_pos[0], -1, sponge_pos_x)  
             
         
         # set shape states
-        shape_states = np.zeros((2, 14))
+        shape_states = np.zeros((3, 14))
         shape_states[0] = table_shape_states
         
         # set shape state for table
         shape_states[0] = table_shape_states
         
-        # set shape state for bowl
-        # shape_states[1] = obj_shape_states[0]
+        # set shape state for sponge
+        shape_states[1, :3] = sponge_pos
+        shape_states[1, 3:6] = sponge_pos_prev
+        shape_states[1, 6:10] = sponge_quat
+        shape_states[1, 10:] = sponge_quat_prev
         
-        # set shape state for spoon
-        shape_states[1, :3] = spoon_pos
-        shape_states[1, 3:6] = spoon_pos_prev
-        shape_states[1, 6:10] = spoon_quat
-        shape_states[1, 10:] = spoon_quat_prev
+        sponge_pos_prev = sponge_pos
+        sponge_quat_prev = sponge_quat
         
-        spoon_pos_prev = spoon_pos
-        spoon_quat_prev = spoon_quat
+        # set shape state fordustpan
+        shape_states[2] = obj_shape_states[0]
         
         pyflex.set_shape_states(shape_states)
         
