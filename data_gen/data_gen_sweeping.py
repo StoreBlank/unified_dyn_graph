@@ -47,17 +47,17 @@ def data_gen_scooping(info):
      
     radius = 0.03
     
-    num_granular_ft_x = 5
-    num_granular_ft_y = 2
-    num_granular_ft_z = 5
+    num_granular_ft_x = 3
+    num_granular_ft_y = 1
+    num_granular_ft_z = 3
     num_granular_ft = [num_granular_ft_x, num_granular_ft_y, num_granular_ft_z] 
-    granular_scale = 0.25
-    pos_granular = [-0.5, 1., 0.]
+    granular_scale = 0.4
+    pos_granular = [0., 1., 0.]
     granular_dis = 0.
 
     draw_mesh = 0
     
-    shapeCollisionMargin = 0.05
+    shapeCollisionMargin = 0.01
     collisionDistance = 0.03
     dynamic_friction = 0.3
 
@@ -92,7 +92,7 @@ def data_gen_scooping(info):
     ## add spatula
     spoon_scale = 0.4
     spoon_pos_x = 4.0
-    spoon_pos_y = table_height+0.93
+    spoon_pos_y = table_height+0.9
     spoon_pos_z = 0.5
     spoon_pos = np.array([spoon_pos_x, spoon_pos_y, spoon_pos_z])
     spoon_quat_axis = np.array([0., 0., 1.])
@@ -155,9 +155,8 @@ def data_gen_scooping(info):
             spoon_pos[1] = np.clip(spoon_pos[1], spoon_pos_y, spoon_pos_y+1.5)
         if n_up < i:
             # change spoon z position
-            # spoon_pos[2] -= 0.005
+            # spoon_pos[2] -= 0.01
             # spoon_pos[2] = np.clip(spoon_pos[2], -0.5, spoon_pos_z)
-            
             # change spoon angle
             spoon_quat_axis[2] += 0.001
             spoon_quat_axis[2] = np.clip(spoon_quat_axis[2], -2.0, 2.0)
