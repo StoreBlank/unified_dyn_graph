@@ -4,6 +4,7 @@ import pyflex
 import cv2
 import json
 import multiprocessing as mp
+import itertools
 
 from utils_env import rand_float, quatFromAxisAngle, degs_to_quat
 
@@ -14,6 +15,10 @@ def data_gen_slice(info):
     data_root_dir = info['data_root_dir']
     headless = info['headless']
     
+    physics = info['physics']
+    combination = info['combination']
+    
+    # create folder
     data_dir = os.path.join(data_root_dir, 'breadslice')
     epi_dir = os.path.join(data_dir, "episode_%d" % epi)
     if not os.path.exists(epi_dir):
@@ -21,25 +26,32 @@ def data_gen_slice(info):
     
     pyflex.init(headless)
 
-    radius = 0.2
+    radius = 0.1 #0.3
     # water pos
     lower_x = 0.
     lower_y = 2.
     lower_z = 0.
     # water cube size
-    dim_x = 10
+    dim_x = 20
     dim_y = 5
-    dim_z = 10
+    dim_z = 20
 
     lower = np.array([lower_x, lower_y, lower_z])
     fluid_pos = np.array([dim_x, dim_y, dim_z])
     
-    np.random.seed(epi)
-    viscosity_list = np.array([10., 50., 100., 150., 200.])
-    cohesion_list = np.array([0.05, 0.1, 0.2, 0.5])
-    viscosity = np.random.choice(viscosity_list) #TODO
-    cohesion = np.random.choice(cohesion_list) #TODO
-    print("episode", epi, "; viscosity", viscosity, "; cohesion", cohesion)
+    if physics == 'random':
+        np.random.seed(epi)
+        viscosity_list = np.array([10., 50., 100., 150., 200.])
+        cohesion_list = np.array([0.05, 0.1, 0.2, 0.5])
+        viscosity = 100. #np.random.choice(viscosity_list) #TODO
+        cohesion = 0.2 #np.random.choice(cohesion_list) #TODO
+        dynamic_friction = 0.2
+    elif physics == 'grid':
+        viscosity, cohesion, dynamic_friction = combination
+    
+    print("episode", epi, "; viscosity", viscosity, "; cohesion", cohesion, "; dynamic_friction", dynamic_friction) 
+    
+    
     # save to json
     property = {"viscosity": viscosity, "cohesion": cohesion}
     with open(os.path.join(epi_dir, 'property.json'), 'w') as f:
@@ -48,7 +60,7 @@ def data_gen_slice(info):
     shapeCollisionMargin = 1e-100
     draw_mesh = 1
 
-    dynamic_friction = 0.9
+    
     scene_params = np.array([radius, *lower, *fluid_pos, draw_mesh, 
                             viscosity, cohesion, shapeCollisionMargin, dynamic_friction])
 
@@ -230,7 +242,7 @@ def data_gen_slice(info):
         
         pyflex.set_shape_states(shape_states)
         
-        if not debug and i % 2 == 0:
+        if not debug and i % 10 == 0:
             img = pyflex.render().reshape(screenHeight, screenWidth, 4)
             cv2.imwrite(os.path.join(epi_dir, '%d_color.jpg' % i), img[..., :3][..., ::-1])
         
@@ -239,26 +251,62 @@ def data_gen_slice(info):
     pyflex.clean()
 
 ### data generation for bread slicing
-bases = [0]
-n_worker = 20
-n_episode = 20
-for base in bases:
-    infos=[]
-    for i in range(n_worker):
-        info = {
-            "epi": base+i*n_episode//n_worker,
-            "headless": True,
-            "data_root_dir": "data_dense",
-            "debug": False,
-        }
-        infos.append(info)
-    pool = mp.Pool(processes=n_worker)
-    pool.map(data_gen_slice, infos)
+# bases = [0]
+# n_worker = 20
+# n_episode = 20
+# for base in bases:
+#     infos=[]
+#     for i in range(n_worker):
+#         info = {
+#             "epi": base+i*n_episode//n_worker,
+#             "headless": True,
+#             "data_root_dir": "data_dense",
+#             "debug": False,
+#         }
+#         infos.append(info)
+#     pool = mp.Pool(processes=n_worker)
+#     pool.map(data_gen_slice, infos)
 
-# info = {
-#     "headless": False,
-#     "data_root_dir": "data_dense",
-#     "debug": True,
-# }
+info = {
+    "epi": 0,
+    "headless": False,
+    "data_root_dir": "data_dense",
+    "debug": False,
+    "physics": 'random',
+    "combination": None,
+}
+data_gen_slice(info)
 
-# data_gen_slice(info)
+### grid analysis
+# viscosity_list = np.array([10., 50., 100., 150., 200.])
+# cohesion_list = np.array([0.01, 0.05, 0.1, 0.2, 0.5])
+# dynamic_friction_list = np.array([0.1, 0.3, 0.5, 0.7, 0.9])
+# property_combinations = list(itertools.product(viscosity_list, cohesion_list, dynamic_friction_list))
+
+# for i, p in enumerate(property_combinations):
+#     print(i, p)
+
+# total_episode = len(property_combinations)
+# print("total_episode: ", total_episode)
+
+# n_worker = 25
+# n_episode = 25
+
+# n_bases = total_episode // n_worker
+# bases = [i*n_worker for i in range(n_bases+1)]
+# print("bases: ", bases)
+
+# for base in bases:
+#     infos = []
+#     for i in range(n_worker):
+#         info = {
+#             "epi": base+i*n_episode//n_worker,
+#             "headless": True,
+#             "data_root_dir": "data_dense",
+#             "debug": False,
+#             "physics": 'grid',
+#             "combination": property_combinations[base+i],
+#         }
+#         infos.append(info)
+#     pool = mp.Pool(processes=n_worker)
+#     pool.map(data_gen_slice, infos)

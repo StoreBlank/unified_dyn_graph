@@ -1,9 +1,9 @@
 dataset:
-  folder: 'data_dense' #"/media/baoyu/sumsung/granular"
+  folder: "/media/baoyu/sumsung/granular" #'data_dense' #"/media/baoyu/sumsung/granular"
   n_worker: 10
   n_episode: 10
-  n_timestep: 1
-  obj: "rigid_granular" 
+  n_timestep: 10
+  obj: "carrots" 
   wkspc_w: 4.0
   headless: True
   robot_type: 'xarm6' 

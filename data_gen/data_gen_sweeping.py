@@ -32,14 +32,14 @@ def render(screenHeight, screenWidth, no_return=False):
     else:
         return pyflex.render(render_depth=True).reshape(screenHeight, screenWidth, 5)
 
-def data_gen_scooping(info):
+def data_gen_sweeping(info):
     # info
     debug = info['debug']
     data_root_dir = info['data_root_dir']
     headless = info['headless']
     
     # create folder
-    folder_dir = os.path.join(data_root_dir, 'granular_scooping')
+    folder_dir = os.path.join(data_root_dir, 'granular_sweeping')
     os.system('mkdir -p ' + folder_dir)
     
     ## set scene
@@ -51,7 +51,7 @@ def data_gen_scooping(info):
     num_granular_ft_y = 1
     num_granular_ft_z = 10
     num_granular_ft = [num_granular_ft_x, num_granular_ft_y, num_granular_ft_z] 
-    granular_scale = 0.2
+    granular_scale = 0.1
     pos_granular = [0., 1., 0.]
     granular_dis = 0.
 
@@ -94,14 +94,14 @@ def data_gen_scooping(info):
     sponge_quat_prev = sponge_quat
     
     ## add dustpan
-    obj_shape_states = np.zeros((1, 14))
-    dustpan_scale = 1.5
-    dustpan_pos = np.array([-2.0, table_height+0.45, 0.5])
-    dustpan_quat = quatFromAxisAngle(np.array([0., 1., 0.]), np.deg2rad(90.))
-    dustpan_color = np.array([204/255, 204/255, 1.])
-    pyflex.add_mesh('assets/mesh/dustpan.obj',dustpan_scale, 0, 
-                   dustpan_color,dustpan_pos,dustpan_quat, False)
-    obj_shape_states[0] = np.concatenate([dustpan_pos,dustpan_pos,dustpan_quat,dustpan_quat])
+    # obj_shape_states = np.zeros((1, 14))
+    # dustpan_scale = 1.5
+    # dustpan_pos = np.array([-2.0, table_height+0.45, 0.5])
+    # dustpan_quat = quatFromAxisAngle(np.array([0., 1., 0.]), np.deg2rad(90.))
+    # dustpan_color = np.array([204/255, 204/255, 1.])
+    # pyflex.add_mesh('assets/mesh/dustpan.obj',dustpan_scale, 0, 
+    #                dustpan_color,dustpan_pos,dustpan_quat, False)
+    # obj_shape_states[0] = np.concatenate([dustpan_pos,dustpan_pos,dustpan_quat,dustpan_quat])
     
 
     ## Light setting
@@ -182,6 +182,12 @@ def data_gen_scooping(info):
             # change sponge x position
             sponge_pos[0] -= 0.01
             sponge_pos[0] = np.clip(sponge_pos[0], -1, sponge_pos_x)  
+        
+        elif n_third_move < i:
+            # change sponge position
+            sponge_pos_x = 3.0
+            sponge_pos_z = 1.0
+            sponge_pos = np.array([sponge_pos_x, sponge_pos_y, sponge_pos_z])  
             
         
         # set shape states
@@ -201,7 +207,7 @@ def data_gen_scooping(info):
         sponge_quat_prev = sponge_quat
         
         # set shape state fordustpan
-        shape_states[2] = obj_shape_states[0]
+        # shape_states[2] = obj_shape_states[0]
         
         pyflex.set_shape_states(shape_states)
         
@@ -231,4 +237,4 @@ info = {
     "debug": True,
 }
 
-data_gen_scooping(info)
+data_gen_sweeping(info)

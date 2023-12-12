@@ -1,8 +1,6 @@
 import os
-import cv2
 import numpy as np
 import time
-import yaml
 from env.flex_env import FlexEnv
 import json
 import multiprocessing as mp

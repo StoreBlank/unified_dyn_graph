@@ -13,7 +13,9 @@ BASE_PATH = os.path.join(os.path.expanduser("~"), ".objaverse")
 _VERSIONED_PATH = os.path.join(BASE_PATH, "hf-objaverse-v1")
 
 uids = [#"9615d1731e9f41f199d9175eb538c174", # sponge
-        'd91eae20c02a4741aeb889246b417ae4']
+        #'d91eae20c02a4741aeb889246b417ae4', # dustpan
+        'df51f3ec58af40c8af562c5096f71bfa', # brush
+    ]
 
 def _load_object_paths() -> Dict[str, str]:
     """Load the object paths from the dataset.

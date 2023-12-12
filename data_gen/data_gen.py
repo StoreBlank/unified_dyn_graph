@@ -83,18 +83,18 @@ def gen_data(info):
             
             color_diff = 0
             while color_diff < color_threshold:
-                # u = None
-                # u = env.sample_action()
+                u = None
+                u = env.sample_action()
             
                 # u = [-0.2, -1., 0., 1.] #bottle_granular
                 # u = [0.0, 1., 0.0, -1.] #folding cloth
                 
                 # u = [-1., 0., 1., 0.] #-x -> +x
                 
-                center_x, center_z = env.get_obj_center()
+                # center_x, center_z = env.get_obj_center()
                 # u = [center_x, 2.0, center_x, -1.5] #-z -> +z
                 # center_x += 0.1
-                u = [center_x, -2, center_x, 2.]
+                # u = [center_x, -2, center_x, 2.]
                   
                 # u = us[idx_timestep]
         
@@ -111,7 +111,7 @@ def gen_data(info):
                     n_steps = prev_steps
                 else:
                     steps_list.append(n_steps)
-                    contacts_list.append(contact)
+                    # contacts_list.append(contact)
                 
                
 
@@ -135,7 +135,7 @@ def gen_data(info):
         if not debug:
             np.save(os.path.join(epi_dir, 'actions.npy'), actions)
             np.save(os.path.join(epi_dir, 'steps.npy'), np.array(steps_list))
-            np.save(os.path.join(epi_dir, 'contacts.npy'), np.array(contacts_list))
+            # np.save(os.path.join(epi_dir, 'contacts.npy'), np.array(contacts_list))
 
         end_epi_time = time.time()
         print("Finish episode %d!!!!" % idx_episode)
@@ -153,7 +153,7 @@ def gen_data(info):
 ###multiprocessing
 # bases = [210, 240, 270, 300, 330, 360, 390, 420, 450, 480]
 # bases = [207, 281,  327, 331, 353, 364, 391]
-bases = [0]
+bases = [25, 50, 75, 100, 125, 150, 175,]
 for base in bases:
     print("base:", base)
     infos=[]
