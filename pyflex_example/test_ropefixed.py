@@ -5,17 +5,9 @@ import time
 from scipy.spatial.transform import Rotation
 
 from utils_env import rand_float, quatFromAxisAngle, degs_to_quat
-from utils_env import find_min_distance
+from action.action_space import Picker
 
 camera_view = 1
-
-def _set_pos(picker_pos, particle_pos):
-    """For gripper and grasp task."""
-    shape_states = np.array(pyflex.get_shape_states()).reshape(-1, 14)
-    shape_states[:, 3:6] = shape_states[:, :3] #picker_pos
-    shape_states[:, :3] = picker_pos
-    pyflex.set_shape_states(shape_states)
-    pyflex.set_positions(particle_pos)
 
 pyflex.init(False)
 
@@ -25,7 +17,7 @@ radius = 0.04 #0.03
 length = 3.0 #rand_float(0.5, 2.5)
 thickness = 3.0 #rand_float(1., 2.5)
 scale = np.array([length, thickness, thickness]) * 50 # length, extension, thickness
-cluster_spacing = 5. #rand_float(2, 8) # change the stiffness of the rope
+cluster_spacing = 8. #rand_float(2, 8) # change the stiffness of the rope
 dynamicFriction = 0.3 #rand_float(0.1, 0.7)
 
 trans = [0., 0.5, 3.]
@@ -54,7 +46,7 @@ cluster_plastic_creep = 0.
 
 particleFriction = 0.25
 
-draw_mesh = 0
+draw_mesh = 1
 
 relaxtion_factor = 1.
 collisionDistance = radius * 0.5
@@ -126,33 +118,18 @@ color = np.ones(3) * (160. / 255.)
 pyflex.add_box(halfEdge, center, quats, hideShape, color)
 table_shape_states = np.concatenate([center, center, quats, quats])
 
-box_shape_states = np.zeros((3, 14))
-## add box for the barrier
-np.random.seed(0)
-# box 1
-box_side = 0.1
+box_shape_states = np.zeros((2, 14))
+# add box on the leftmost of the rope
+box_side = 0.2
 halfEdge = np.ones(3) * box_side
-box_x_1, box_z_1 = -1, -1
-box_1_center = np.array([box_x_1, table_height+box_side, box_z_1])
+center = np.array([np.median(particle_pos_x), table_height+box_side, particle_pos_z_min])
 quats = quatFromAxisAngle(axis=np.array([0., 1., 0.]), angle=0.)
 hideShape = 0
-color = np.array([1., 0., 0.]) 
-pyflex.add_box(halfEdge, box_1_center, quats, hideShape, color)
-box_shape_states[0] = np.concatenate([box_1_center, box_1_center, quats, quats])
-# box 2
-box_side = 0.1
-halfEdge = np.ones(3) * box_side
-box_x_2, box_z_2 = 1, 1
-box_2_center = np.array([box_x_2, table_height+box_side, box_z_2])
-quats = quatFromAxisAngle(axis=np.array([0., 1., 0.]), angle=0.)
-hideShape = 0
-color = np.array([1., 0., 0.]) 
-pyflex.add_box(halfEdge, box_2_center, quats, hideShape, color)
-box_shape_states[1] = np.concatenate([box_2_center, box_2_center, quats, quats])
+color = np.ones(3) * (160. / 255.)
+pyflex.add_box(halfEdge, center, quats, hideShape, color)
+box_shape_states[0] = np.concatenate([center, center, quats, quats])
 
-# find the index of min z
-min_z_idx, max_z_idx = np.argmin(particle_pos_z), np.argmax(particle_pos_z)
-# fixed one side of the rope
+# add box on the rightmost of the rope
 box_side = 0.2
 halfEdge = np.ones(3) * box_side
 center = np.array([np.median(particle_pos_x), table_height+box_side, particle_pos_z_max])
@@ -160,10 +137,16 @@ quats = quatFromAxisAngle(axis=np.array([0., 1., 0.]), angle=0.)
 hideShape = 0
 color = np.ones(3) * (160. / 255.)
 pyflex.add_box(halfEdge, center, quats, hideShape, color)
-box_shape_states[2] = np.concatenate([center, center, quats, quats])
+box_shape_states[1] = np.concatenate([center, center, quats, quats])
+
+
+# find the index of min z
+min_z_idx, max_z_idx = np.argmin(particle_pos_z), np.argmax(particle_pos_z)
+# new_particle_pos[min_z_idx, :3] = particle_pos[min_z_idx, :3]
+# new_particle_pos[max_z_idx, :3] = particle_pos[max_z_idx, :3]
 
 # random pick a point on the rope
-np.random.seed(0)
+# np.random.seed(0)
 pick_point_idx = np.random.randint(0, num_particles)
 new_particle_pos[pick_point_idx, 1] = particle_pos[pick_point_idx, 1] + 2.
 new_particle_pos[pick_point_idx, 3] = 0.
@@ -173,39 +156,25 @@ pyflex.step()
 
 shape_pos = np.array(pyflex.get_shape_states()).reshape(-1, 14)
 num_shape_pos = shape_pos.shape[0]
-# print('num_shape_pos', num_shape_pos)
-# print('shape_pos', shape_pos[:, :3])
+print('num_shape_pos', num_shape_pos)
+print('shape_pos', shape_pos[:, :3])
 
-box1_min_dist, box1_pick_index = find_min_distance(box_1_center, particle_pos[:, :3], 10)
-box2_min_dist, box2_pick_index = find_min_distance(box_2_center, particle_pos[:, :3], 10)
-# print('box1_pick_index', box1_pick_index, ';box2_pick_index', box2_pick_index)
-
-# end_point_1 = box_1_center + np.array([box_side - 0.5, 2., 0.])
-# end_point_2 = box_2_center + np.array([box_side + 0.5, 2., 0.])
-
-end_point_1 = new_particle_pos[box1_pick_index[0], :3]
-pos_prev = particle_pos.copy()
+# update the shape states for each time step
 for i in range(2000):
     
-    # find the cloest point to the box 1
+    # move the rope to the right
+    new_particle_pos[pick_point_idx, 0] += 0.01
+    new_particle_pos[pick_point_idx, 0] = np.clip(new_particle_pos[pick_point_idx, 0], -4, 4)
+    pyflex.set_positions(new_particle_pos)
     
-    # print('end_point_1', end_point_1)
-    # for index in box1_pick_index:
-    #     new_particle_pos[index, 1] += 0.01 
-    #     new_particle_pos[index, 1] = np.clip(new_particle_pos[index, 1], 0.5, 2.)
-    #     new_particle_pos[index, 3] = 0.
+    if i > 1500:
+        new_particle_pos[pick_point_idx, 3] = particle_inv_mass[pick_point_idx]
     
-    end_point_1[1] += 0.001
-    
-    new_particle_pos[box1_pick_index, :3] = end_point_1
-    new_particle_pos[box1_pick_index, 3] = 0.
-    
-    _set_pos(end_point_1, new_particle_pos)
         
     # set shape states
     shape_states = np.zeros((num_shape_pos, 14))
     shape_states[0] = table_shape_states
-    for i in range(num_shape_pos-1):
+    for i in range(len(box_shape_states)):
         shape_states[i+1] = box_shape_states[i]
     
     pyflex.set_shape_states(shape_states)

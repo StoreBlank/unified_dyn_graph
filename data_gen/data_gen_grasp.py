@@ -2,12 +2,12 @@ import os
 import cv2
 import numpy as np
 import time
-import yaml
-from env.flex_env_rope import FlexEnv
 import trimesh
 import json
 import pickle
 import multiprocessing as mp
+
+from env.flex_env_rope import FlexEnv
 
 from utils_env import load_yaml
 from utils_env import rand_float, rand_int, quatFromAxisAngle, find_min_distance
@@ -85,11 +85,6 @@ def gen_data(info):
             while color_diff < color_threshold:
                 # u = None
                 # u = env.sample_action()
-            
-                # u = [-0.2, -1., 0., 1.] #bottle_granular
-                # u = [0.0, 1., 0.0, -1.] #folding cloth
-                
-                # u = [-1., 0., 1., 0.] #-x -> +x
                 
                 center_x, center_z = env.get_obj_center()
                 u = [center_x, 2.0, center_x, -1.5] #-z -> +z
