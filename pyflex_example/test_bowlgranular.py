@@ -3,21 +3,7 @@ import numpy as np
 import pyflex
 import time
 
-def rand_float(lo, hi):
-    return np.random.rand() * (hi - lo) + lo
-
-def quatFromAxisAngle(axis, angle):
-    axis /= np.linalg.norm(axis)
-
-    half = angle * 0.5
-    w = np.cos(half)
-
-    sin_theta_over_two = np.sin(half)
-    axis *= sin_theta_over_two
-
-    quat = np.array([axis[0], axis[1], axis[2], w])
-
-    return quat
+from utils_env import rand_float, quatFromAxisAngle, degs_to_quat
 
 pyflex.init(False)
 
@@ -44,7 +30,7 @@ temp = np.array([0])
 pyflex.set_scene(35, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0)
 
 
-# add box
+# add table
 table_height = 0.5
 halfEdge = np.array([4., table_height, 4.])
 center = np.array([0.0, 0.0, 0.0])

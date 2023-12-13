@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import time
 import yaml
-from env.flex_env_grasp import FlexEnv
+from env.flex_env_rope import FlexEnv
 import trimesh
 import json
 import pickle

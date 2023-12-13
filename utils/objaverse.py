@@ -1,4 +1,4 @@
-import objaverse
+import utils.objaverse as objaverse
 import multiprocessing
 import os
 from typing import Any, Dict, List, Optional, Tuple
