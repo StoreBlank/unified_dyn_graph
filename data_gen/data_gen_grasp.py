@@ -87,9 +87,12 @@ def gen_data(info):
                 # u = env.sample_action()
                 
                 center_x, center_z = env.get_obj_center()
-                u = [center_x, 2.0, center_x, -1.5] #-z -> +z
+                # u = [center_x, 2.0, center_x, -1.5] #-z -> +z
                 
                 # u = us[idx_timestep]
+                
+                x_min_idx, x_max_idx, z_min_idx, z_max_idx = env.get_obj_idx_range()
+                u = [center_x, center_z, center_x, -0.5]
         
                 # step
                 prev_steps = n_steps
