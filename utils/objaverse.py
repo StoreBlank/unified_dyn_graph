@@ -1,4 +1,4 @@
-import utils.objaverse as objaverse
+import objaverse
 import multiprocessing
 import os
 from typing import Any, Dict, List, Optional, Tuple
@@ -14,7 +14,9 @@ _VERSIONED_PATH = os.path.join(BASE_PATH, "hf-objaverse-v1")
 
 uids = [#"9615d1731e9f41f199d9175eb538c174", # sponge
         #'d91eae20c02a4741aeb889246b417ae4', # dustpan
-        'df51f3ec58af40c8af562c5096f71bfa', # brush
+        #'df51f3ec58af40c8af562c5096f71bfa', # brush
+        '8706b77d20cf44169371de9e36fc6cda', # chef knife
+        'd3cd1801237e479daccedf1f93e46ae7', # sponge 2
     ]
 
 def _load_object_paths() -> Dict[str, str]:

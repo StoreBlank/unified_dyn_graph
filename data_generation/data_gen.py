@@ -1,12 +1,8 @@
 import os
-import cv2
 import numpy as np
 import time
-import yaml
 from env.flex_env import FlexEnv
-import trimesh
 import json
-import pickle
 import multiprocessing as mp
 
 from utils_env import load_yaml

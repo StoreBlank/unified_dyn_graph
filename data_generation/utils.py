@@ -1,6 +1,8 @@
 import numpy as np
 import pyflex
 
+from utils_env import rand_float
+
 def init_multiview_camera(cam_dis = 3, cam_height = 4.5):
     camPos_list = []
     camAngle_list = []
@@ -24,3 +26,20 @@ def render(screenHeight, screenWidth, no_return=False):
         return
     else:
         return pyflex.render(render_depth=True).reshape(screenHeight, screenWidth, 5)
+
+def randomize_pos(init_y):
+    # initial start position
+    x_range_min, x_range_max = 0., 4. # range for x if not in (2,3)
+    z_range_min, z_range_max = 0., 4. # range for z if not in (2,3)
+    range_min, range_max = 3., 4.
+    # randomly decide whether x or z will be in the range
+    if np.random.choice(['x', 'z']) == 'x':
+        pos_x = rand_float(range_min, range_max) * np.random.choice([-1., 1.])
+        pos_z = rand_float(z_range_min, z_range_max) * np.random.choice([-1., 1.])
+    else:
+        pos_x = rand_float(x_range_min, x_range_max) * np.random.choice([-1., 1.])
+        pos_z = rand_float(range_min, range_max) * np.random.choice([-1., 1.])
+    
+    pos_y = init_y
+    pos = np.array([pos_x, pos_y, pos_z])
+    return pos

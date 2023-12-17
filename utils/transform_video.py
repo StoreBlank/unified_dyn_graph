@@ -42,12 +42,14 @@ if __name__ == '__main__':
     #     video_path = f"/media/baoyu/sumsung/video/rope/video_{i}.mp4" 
     #     merge_video(image_path, video_path)
     
-    for i in range(1):
-        image_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/breadslice/episode_0"
-        video_path = f"videos/fluid_r01.mp4" 
-        merge_video(image_path, video_path)
-
     # for i in range(1):
-    #     image_path = f"data_dense/fluid_pouring"
-    #     video_path = f"videos/fluid_poruing_3.mp4" 
+    #     image_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/breadslice/episode_0"
+    #     video_path = f"videos/fluid_r01.mp4" 
     #     merge_video(image_path, video_path)
+
+    for i in range(10):
+        image_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/granular_sweeping/episode_{i}/camera_0"
+        video_path = f"videos/sweeping_{i}.mp4" 
+        merge_video(image_path, video_path)
+    
+    
