@@ -102,7 +102,8 @@ def data_gen_slice(info):
     knife_pos = np.array([knife_init_x, knife_init_y, knife_init_z])
 
     deg_xyz = np.array([0., -90., 0.])
-    quaternion = degs_to_quat(deg_xyz)
+    init_rot = np.array([[0., 0., 1.], [1., 0., 0.], [0., 1., 0.]])
+    quaternion = degs_to_quat(deg_xyz, init_rot)
     knife_quat = np.array([quaternion[1], quaternion[2], quaternion[3], quaternion[0]])
 
     knife_color = np.array([128/255, 128/255, 128/255])

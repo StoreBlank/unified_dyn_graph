@@ -90,6 +90,16 @@ def quatFromAxisAngle(axis, angle):
 
     return quat
 
+def quaternion_multuply(q1, q2):
+    x1, y1, z1, w1 = q1
+    x2, y2, z2, w2 = q2
+    return np.array([
+        w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2,
+        w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2,
+        w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2,
+        w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2,
+    ])
+
 def rotation_to_quaternion(rot):
     # Ensure the rotation matrix is in the correct shape (3x3)
     if rot.shape != (3, 3):
@@ -111,11 +121,11 @@ def rotation_to_quaternion(rot):
 
     return q
 
-def degs_to_quat(deg_xyz):
+def degs_to_quat(deg_xyz, init_rot):
     deg_x, deg_y, deg_z = deg_xyz
     rad_x, rad_y, rad_z = np.deg2rad(deg_x), np.deg2rad(deg_y), np.deg2rad(deg_z)
     
-    rot = np.array([[0., 0., 1.], [1., 0., 0.], [0., 1., 0.]])
+    rot = init_rot
     rot_y = np.array([[np.cos(rad_x), 0., np.sin(rad_x)], [0., 1., 0.], [-np.sin(rad_x), 0., np.cos(rad_x)]])
     rot_x = np.array([[1., 0., 0.], [0., np.cos(rad_y), -np.sin(rad_y)], [0., np.sin(rad_y), np.cos(rad_y)]])
     rot_z = np.array([[np.cos(rad_z), -np.sin(rad_z), 0.], [np.sin(rad_z), np.cos(rad_z), 0.], [0., 0., 1.]])

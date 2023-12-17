@@ -37,6 +37,7 @@ def data_gen_sweeping(info):
     debug = info['debug']
     data_root_dir = info['data_root_dir']
     headless = info['headless']
+    time_step = info['time_step']
     
     # create folder
     folder_dir = os.path.join(data_root_dir, 'granular_sweeping')
@@ -48,7 +49,7 @@ def data_gen_sweeping(info):
     radius = 0.03
     
     num_granular_ft_x = 10
-    num_granular_ft_y = 1
+    num_granular_ft_y = 2
     num_granular_ft_z = 10
     num_granular_ft = [num_granular_ft_x, num_granular_ft_y, num_granular_ft_z] 
     granular_scale = 0.1
@@ -136,7 +137,7 @@ def data_gen_sweeping(info):
 
     ## update the shape states for each time step
     count = 0
-    for i in range(2000):
+    for i in range(time_step):
         angle = 30
         
         n_stay_still = 40
@@ -232,6 +233,7 @@ def data_gen_sweeping(info):
 
 ### data generation for scooping
 info = {
+    "time_step": 2000,
     "headless": False,
     "data_root_dir": "data_dense",
     "debug": True,
