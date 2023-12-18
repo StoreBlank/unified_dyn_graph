@@ -153,7 +153,7 @@ def data_gen_sweeping(info):
         pick_pos = particle_pos[pick_id, :3]
         
         if p == 0:
-            sponge_pos = sponge_pos_origin .copy()
+            sponge_pos = sponge_pos_origin.copy()
         else:
             sponge_pos = randomize_pos(sponge_pos_y)
         

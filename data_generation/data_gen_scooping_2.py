@@ -3,6 +3,8 @@ import numpy as np
 import pyflex
 import time
 import cv2
+import json
+import multiprocessing as mp
 
 from utils_env import rand_float, rand_int, quatFromAxisAngle, quaternion_multuply
 from data_generation.utils import add_table, set_light, set_camera
@@ -32,17 +34,17 @@ def data_gen_scooping(info):
     os.system("mkdir -p %s" % epi_dir)
     
     pyflex.init(headless)
-    # np.random.seed(epi)
+    np.random.seed(epi)
     ## set scene
     radius = 0.03
     
-    num_granular_ft_x = 5
-    num_granular_ft_y = 3
-    num_granular_ft_z = 5
+    num_granular_ft_x = rand_float(3, 8)
+    num_granular_ft_y = rand_int(2, 3)
+    num_granular_ft_z = rand_float(3, 8)
     num_granular_ft = [num_granular_ft_x, num_granular_ft_y, num_granular_ft_z] 
     num_granular = int(num_granular_ft_x * num_granular_ft_y * num_granular_ft_z)
     
-    granular_scale = 0.2
+    granular_scale = rand_float(0.1, 0.2)
     pos_granular = [-0.5, 1., 0.]
     granular_dis = 0.
 
@@ -51,8 +53,8 @@ def data_gen_scooping(info):
     shapeCollisionMargin = 0.05
     collisionDistance = 0.03 #granular_scale * 0.1
     
-    dynamic_friction = 0.3
-    granular_mass = 0.1
+    dynamic_friction = rand_float(0.2, 0.9)
+    granular_mass = rand_float(0.1, 10.)
 
     scene_params = np.array([radius, *num_granular_ft, granular_scale, *pos_granular, granular_dis, 
                             draw_mesh, shapeCollisionMargin, collisionDistance, dynamic_friction, 
@@ -69,19 +71,27 @@ def data_gen_scooping(info):
     
     ## add spatula
     spoon_scale = 0.4
-    # spoon_pos_x = 4.0
-    # spoon_pos_z = 0.5
-    spoon_pos_y = table_height+0.98 #0.93-0.95
-    # spoon_pos = np.array([spoon_pos_x, spoon_pos_y, spoon_pos_z])
-    spoon_pos_origin = randomize_pos(spoon_pos_y)
-    spoon_pos = spoon_pos_origin.copy()
+    spoon_pos_y = table_height+0.95
+    scooping_list = np.array([
+        [5., spoon_pos_y, 0.5, 0.],
+        [5., spoon_pos_y, -5., 45.],
+        [0., spoon_pos_y, -5., 90.],
+        [-5., spoon_pos_y, -5., 135.],
+        [-5., spoon_pos_y, 0.5, 180.],
+        [-5., spoon_pos_y, 5., -135.],
+        [0., spoon_pos_y, 5., -90.],
+        [5., spoon_pos_y, 5., -45.]
+    ])
+    l = np.random.randint(0, scooping_list.shape[0])
+    spoon_pos_origin = scooping_list[l, :3]
+    spoon_pos = spoon_pos_origin
     
     spoon_quat_axis_origin = np.array([0., 0., 1.])
     angle_origin = 30.
     spoon_quat_origin = quatFromAxisAngle(spoon_quat_axis_origin, np.deg2rad(angle_origin))
-    spoon_quat_axis = np.array([0., 1., 0.])
     
-    angle = np.random.randint(0, 360)
+    spoon_quat_axis = np.array([0., 1., 0.])
+    angle = scooping_list[l, -1] 
     spoon_quat_2 = quatFromAxisAngle(spoon_quat_axis, np.deg2rad(angle))
     spoon_quat = quaternion_multuply(spoon_quat_2, spoon_quat_origin)
     
@@ -103,40 +113,78 @@ def data_gen_scooping(info):
 
     ## update the shape states for each time step
     count = 0
+    angle_drop = 0.
+    
     step_list = []
     particle_pos_list = []
     tool_pos_list = []
     tool_quat_list = []
     
+    n_stay_still = 90
+    n_move = 300
+    n_up = 500
+    speed= rand_float(0.01, 0.02)
+    
+    # if np.random.randint(0, 3) == 0:
+    #     spoon_quat_axis_drop = np.array([0., 0., 1.])
+    #     n_drop = 800
+    # elif np.random.randint(0, 3) == 1:
+    #     spoon_quat_axis_drop = np.array([1., 0., 0.])
+    #     n_drop = 900
+    # elif np.random.randint(0, 3) == 2:
+    #     spoon_quat_axis_drop = np.array([-1., 0., 0.])
+    #     n_drop = 900
+    
+    # spoon_quat_axis_drop = np.array([1., 0., 0.])
+    # n_drop = 800
+    
     for p in range(n_scoop):
+        particle_pos = pyflex.get_positions().reshape(-1, 4)
+        num_particle = particle_pos.shape[0]
+        # random pick one particle
+        pick_id = rand_int(0, num_particle)
+        pick_pos = particle_pos[pick_id, :3]
+        
+        if p == 0:
+            spoon_pos = spoon_pos_origin
+            spoon_quat_t = spoon_quat
+        else:
+            l = np.random.randint(0, scooping_list.shape[0])
+            spoon_pos = scooping_list[l, :3]
+            spoon_quat_axis = np.array([0., 1., 0.])
+            angle = scooping_list[l, -1]  
+            spoon_quat_t = quatFromAxisAngle(spoon_quat_axis, np.deg2rad(angle))
+            spoon_quat_t = quaternion_multuply(spoon_quat_t, spoon_quat_origin)
+        spoon_quat = spoon_quat_t
+        
+        # ending position based on the start position and pick position
+        spoon_pos_end = spoon_pos.copy()
+        spoon_pos_end[0] = pick_pos[0]
+        spoon_pos_end[2] = pick_pos[2]
+        
+        # save info
+        step_list.append(count)
+        
         for i in range(n_time_step):
-            angle = 30
             
-            n_stay_still = 40
-            n_scoop = 300
-            n_up = 600
+            # downsample the point positions
+            if p == 0 and i == n_stay_still:
+                particle_pos = pyflex.get_positions().reshape(-1, 4)
+                sampled_particle_pos, sampled_idx = fps_with_idx(particle_pos[:, :3], num_sample_points)
             
-            n_move = 2000
-            
-            if n_stay_still < i < n_scoop:
-                # change spoon x position
-                spoon_pos[0] -= 0.01
-                spoon_pos[0] = np.clip(spoon_pos[0], 2.0, spoon_pos_x) 
-            if n_scoop < i < n_up:
-                # change spoon y position
+            # scooping
+            if n_stay_still < i < n_move:
+                spoon_pos = spoon_pos + (spoon_pos_end - spoon_pos) * speed
+            if n_move < i < n_up:
                 spoon_pos[1] += 0.01
-                spoon_pos[1] = np.clip(spoon_pos[1], spoon_pos_y, spoon_pos_y+1.5)
-            if n_up < i:
-                # change spoon z position
-                # spoon_pos[2] -= 0.005
-                # spoon_pos[2] = np.clip(spoon_pos[2], -0.5, spoon_pos_z)
-                
-                # change spoon angle
-                spoon_quat_axis[2] += 0.001
-                spoon_quat_axis[2] = np.clip(spoon_quat_axis[2], -2.0, 2.0)
-                spoon_quat_axis[0] += 0.005
-                spoon_quat_axis[0] = np.clip(spoon_quat_axis[0], -2.0, 10.0)
-                spoon_quat = quatFromAxisAngle(spoon_quat_axis_origin, np.deg2rad(angle))
+                spoon_pos[1] = np.clip(spoon_pos[1], spoon_pos_y, table_height + 4.0)
+            # if n_up < i < n_drop:
+            #     spoon_quat_axis[0] += 0.001
+            #     spoon_quat_axis[0] = np.clip(spoon_quat_axis[0], 0., 1.)
+            #     angle = 90
+            #     spoon_quat_drop  = quatFromAxisAngle(spoon_quat_axis, np.deg2rad(angle))
+            #     spoon_quat = quaternion_multuply(spoon_quat_drop, spoon_quat)
+               
             
             # set shape states
             shape_states = np.zeros((2, 14))
@@ -163,7 +211,7 @@ def data_gen_scooping(info):
                     pyflex.set_camAngle(camAngle_list[j])
                     
                     # create dir with cameras
-                    cam_dir = os.path.join(folder_dir, 'camera_%d' % (j))
+                    cam_dir = os.path.join(epi_dir, 'camera_%d' % (j))
                     os.system('mkdir -p ' + cam_dir)
                     
                     # save camera params
@@ -175,18 +223,54 @@ def data_gen_scooping(info):
                 count += 1
             
             pyflex.step()
+    
+    # save property params
+    property_params = {
+        'particle_radius': radius,
+        'num_particles': len(sampled_idx),
+        'granular_scale': granular_scale,
+        'num_granular': num_granular,
+        'distribution_r': granular_dis,
+        'dynamic_friction': dynamic_friction,
+        'granular_mass': granular_mass,
+        'speed': speed,
+    }
+    print(property_params)
 
     pyflex.clean()
+    
+    print(f'done episode {epi}!!!! total time: {time.time() - epi_start_time}')
 
 ### data generation for scooping
-info = {
-    'epi': 0,
-    'n_time_step': 1000,
-    'n_scoop': 1,
-    'num_sample_points': 2000,
-    "headless": False,
-    "data_root_dir": "data_dense",
-    "debug": True,
-}
+# info = {
+#     'epi': 0,
+#     'n_time_step': 800,
+#     'n_scoop': 1,
+#     'num_sample_points': 2000,
+#     "headless": False,
+#     "data_root_dir": "data_dense",
+#     "debug": True,
+# }
+# data_gen_scooping(info)
 
-data_gen_scooping(info)
+## multiprocessing
+n_worker = 10
+n_episode = 10
+# end_base = int(1000 / 5)
+# bases = [i for i in range(0, end_base, n_episode)]
+bases = [0]
+for base in bases:
+    infos = []
+    for i in range(n_worker):
+        info = {
+            'epi': base+i*n_episode//n_worker,
+            'n_time_step': 800,
+            'n_scoop': 1,
+            'num_sample_points': 2000,
+            "headless": True,
+            "data_root_dir": "/media/baoyu/sumsung",
+            "debug": False,
+        }
+        infos.append(info)
+    pool = mp.Pool(processes=n_worker)
+    pool.map(data_gen_scooping, infos)
