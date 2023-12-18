@@ -73,7 +73,7 @@ def set_light(screenHeight, screenWidth):
     pyflex.set_light_fov(70.)
     
 
-def set_camera(cam_dis, cam_height, camera_view=1):
+def set_camera(cam_dis, cam_height, camera_view):
     if camera_view == 1:
         camPos = np.array([cam_dis, cam_height, cam_dis])
         camAngle = np.array([np.deg2rad(45.), -np.deg2rad(45.), 0.])

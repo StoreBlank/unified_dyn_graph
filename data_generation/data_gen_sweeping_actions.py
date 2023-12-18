@@ -288,7 +288,10 @@ def data_gen_sweeping(info):
 ## multiprocessing
 n_worker = 25
 n_episode = 25
-bases = [0]
+end_base = int(1000 / 5)
+bases = [i for i in range(0, end_base, n_episode)]
+print(bases)
+print(len(bases))
 for base in bases:
     print("base:", base)
     infos=[]
