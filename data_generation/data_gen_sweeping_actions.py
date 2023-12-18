@@ -7,8 +7,9 @@ import json
 import multiprocessing as mp
 
 from utils_env import rand_float, rand_int, quatFromAxisAngle, quaternion_multuply
-from data_generation.utils import init_multiview_camera, render, randomize_pos, fps_with_idx
-from data_generation.utils import get_camera_intrinsics, get_camera_extrinsics
+from data_generation.utils import add_table, set_light, set_camera
+from data_generation.utils import init_multiview_camera, get_camera_intrinsics, get_camera_extrinsics
+from data_generation.utils import fps_with_idx, randomize_pos, render
 
 camera_view = 4
 
@@ -67,14 +68,8 @@ def data_gen_sweeping(info):
     ## set env
     ## add table
     table_height = 0.5
-    halfEdge = np.array([4., table_height, 4.])
-    center = np.array([0.0, 0.0, 0.0])
-    quats = quatFromAxisAngle(axis=np.array([0., 1., 0.]), angle=0.)
-    hideShape = 0
-    color = np.ones(3) * (160. / 255.)
-    pyflex.add_box(halfEdge, center, quats, hideShape, color)
-    table_shape_states = np.concatenate([center, center, quats, quats])
-    # print('table_shape_states', table_shape_states.shape) # (14,)
+    table_side = 5.
+    table_shape_states = add_table(table_height, table_side)
     
     ## add sponge
     sponge_choice = np.random.choice([1, 2, 3]) # 1: sponge, 2: sponge_2, 3: chef_knife
@@ -130,32 +125,11 @@ def data_gen_sweeping(info):
                     dustpan_color,dustpan_pos,dustpan_quat, False)
         obj_shape_states[0] = np.concatenate([dustpan_pos,dustpan_pos,dustpan_quat,dustpan_quat])
 
-    ## Light setting
-    screebWidth, screenHeight = 720, 720
-    pyflex.set_screenWidth(screebWidth)
-    pyflex.set_screenHeight(screenHeight)
-    pyflex.set_light_dir(np.array([0.1, 5.0, 0.1]))
-    pyflex.set_light_fov(70.)
-    
-    ## camera setting for view
-    cam_dis = 6.
-    cam_height = 10.
-    if camera_view == 1:
-        camPos = np.array([cam_dis, cam_height, cam_dis])
-        camAngle = np.array([np.deg2rad(45.), -np.deg2rad(45.), 0.])
-    elif camera_view == 2:
-        camPos = np.array([cam_dis, cam_height, -cam_dis])
-        camAngle = np.array([np.deg2rad(45.+90.), -np.deg2rad(45.), 0.])
-    elif camera_view == 3:
-        camPos = np.array([-cam_dis, cam_height, -cam_dis])
-        camAngle = np.array([np.deg2rad(45.+180.), -np.deg2rad(45.), 0.])
-    elif camera_view == 4:
-        camPos = np.array([-cam_dis, cam_height, cam_dis])
-        camAngle = np.array([np.deg2rad(45.+270.), -np.deg2rad(45.), 0.])
-    
-    pyflex.set_camPos(camPos)
-    pyflex.set_camAngle(camAngle)
-    
+    ## Light and camera setting
+    screenHeight, screenWidth = 720, 720
+    cam_dis, cam_height = 6., 10.
+    set_light(screenHeight, screenWidth)
+    set_camera(cam_dis, cam_height, camera_view)
     camPos_list, camAngle_list, cam_intrinsic_params, cam_extrinsic_matrix = init_multiview_camera(cam_dis, cam_height)
             
     pyflex.step()
@@ -237,7 +211,7 @@ def data_gen_sweeping(info):
             
             if not debug and i % 2 == 0 and n_stay_still < i < n_up:
                 num_cam = len(camPos_list)
-                for j in range(1):
+                for j in range(num_cam):
                     pyflex.set_camPos(camPos_list[j])
                     pyflex.set_camAngle(camAngle_list[j])
                     
@@ -247,11 +221,11 @@ def data_gen_sweeping(info):
                     
                     # save camera params
                     if p == 0 and i == 0:
-                        cam_intrinsic_params[j] = get_camera_intrinsics(screenHeight, screebWidth)
+                        cam_intrinsic_params[j] = get_camera_intrinsics(screenHeight, screenWidth)
                         cam_extrinsic_matrix[j] = get_camera_extrinsics()
                     
                     # save rgb images
-                    img = render(screenHeight, screebWidth)
+                    img = render(screenHeight, screenWidth)
                     cv2.imwrite(os.path.join(cam_dir, '%d_color.jpg' % count), img[:, :, :3][..., ::-1])
                     cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % count), (img[:, :, -1]*1000).astype(np.uint16))
                     if j == 0:
@@ -267,7 +241,7 @@ def data_gen_sweeping(info):
             
             pyflex.step()
 
-    ## save property params
+    # save property params
     property_params = {
         'particle_radius': radius,
         'num_particles': len(sampled_idx),
@@ -298,37 +272,37 @@ def data_gen_sweeping(info):
 
 ### data generation for scooping
 
-info = {
-    "epi": 9,
-    "n_time_step": 500,
-    "n_push": 5,
-    "num_sample_points": 2000,
-    "with_dustpan": False,
-    "headless": False,
-    "data_root_dir": "data_dense",
-    "debug": False,
-}
+# info = {
+#     "epi": 9,
+#     "n_time_step": 500,
+#     "n_push": 5,
+#     "num_sample_points": 2000,
+#     "with_dustpan": False,
+#     "headless": False,
+#     "data_root_dir": "data_dense",
+#     "debug": False,
+# }
 
-data_gen_sweeping(info)
+# data_gen_sweeping(info)
 
 ## multiprocessing
-# n_worker = 10
-# n_episode = 10
-# bases = [0]
-# for base in bases:
-#     print("base:", base)
-#     infos=[]
-#     for i in range(n_worker):
-#         info = {
-#             "epi": base+i*n_episode//n_worker,
-#             "n_time_step": 500,
-#             "n_push": 5,
-#             "num_sample_points": 1000,
-#             "with_dustpan": False,
-#             "headless": True,
-#             "data_root_dir": "data_dense", #'/media/baoyu/sumsung', #"data_dense",
-#             "debug": False,
-#         }
-#         infos.append(info)
-#     pool = mp.Pool(processes=n_worker)
-#     pool.map(data_gen_sweeping, infos)
+n_worker = 25
+n_episode = 25
+bases = [0]
+for base in bases:
+    print("base:", base)
+    infos=[]
+    for i in range(n_worker):
+        info = {
+            "epi": base+i*n_episode//n_worker,
+            "n_time_step": 500,
+            "n_push": 5,
+            "num_sample_points": 2000,
+            "with_dustpan": False,
+            "headless": True,
+            "data_root_dir": "/media/baoyu/sumsung", #"data_dense", 
+            "debug": False,
+        }
+        infos.append(info)
+    pool = mp.Pool(processes=n_worker)
+    pool.map(data_gen_sweeping, infos)
