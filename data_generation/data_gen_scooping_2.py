@@ -123,7 +123,7 @@ def data_gen_scooping(info):
     n_stay_still = 90
     n_move = 300
     n_up = 500
-    speed= rand_float(0.01, 0.02)
+    speed= rand_float(0.03, 0.04) #rand_float(0.01, 0.02)
     
     # if np.random.randint(0, 3) == 0:
     #     spoon_quat_axis_drop = np.array([0., 0., 1.])
