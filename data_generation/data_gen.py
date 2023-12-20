@@ -149,7 +149,7 @@ def gen_data(info):
 ###multiprocessing
 # bases = [210, 240, 270, 300, 330, 360, 390, 420, 450, 480]
 # bases = [207, 281,  327, 331, 353, 364, 391]
-bases = [25, 50, 75, 100, 125, 150, 175,]
+bases = [0, 25]
 for base in bases:
     print("base:", base)
     infos=[]

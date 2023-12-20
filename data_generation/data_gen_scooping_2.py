@@ -242,35 +242,35 @@ def data_gen_scooping(info):
     print(f'done episode {epi}!!!! total time: {time.time() - epi_start_time}')
 
 ### data generation for scooping
-# info = {
-#     'epi': 0,
-#     'n_time_step': 800,
-#     'n_scoop': 1,
-#     'num_sample_points': 2000,
-#     "headless": False,
-#     "data_root_dir": "data_dense",
-#     "debug": True,
-# }
-# data_gen_scooping(info)
+info = {
+    'epi': 0,
+    'n_time_step': 800,
+    'n_scoop': 1,
+    'num_sample_points': 2000,
+    "headless": False,
+    "data_root_dir": "/mnt/sda",
+    "debug": False,
+}
+data_gen_scooping(info)
 
 ## multiprocessing
-n_worker = 10
-n_episode = 10
-# end_base = int(1000 / 5)
-# bases = [i for i in range(0, end_base, n_episode)]
-bases = [0]
-for base in bases:
-    infos = []
-    for i in range(n_worker):
-        info = {
-            'epi': base+i*n_episode//n_worker,
-            'n_time_step': 800,
-            'n_scoop': 1,
-            'num_sample_points': 2000,
-            "headless": True,
-            "data_root_dir": "/media/baoyu/sumsung",
-            "debug": False,
-        }
-        infos.append(info)
-    pool = mp.Pool(processes=n_worker)
-    pool.map(data_gen_scooping, infos)
+# n_worker = 10
+# n_episode = 10
+# # end_base = int(1000 / 5)
+# # bases = [i for i in range(0, end_base, n_episode)]
+# bases = [0]
+# for base in bases:
+#     infos = []
+#     for i in range(n_worker):
+#         info = {
+#             'epi': base+i*n_episode//n_worker,
+#             'n_time_step': 800,
+#             'n_scoop': 1,
+#             'num_sample_points': 2000,
+#             "headless": True,
+#             "data_root_dir": "/media/baoyu/sumsung",
+#             "debug": False,
+#         }
+#         infos.append(info)
+#     pool = mp.Pool(processes=n_worker)
+#     pool.map(data_gen_scooping, infos)
