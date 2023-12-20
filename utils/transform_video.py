@@ -31,15 +31,28 @@ def merge_video(image_path, video_path):
     video_writer.release()
 
 if __name__ == '__main__':
+    # epi_num = 10
+    # for n in range(epi_num):
+    #     #i = np.random.randint(0, 100)
+    #     i = n
+    #     #j = np.random.randint(0, 4)
+    #     j = 0
+    #     epi_path = f"/media/baoyu/sumsung/granular_scooping/episode_{i}/camera_{j}"
+    #     image_path = f"/media/baoyu/sumsung/granular_scooping/episode_{i}/camera_{j}"
+    #     video_path = f"/media/baoyu/sumsung/video/granular_scooping/video_{i}.mp4" 
+    #     merge_video(image_path, video_path)
+    
     epi_num = 10
     for n in range(epi_num):
         #i = np.random.randint(0, 100)
         i = n
         #j = np.random.randint(0, 4)
         j = 0
-        epi_path = f"/media/baoyu/sumsung/granular_scooping/episode_{i}/camera_{j}"
-        image_path = f"/media/baoyu/sumsung/granular_scooping/episode_{i}/camera_{j}"
-        video_path = f"/media/baoyu/sumsung/video/granular_scooping/video_{i}.mp4" 
+        epi_path = f"/mnt/sda/data/granular_sweeping_dustpan/episode_{i}/camera_{j}"
+        image_path = f"/mnt/sda/data/granular_sweeping_dustpan/episode_{i}/camera_{j}"
+        video_dir = f"/mnt/sda/videos/granular_sweeping_dustpan" 
+        video_path = f"/mnt/sda/videos/granular_sweeping_dustpan/video_{i}.mp4" 
+        os.makedirs(video_dir, exist_ok=True)
         merge_video(image_path, video_path)
     
     # for i in range(1):
