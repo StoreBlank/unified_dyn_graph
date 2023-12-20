@@ -48,10 +48,10 @@ if __name__ == '__main__':
         i = n
         #j = np.random.randint(0, 4)
         j = 0
-        epi_path = f"/mnt/sda/data/granular_sweeping_dustpan/episode_{i}/camera_{j}"
-        image_path = f"/mnt/sda/data/granular_sweeping_dustpan/episode_{i}/camera_{j}"
-        video_dir = f"/mnt/sda/videos/granular_sweeping_dustpan" 
-        video_path = f"/mnt/sda/videos/granular_sweeping_dustpan/video_{i}.mp4" 
+        epi_path = f"/mnt/sda/data/granular_scooping_board/episode_{i}/camera_{j}"
+        image_path = f"/mnt/sda/data/granular_scooping_board/episode_{i}/camera_{j}"
+        video_dir = f"/mnt/sda/videos/granular_scooping_board" 
+        video_path = f"/mnt/sda/videos/granular_scooping_board/video_{i}.mp4" 
         os.makedirs(video_dir, exist_ok=True)
         merge_video(image_path, video_path)
     
