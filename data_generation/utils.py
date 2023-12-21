@@ -2,6 +2,7 @@ import numpy as np
 import pyflex
 
 from utils_env import rand_float, quatFromAxisAngle
+from transformations import rotation_matrix, quaternion_from_matrix
 
     
 def randomize_pos(init_y):
@@ -118,4 +119,92 @@ def add_table(table_height, table_side):
     pyflex.add_box(halfEdge, center, quats, hideShape, color)
     table_shape_states = np.concatenate([center, center, quats, quats])
     return table_shape_states
+
+def calc_container_boxes(pos, angle, direction, size, border=0.02):
+    boxes = []
+    hide_shape = []
+
+    dx, dy, dz = size
+    r_mtx = rotation_matrix(angle, direction)
+    quat = quaternion_from_matrix(r_mtx)
+
+    # bottom
+    halfEdge = np.array([dx / 2. + border, border / 2., dz / 2. + border])
+    center = np.array([0., -(dy + border) / 2., 0., 1.])
+    center = r_mtx.dot(center)[:3] + pos
+    boxes.append([halfEdge, center, quat])
+    hide_shape.append(0)
+
+    # left
+    halfEdge = np.array([border / 2., dy / 2. + border, dz / 2. + border])
+    center = np.array([-(dx + border) / 2., 0., 0., 1.])
+    center = r_mtx.dot(center)[:3] + pos
+    boxes.append([halfEdge, center, quat])
+    hide_shape.append(1)
+
+    # right
+    center = np.array([(dx + border) / 2., 0., 0., 1.])
+    center = r_mtx.dot(center)[:3] + pos
+    boxes.append([halfEdge, center, quat])
+    hide_shape.append(1)
+
+    # back
+    halfEdge = np.array([dx / 2. + border, dy / 2. + border, border / 2.])
+    center = np.array([0., 0., -(dz + border) / 2., 1.])
+    center = r_mtx.dot(center)[:3] + pos
+    boxes.append([halfEdge, center, quat])
+    hide_shape.append(1)
+
+    # front
+    center = np.array([0., 0., (dz + border) / 2., 1.])
+    center = r_mtx.dot(center)[:3] + pos
+    boxes.append([halfEdge, center, quat])
+    hide_shape.append(1)
+
+    # top bars
+    halfEdge = np.array([border / 2., border / 2., dz / 2. + border])
+    center = np.array([(dx + border) / 2., (dy + border) / 2., 0., 1])
+    center = r_mtx.dot(center)[:3] + pos
+    boxes.append([halfEdge, center, quat])
+    hide_shape.append(0)
+
+    center = np.array([-(dx + border) / 2., (dy + border) / 2., 0., 1])
+    center = r_mtx.dot(center)[:3] + pos
+    boxes.append([halfEdge, center, quat])
+    hide_shape.append(0)
+
+    halfEdge = np.array([dx / 2. + border, border / 2., border / 2.])
+    center = np.array([0, (dy + border) / 2., (dz + border) / 2., 1])
+    center = r_mtx.dot(center)[:3] + pos
+    boxes.append([halfEdge, center, quat])
+    hide_shape.append(0)
+
+    center = np.array([0, (dy + border) / 2., -(dz + border) / 2., 1])
+    center = r_mtx.dot(center)[:3] + pos
+    boxes.append([halfEdge, center, quat])
+    hide_shape.append(0)
+
+    # side bars
+    halfEdge = np.array([border / 2., dy / 2. + border, border / 2.])
+    center = np.array([(dx + border) / 2., 0., (dz + border) / 2., 1])
+    center = r_mtx.dot(center)[:3] + pos
+    boxes.append([halfEdge, center, quat])
+    hide_shape.append(0)
+
+    center = np.array([(dx + border) / 2., 0., -(dz + border) / 2., 1])
+    center = r_mtx.dot(center)[:3] + pos
+    boxes.append([halfEdge, center, quat])
+    hide_shape.append(0)
+
+    center = np.array([-(dx + border) / 2., 0., -(dz + border) / 2., 1])
+    center = r_mtx.dot(center)[:3] + pos
+    boxes.append([halfEdge, center, quat])
+    hide_shape.append(0)
+
+    center = np.array([-(dx + border) / 2., 0., (dz + border) / 2., 1])
+    center = r_mtx.dot(center)[:3] + pos
+    boxes.append([halfEdge, center, quat])
+    hide_shape.append(0)
+
+    return boxes, np.array(hide_shape)
 
