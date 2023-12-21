@@ -322,7 +322,6 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <!-- <mesh filename="xarm_gripper/meshes/finger_v2.obj"/> -->
         <mesh filename="xarm_gripper/meshes/stick_2cm.obj"/>
       </geometry>
       <!-- <material

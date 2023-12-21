@@ -111,7 +111,7 @@ class FlexEnv(gym.Env):
     ### shape states
     def robot_to_shape_states(self, robot_states):
         n_robot_links = robot_states.shape[0]
-        n_table = 1
+        n_table = self.table_shape_states.shape[0]
         
         if self.obj_shape_states == None:
             shape_states = np.zeros((n_table + n_robot_links, 14))
@@ -142,8 +142,7 @@ class FlexEnv(gym.Env):
     
     ### cameras 
     def set_camera(self):
-        cam_dis = 3.
-        cam_height = 4.5
+        cam_dis, cam_height = 6., 10.
         if self.camera_view == 0:
             self.camPos = np.array([0., cam_height+10., 0.])
             self.camAngle = np.array([0., -np.deg2rad(90.), 0.])
@@ -690,14 +689,30 @@ class FlexEnv(gym.Env):
         self.init_multiview_camera()
         
         ## add table board
-        table_height = 0.5
-        halfEdge = np.array([4., table_height, 4.])
+        self.table_shape_states = np.zeros((2, 14))
+        # table for workspace
+        wkspace_height = 0.5
+        wkspace_width = 3.5
+        wkspace_length = 4.5
+        halfEdge = np.array([wkspace_width, wkspace_height, wkspace_length])
         center = np.array([0.0, 0.0, 0.0])
         quats = quatFromAxisAngle(axis=np.array([0., 1., 0.]), angle=0.)
         hideShape = 0
         color = np.ones(3) * (160. / 255.)
         pyflex.add_box(halfEdge, center, quats, hideShape, color)
-        self.table_shape_states = np.concatenate([center, center, quats, quats])
+        self.table_shape_states[0] = np.concatenate([center, center, quats, quats])
+        
+        # table for robot
+        robot_table_height = 0.525
+        robot_table_width = 1.0
+        robot_table_length = 1.0
+        halfEdge = np.array([robot_table_width, robot_table_height, robot_table_length])
+        center = np.array([-wkspace_width-robot_table_width, 0.0, 0.0])
+        quats = quatFromAxisAngle(axis=np.array([0., 1., 0.]), angle=0.)
+        hideShape = 0
+        color = np.ones(3) * (160. / 255.)
+        pyflex.add_box(halfEdge, center, quats, hideShape, color)
+        self.table_shape_states[1] = np.concatenate([center, center, quats, quats])
         
         ## add robot
         if self.gripper:
@@ -706,9 +721,9 @@ class FlexEnv(gym.Env):
             self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'assets/xarm/xarm6_with_gripper_2.urdf', robot_base_pos, robot_base_orn, globalScaling=5) 
             self.rest_joints = np.zeros(13)
         else:
-            robot_base_pos = [-3., 0., 0.5]
+            robot_base_pos = [-wkspace_width-1.0, 0., wkspace_height]
             robot_base_orn = [0, 0, 0, 1]
-            self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'assets/xarm/xarm6_with_gripper.urdf', robot_base_pos, robot_base_orn, globalScaling=7) 
+            self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'assets/xarm/xarm6_with_gripper.urdf', robot_base_pos, robot_base_orn, globalScaling=9) 
             self.rest_joints = np.zeros(8)
 
         pyflex.set_shape_states(self.robot_to_shape_states(pyflex.getRobotShapeStates(self.flex_robot_helper)))
@@ -788,12 +803,9 @@ class FlexEnv(gym.Env):
         
     def step(self, action, prev_counts=0, dir=None):
         if self.gripper:
-            h = 1.35
-        elif self.obj == 'bowl_granular':
-            h = 1.4
+            h = 1.35 #TODO change
         else:
-            # h = 0.5 + 0.5 # table + pusher
-            h = 1.2
+            h = 0.5 + 0.9
         s_2d = np.concatenate([action[:2], [h]])
         e_2d = np.concatenate([action[2:], [h]])
 

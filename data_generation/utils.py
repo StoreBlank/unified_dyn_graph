@@ -110,8 +110,8 @@ def init_multiview_camera(cam_dis = 3, cam_height = 4.5):
     
     return camPos_list, camAngle_list, cam_intrinsic_params, cam_extrinsic_matrix
 
-def add_table(table_height, table_side):
-    halfEdge = np.array([table_side, table_height, table_side])
+def add_table(table_height, table_length=4.5, table_width=3.5):
+    halfEdge = np.array([table_length, table_height, table_width])
     center = np.array([0.0, 0.0, 0.0])
     quats = quatFromAxisAngle(axis=np.array([0., 1., 0.]), angle=0.)
     hideShape = 0
