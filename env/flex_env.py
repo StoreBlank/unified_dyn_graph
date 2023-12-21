@@ -168,9 +168,7 @@ class FlexEnv(gym.Env):
         self.camPos_list = []
         self.camAngle_list = []
 
-        cam_dis = 3.
-        cam_height = 4.5
-
+        cam_dis, cam_height = 6., 10.
         rad_list = np.deg2rad(np.array([0., 90., 180., 270.]) + 45.)
         cam_x_list = np.array([cam_dis, cam_dis, -cam_dis, -cam_dis])
         cam_z_list = np.array([cam_dis, -cam_dis, -cam_dis, cam_dis])

@@ -147,7 +147,7 @@ info = {
     "n_epi_per_worker": n_episode,
     "thread_idx": 1,
     "verbose": False,
-    "debug": True,
+    "debug": False,
 }
 gen_data(info)
 

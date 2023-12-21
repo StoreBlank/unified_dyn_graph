@@ -141,9 +141,7 @@ class FlexEnv(gym.Env):
         self.camPos_list = []
         self.camAngle_list = []
 
-        cam_dis = 3.
-        cam_height = 4.5
-
+        cam_dis, cam_height = 6., 10.
         rad_list = np.deg2rad(np.array([0., 90., 180., 270.]) + 45.)
         cam_x_list = np.array([cam_dis, cam_dis, -cam_dis, -cam_dis])
         cam_z_list = np.array([cam_dis, -cam_dis, -cam_dis, cam_dis])
@@ -160,23 +158,23 @@ class FlexEnv(gym.Env):
         if obj == 'carrots':
             radius = 0.03
     
-            num_granular_ft_x = rand_float(5, 10)
-            num_granular_ft_y = np.random.choice([2, 3])
-            num_granular_ft_z = rand_float(5, 10)
+            num_granular_ft_x = 5 #rand_float(2, 10)
+            num_granular_ft_y = 2  #np.random.choice([2, 3])
+            num_granular_ft_z = 5 #rand_float(2, 10)
             num_granular_ft = [num_granular_ft_x, num_granular_ft_y, num_granular_ft_z] 
             num_granular = int(num_granular_ft_x * num_granular_ft_y * num_granular_ft_z)
             
-            granular_scale = 0.09 #rand_float(0.1, 0.2)
+            granular_scale = 0.25 #rand_float(0.1, 0.2)
             pos_granular = [-1.0, 1., -0.8]
-            granular_dis = rand_float(0.1, 0.3)
+            granular_dis = 0.1 #rand_float(0.1, 0.3)
 
             draw_mesh = 1
             
             shapeCollisionMargin = 0.01
             collisionDistance = 0.03
             
-            dynamic_friction = rand_float(0.2, 0.9)
-            granular_mass = rand_float(0.1, 10.)
+            dynamic_friction = 0.3 #rand_float(0.2, 0.9)
+            granular_mass = 0.1 #rand_float(0.1, 10.)
 
             scene_params = np.array([radius, *num_granular_ft, granular_scale, *pos_granular, granular_dis, 
                                     draw_mesh, shapeCollisionMargin, collisionDistance, dynamic_friction,
@@ -185,7 +183,7 @@ class FlexEnv(gym.Env):
             temp = np.array([0])
             pyflex.set_scene(35, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0)
             
-            property_params = {
+            property_param = {
                 'particle_radius': radius,
                 'num_particles': self.get_num_particles(),
                 'granular_scale': granular_scale,
@@ -194,7 +192,8 @@ class FlexEnv(gym.Env):
                 'dynamic_friction': dynamic_friction,
                 'granular_mass': granular_mass,
             }
-            print(property_params)
+            # print(property_params)
+            self.property = property_param
         
         elif obj == 'coffee':
             radius = 0.03
