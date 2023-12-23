@@ -22,10 +22,9 @@ cam_view = config['dataset']['camera_view']
 os.system("mkdir -p %s" % data_dir)
 
 def gen_data(info):
-    base_epi = info["base_epi"]
-    n_epi_per_worker = info["n_epi_per_worker"]
-    thread_idx = info["thread_idx"]
-    verbose = info["verbose"]
+    start_time = time.time()
+    
+    idx_episode = info["epi"]
     debug = info["debug"]
 
     # create folder
@@ -34,85 +33,66 @@ def gen_data(info):
 
     # set env 
     env = FlexEnv(config)
-    np.random.seed(round(time.time() * 1000 + thread_idx) % 2 ** 32)
-
-    idx_episode = base_epi
-    while idx_episode < base_epi + n_epi_per_worker:
-        start_epi_time = time.time()
-        print('episode:', idx_episode)
+    np.random.seed(idx_episode)
+    print('episode start:', idx_episode)
+    
+    if debug:
+        particle_pos_list, eef_pos_list, step_list, contact_list = env.reset() 
+    else:
+        epi_dir = os.path.join(folder_dir, "episode_%d" % idx_episode)
+        os.system("mkdir -p %s" % epi_dir)
         
-        if debug:
-            n_steps = env.reset() 
-        else:
-            epi_dir = os.path.join(folder_dir, "episode_%d" % idx_episode)
-            os.system("mkdir -p %s" % epi_dir)
-            n_steps = env.reset(dir=epi_dir)
-            # save property
-            property = env.get_property()
-            with open(os.path.join(epi_dir, 'property.json'), 'w') as f:
-                json.dump(property, f)
+        particle_pos_list, eef_pos_list, step_list, contact_list = env.reset(dir=epi_dir)
         
-        actions = np.zeros((n_timestep, action_dim))
-        color_threshold = 0.1
-        
-        # time step
-        img = env.render()
+        # save property
+        property = env.get_property()
+        with open(os.path.join(epi_dir, 'property.json'), 'w') as f:
+            json.dump(property, f)
+    
+    actions = np.zeros((n_timestep, action_dim))
+    color_threshold = 0.1
+    
+    # n_pushes
+    img = env.render()
+    last_img = img.copy()
+    for idx_timestep in range(n_timestep):
+        color_diff = 0
+        while color_diff < color_threshold:
+            u = None
+            u = env.sample_action()
+    
+            # step
+            prev_particle_pos_list, prev_eef_pos_list, prev_step_list, prev_contact_list = particle_pos_list, eef_pos_list, step_list, contact_list
+            if debug:
+                img, particle_pos_list, eef_pos_list, step_list, contact_list = env.step(u, particle_pos_list=particle_pos_list, eef_pos_list=eef_pos_list, step_list=step_list, contact_list=contact_list)
+            else: 
+                img, particle_pos_list, eef_pos_list, step_list, contact_list = env.step(u, epi_dir, particle_pos_list, eef_pos_list, step_list, contact_list)
+            
+            # check whether action is valid 
+            color_diff = np.mean(np.abs(img[:, :, :3] - last_img[:, :, :3]))
+            if color_diff < color_threshold:
+                particle_pos_list, eef_pos_list, step_list, contact_list = prev_particle_pos_list, prev_eef_pos_list, prev_step_list, prev_contact_list
+            
+        actions[idx_timestep] = u
         last_img = img.copy()
-        steps_list = []
-        contacts_list = []
-        for idx_timestep in range(n_timestep):
-            if verbose:
-                print('timestep %d' % idx_timestep)
-            
-            color_diff = 0
-            while color_diff < color_threshold:
-                u = None
-                u = env.sample_action()
-                # u = [2.5, 0., -2., 0.]
+        # print("particle_pos_list:", np.array(particle_pos_list).shape)
+        # print("eef_pos_list:", np.array(eef_pos_list).shape)
+        # print("step_list:", step_list)
+        # print("contact_list:", contact_list)
         
-                # step
-                prev_steps = n_steps
-                if debug:
-                    img, n_steps, contact = env.step(u)
-                else: 
-                    img, n_steps, contact = env.step(u, n_steps, epi_dir)
-                
-                # check whether action is valid 
-                color_diff = np.mean(np.abs(img[:, :, :3] - last_img[:, :, :3]))
-                if color_diff < color_threshold:
-                    n_steps = prev_steps
-                else:
-                    steps_list.append(n_steps)
-                    # contacts_list.append(contact)
-                
-               
-
-            actions[idx_timestep] = u
-            last_img = img.copy()
-
-            if verbose:
-                print('action: ', u)
-                print('num particles: ', env.get_positions().shape[0] // 4)
-                print('particle positions: ', env.get_positions().reshape(-1, 4))
-                print('\n')
-            
-            # check whether the object is inside the workspace
-            if not env.inside_workspace():
-                print("Object outside workspace!")
-                break
-            
-            print('episode %d timestep %d done!!! step: %d' % (idx_episode, idx_timestep, n_steps))       
+        print('episode %d timestep %d done!!! step: %d' % (idx_episode, idx_timestep, step_list[-1]))       
+    
+    # save actions and steps and end effector positions
+    if not debug:
+        np.save(os.path.join(epi_dir, 'actions.npy'), actions)
+        np.save(os.path.join(epi_dir, 'particles_pos'), particle_pos_list)
+        np.save(os.path.join(epi_dir, 'eef_pos.npy'), eef_pos_list)
+        np.save(os.path.join(epi_dir, 'steps.npy'), step_list)
+        np.save(os.path.join(epi_dir, 'contact.npy'), contact_list)
         
-        # save actions and steps and end effector positions
-        if not debug:
-            np.save(os.path.join(epi_dir, 'actions.npy'), actions)
-            np.save(os.path.join(epi_dir, 'steps.npy'), np.array(steps_list))
-            # np.save(os.path.join(epi_dir, 'contacts.npy'), np.array(contacts_list))
-
-        end_epi_time = time.time()
-        print("Finish episode %d!!!!" % idx_episode)
-        print('episiode %d time: ' % idx_episode, end_epi_time - start_epi_time)
-        idx_episode += 1
+    end_time = time.time()
+    print("Finish episode %d!!!!" % idx_episode)
+    print('episiode %d time: ' % idx_episode, end_time - start_time)
         
     # save camera params
     if not debug:
@@ -143,10 +123,7 @@ def gen_data(info):
 
 
 info = {
-    "base_epi": 0,
-    "n_epi_per_worker": n_episode,
-    "thread_idx": 1,
-    "verbose": False,
+    "epi": 0,
     "debug": False,
 }
 gen_data(info)

@@ -264,8 +264,8 @@ def data_gen_sweeping(info):
     
     # save info
     if not debug:
-        np.save(os.path.join(epi_dir, 'cam_intrinsic_params.npy'), cam_intrinsic_params)
-        np.save(os.path.join(epi_dir, 'cam_extrinsic_matrix.npy'), cam_extrinsic_matrix)
+        np.save(os.path.join(folder_dir, 'cam_intrinsic_params.npy'), cam_intrinsic_params)
+        np.save(os.path.join(folder_dir, 'cam_extrinsic_matrix.npy'), cam_extrinsic_matrix)
         np.save(os.path.join(epi_dir, 'steps.npy'), np.array(step_list))
         np.save(os.path.join(epi_dir, 'particle_pos.npy'), np.array(particle_pos_list))
         np.save(os.path.join(epi_dir, 'tool_pos.npy'), np.array(tool_pos_list))
