@@ -2,7 +2,7 @@ dataset:
   folder: "/mnt/sda/data" #'data_dense' #"/media/baoyu/sumsung/granular"
   n_worker: 25
   n_episode: 25
-  n_timestep: 10
+  n_timestep: 5
   obj: "carrots" 
   wkspc_w: 2.5
   headless: True
@@ -13,3 +13,4 @@ dataset:
   grasp: False
   physics: "random" # "random" or "grid"
   fps: True
+  fps_number: 2000

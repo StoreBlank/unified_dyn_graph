@@ -144,26 +144,26 @@ def find_min_distance(X, Z, k):
     min_distances = distances[index[0]]
     return min_distances, index
 
-def fps_rad(pcd, radius):
-    # pcd: (n, 3) numpy array
-    # pcd_fps: (-1, 3) numpy array
-    # radius: float
-    rand_idx = np.random.randint(pcd.shape[0])
-    pcd_fps_lst = [pcd[rand_idx]]
-    dist = np.linalg.norm(pcd - pcd_fps_lst[0], axis=1)
-    while dist.max() > radius:
-        pcd_fps_lst.append(pcd[dist.argmax()])
-        dist = np.minimum(dist, np.linalg.norm(pcd - pcd_fps_lst[-1], axis=1))
-    pcd_fps = np.stack(pcd_fps_lst, axis=0)
-    return pcd_fps
-
-def recenter(pcd, sampled_pcd, r = 0.02):
-    # pcd: (n, 3) numpy array
-    # sampled_pcd: (self.partcile_num, 3) numpy array
-    # recentering around a local point cloud
-    particle_num = sampled_pcd.shape[0]
-    dist = np.linalg.norm(pcd[:, None, :] - sampled_pcd[None, :, :], axis=2) # (n, self.particle_num)
-    recenter_sampled_pcd = np.zeros_like(sampled_pcd)
-    for i in range(particle_num):
-        recenter_sampled_pcd[i] = pcd[dist[:, i] < r].mean(axis=0)
-    return recenter_sampled_pcd
+def fps_with_idx(points, N):
+    """
+    Input:
+        points: np.array() particle positions
+        N: int sample number
+    Output:
+        points[farthest_pts_idx]: np.array() sampled points
+        farthest_pts_idx: np.array() indices of the sampled points
+    """
+    if N > len(points):
+        return points, np.arange(len(points))
+    else:
+        # start with the first point
+        farthest_pts_idx = [0]
+        distances = np.full(len(points), np.inf)
+        
+        for _ in range(1, N):
+            last_point = points[farthest_pts_idx[-1]]
+            new_distances = np.linalg.norm(points - last_point, axis=1)
+            distances = np.minimum(distances, new_distances)
+            farthest_pts_idx.append(np.argmax(distances))
+            
+        return points[farthest_pts_idx], np.array(farthest_pts_idx)

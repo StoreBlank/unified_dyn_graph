@@ -112,10 +112,7 @@ for base in bases:
     infos=[]
     for i in range(n_worker):
         info = {
-            "base_epi": base+i*n_episode//n_worker,
-            "n_epi_per_worker": n_episode//n_worker,
-            "thread_idx": i,
-            "verbose": False,
+            "epi": base+i*n_episode//n_worker,
             "debug": False,
         }
         infos.append(info)
@@ -123,9 +120,9 @@ for base in bases:
     pool.map(gen_data, infos)
 
 
-info = {
-    "epi": 0,
-    "debug": False,
-}
-gen_data(info)
+# info = {
+#     "epi": 0,
+#     "debug": False,
+# }
+# gen_data(info)
 

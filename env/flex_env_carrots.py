@@ -22,7 +22,7 @@ pyflex.getRobotShapeStates = FlexRobotHelper.getRobotShapeStates
 # utils
 from utils_env import load_cloth
 from utils_env import rand_float, rand_int, quatFromAxisAngle, find_min_distance
-from utils_env import fps_rad, recenter
+from utils_env import fps_with_idx
 
 class FlexEnv(gym.Env):
     def __init__(self, config=None) -> None:
@@ -82,7 +82,7 @@ class FlexEnv(gym.Env):
         self.contact_list = []
         
         self.fps = config['dataset']['fps']
-        self.particle_num_threshold = 0
+        self.fps_number = config['dataset']['fps_number']
         self.obj_shape_states = None
         
         self.stick_len = 0.9
@@ -314,6 +314,9 @@ class FlexEnv(gym.Env):
                     # save particle pos
                     particles = self.get_positions().reshape(-1, 4)
                     particles_pos = particles[:, :3]
+                    if self.fps:
+                        _, self.sampled_idx = fps_with_idx(particles_pos, self.fps_number)
+                        particles_pos = particles_pos[self.sampled_idx]
                     self.particle_pos_list.append(particles_pos)
                     # save eef pos
                     robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
@@ -360,6 +363,8 @@ class FlexEnv(gym.Env):
                     # save particle pos
                     particles = self.get_positions().reshape(-1, 4)
                     particles_pos = particles[:, :3]
+                    if self.fps:
+                        particles_pos = particles_pos[self.sampled_idx]
                     self.particle_pos_list.append(particles_pos)
                     # save eef pos
                     robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
@@ -446,6 +451,8 @@ class FlexEnv(gym.Env):
                                 # save particle pos
                                 particles = self.get_positions().reshape(-1, 4)
                                 particles_pos = particles[:, :3]
+                                if self.fps:
+                                    particles_pos = particles_pos[self.sampled_idx]
                                 self.particle_pos_list.append(particles_pos)
                                 # save eef pos
                                 robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
@@ -471,6 +478,8 @@ class FlexEnv(gym.Env):
                                 # save particle pos
                                 particles = self.get_positions().reshape(-1, 4)
                                 particles_pos = particles[:, :3]
+                                if self.fps:
+                                    particles_pos = particles_pos[self.sampled_idx]
                                 self.particle_pos_list.append(particles_pos)
                                 # save eef pos
                                 robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
@@ -505,6 +514,8 @@ class FlexEnv(gym.Env):
                     # save particle pos
                     particles = self.get_positions().reshape(-1, 4)
                     particles_pos = particles[:, :3]
+                    if self.fps:
+                        particles_pos = particles_pos[self.sampled_idx]
                     self.particle_pos_list.append(particles_pos)
                     # save eef pos
                     robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
