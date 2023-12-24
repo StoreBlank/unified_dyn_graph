@@ -80,7 +80,8 @@ def gen_data(info):
         # print("step_list:", step_list)
         # print("contact_list:", contact_list)
         
-        print('episode %d timestep %d done!!! step: %d' % (idx_episode, idx_timestep, step_list[-1]))       
+        if not debug:
+            print('episode %d timestep %d done!!! step: %d' % (idx_episode, idx_timestep, step_list[-1]))       
     
     # save actions and steps and end effector positions
     if not debug:
@@ -105,21 +106,21 @@ def gen_data(info):
 ###multiprocessing
 # bases = [210, 240, 270, 300, 330, 360, 390, 420, 450, 480]
 # bases = [207, 281,  327, 331, 353, 364, 391]
-# bases = [0, 25]
-# for base in bases:
-#     print("base:", base)
-#     infos=[]
-#     for i in range(n_worker):
-#         info = {
-#             "base_epi": base+i*n_episode//n_worker,
-#             "n_epi_per_worker": n_episode//n_worker,
-#             "thread_idx": i,
-#             "verbose": False,
-#             "debug": False,
-#         }
-#         infos.append(info)
-#     pool = mp.Pool(processes=n_worker)
-#     pool.map(gen_data, infos)
+bases = [0, 25, 50, 75, 100, 125, 150, 175]
+for base in bases:
+    print("base:", base)
+    infos=[]
+    for i in range(n_worker):
+        info = {
+            "base_epi": base+i*n_episode//n_worker,
+            "n_epi_per_worker": n_episode//n_worker,
+            "thread_idx": i,
+            "verbose": False,
+            "debug": False,
+        }
+        infos.append(info)
+    pool = mp.Pool(processes=n_worker)
+    pool.map(gen_data, infos)
 
 
 info = {

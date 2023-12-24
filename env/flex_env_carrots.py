@@ -66,7 +66,6 @@ class FlexEnv(gym.Env):
 
         # set up camera
         self.camera_view = config['dataset']['camera_view']
-        self.camera_radius = config['dataset']['camera_radius']
 
         # define action space
         self.action_dim = 4
@@ -85,6 +84,8 @@ class FlexEnv(gym.Env):
         self.fps = config['dataset']['fps']
         self.particle_num_threshold = 0
         self.obj_shape_states = None
+        
+        self.stick_len = 0.9
         
     ### shape states
     def robot_to_shape_states(self, robot_states):
@@ -163,13 +164,13 @@ class FlexEnv(gym.Env):
         if obj == 'carrots':
             radius = 0.03
     
-            num_granular_ft_x = 5 #rand_float(2, 10)
-            num_granular_ft_y = 2  #np.random.choice([2, 3])
-            num_granular_ft_z = 5 #rand_float(2, 10)
+            num_granular_ft_x = rand_float(2, 10)
+            num_granular_ft_y = np.random.randint(2, 4)
+            num_granular_ft_z = rand_float(2, 10)
             num_granular_ft = [num_granular_ft_x, num_granular_ft_y, num_granular_ft_z] 
             num_granular = int(num_granular_ft_x * num_granular_ft_y * num_granular_ft_z)
             
-            granular_scale = 0.25 #rand_float(0.1, 0.2)
+            granular_scale = rand_float(0.1, 0.12) #rand_float(0.1, 0.2)
             pos_granular = [-1.0, 1., -0.8]
             granular_dis = 0.1 #rand_float(0.1, 0.3)
 
@@ -300,6 +301,10 @@ class FlexEnv(gym.Env):
                 # create dir with cameras
                 cam_dir = os.path.join(dir, 'camera_%d' % (j))
                 os.system('mkdir -p %s' % (cam_dir))
+                
+                if self.cam_intrinsic_params[j].sum() == 0 or self.cam_extrinsic_matrix[j].sum() == 0:
+                        self.cam_intrinsic_params[j] = self.get_camera_intrinsics()
+                        self.cam_extrinsic_matrix[j] = self.get_camera_extrinsics()
 
                 img = self.render()
                 # rgb and depth images
@@ -313,6 +318,7 @@ class FlexEnv(gym.Env):
                     # save eef pos
                     robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
                     eef_pos = robot_shape_states[-1][:3] # actual eef position
+                    eef_pos[1] -= self.stick_len
                     self.eef_pos_list.append(eef_pos)
             self.count += 1
             
@@ -358,24 +364,22 @@ class FlexEnv(gym.Env):
                     # save eef pos
                     robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
                     eef_pos = robot_shape_states[-1][:3] # actual eef position
+                    eef_pos[1] -= self.stick_len
                     self.eef_pos_list.append(eef_pos)
-                
-                if self.cam_intrinsic_params[j].sum() == 0 or self.cam_extrinsic_matrix[j].sum() == 0:
-                        self.cam_intrinsic_params[j] = self.get_camera_intrinsics()
-                        self.cam_extrinsic_matrix[j] = self.get_camera_extrinsics()
             self.count += 1
             self.step_list.append(self.count)
         
         return self.particle_pos_list, self.eef_pos_list, self.step_list, self.contact_list
         
     def step(self, action, dir=None, particle_pos_list = None, eef_pos_list = None, step_list = None, contact_list = None):
-        self.particle_pos_list = particle_pos_list
-        self.eef_pos_list = eef_pos_list
-        self.step_list = step_list
-        self.contact_list = contact_list
-        self.count = self.step_list[-1]
+        if dir != None:
+            self.particle_pos_list = particle_pos_list
+            self.eef_pos_list = eef_pos_list
+            self.step_list = step_list
+            self.contact_list = contact_list
+            self.count = self.step_list[-1]
         
-        h = 0.5 + 0.9
+        h = 0.5 + self.stick_len
         s_2d = np.concatenate([action[:2], [h]])
         e_2d = np.concatenate([action[2:], [h]])
 
@@ -426,7 +430,7 @@ class FlexEnv(gym.Env):
                 robot_obj_dist = np.min(cdist(end_effector_pos[:2].reshape(1, 2), obj_pos))
                 
                 if dir != None:
-                    if robot_obj_dist < 0.2 and i % 4 == 0: #contact
+                    if robot_obj_dist < 0.2 and i % 5 == 0: #contact
                         for j in range(len(self.camPos_list)):
                             pyflex.set_camPos(self.camPos_list[j])
                             pyflex.set_camAngle(self.camAngle_list[j])
@@ -446,8 +450,8 @@ class FlexEnv(gym.Env):
                                 # save eef pos
                                 robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
                                 eef_pos = robot_shape_states[-1][:3] # actual eef position
-                                self.eef_pos_list.append(eef_pos)
-                                
+                                eef_pos[1] -= self.stick_len
+                                self.eef_pos_list.append(eef_pos)  
                         self.count += 1
                         self.contact_list.append(self.count)
                     
@@ -471,6 +475,7 @@ class FlexEnv(gym.Env):
                                 # save eef pos
                                 robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
                                 eef_pos = robot_shape_states[-1][:3] # actual eef position
+                                eef_pos[1] -= self.stick_len
                                 self.eef_pos_list.append(eef_pos)
                         self.count += 1
                     
@@ -504,6 +509,7 @@ class FlexEnv(gym.Env):
                     # save eef pos
                     robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
                     eef_pos = robot_shape_states[-1][:3] # actual eef position
+                    eef_pos[1] -= self.stick_len
                     self.eef_pos_list.append(eef_pos)
             self.count += 1
             self.step_list.append(self.count)
