@@ -50,19 +50,20 @@ def gen_data(info):
             json.dump(property, f)
     
     actions = np.zeros((n_timestep, action_dim))
-    color_threshold = 0.1
+    color_threshold = 0.01
     
     # n_pushes
     img = env.render()
     last_img = img.copy()
+    stuck = False
     for idx_timestep in range(n_timestep):
         color_diff = 0
-        while color_diff < color_threshold:
+        prev_particle_pos_list, prev_eef_pos_list, prev_step_list, prev_contact_list = particle_pos_list.copy(), eef_pos_list.copy(), step_list.copy(), contact_list.copy()
+        for k in range(10):
             u = None
             u = env.sample_action()
     
             # step
-            prev_particle_pos_list, prev_eef_pos_list, prev_step_list, prev_contact_list = particle_pos_list, eef_pos_list, step_list, contact_list
             if debug:
                 img, particle_pos_list, eef_pos_list, step_list, contact_list = env.step(u, particle_pos_list=particle_pos_list, eef_pos_list=eef_pos_list, step_list=step_list, contact_list=contact_list)
             else: 
@@ -70,18 +71,23 @@ def gen_data(info):
             
             # check whether action is valid 
             color_diff = np.mean(np.abs(img[:, :, :3] - last_img[:, :, :3]))
+            
+            
             if color_diff < color_threshold:
                 particle_pos_list, eef_pos_list, step_list, contact_list = prev_particle_pos_list, prev_eef_pos_list, prev_step_list, prev_contact_list
-            
-        actions[idx_timestep] = u
-        last_img = img.copy()
-        # print("particle_pos_list:", np.array(particle_pos_list).shape)
-        # print("eef_pos_list:", np.array(eef_pos_list).shape)
-        # print("step_list:", step_list)
-        # print("contact_list:", contact_list)
-        
-        if not debug:
-            print('episode %d timestep %d done!!! step: %d' % (idx_episode, idx_timestep, step_list[-1]))       
+                if k == 9:
+                    stuck = True
+                    print('The process is stucked on episode %d timestep %d!!!!' % (idx_episode, idx_timestep))
+            else:
+                break
+                
+        if not stuck:
+            actions[idx_timestep] = u
+            last_img = img.copy()
+            if not debug:
+                print('episode %d timestep %d done!!! step: %d' % (idx_episode, idx_timestep, step_list[-1]))
+        else:
+            break       
     
     # save actions and steps and end effector positions
     if not debug:
@@ -93,6 +99,7 @@ def gen_data(info):
         
     end_time = time.time()
     print("Finish episode %d!!!!" % idx_episode)
+    print(f"Episode {idx_episode} step list: {step_list}")
     print('episiode %d time: ' % idx_episode, end_time - start_time)
         
     # save camera params
@@ -104,9 +111,8 @@ def gen_data(info):
     env.close()
 
 ###multiprocessing
-# bases = [210, 240, 270, 300, 330, 360, 390, 420, 450, 480]
-# bases = [207, 281,  327, 331, 353, 364, 391]
-bases = [0, 25, 50, 75, 100, 125, 150, 175]
+bases = [25, 50, 75, 100, 125, 150, 175]
+# bases = [0]
 for base in bases:
     print("base:", base)
     infos=[]
@@ -121,7 +127,7 @@ for base in bases:
 
 
 # info = {
-#     "epi": 0,
+#     "epi": 30,
 #     "debug": False,
 # }
 # gen_data(info)
