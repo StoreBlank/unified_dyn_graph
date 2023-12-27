@@ -26,9 +26,11 @@ def gen_data(info):
     
     idx_episode = info["epi"]
     debug = info["debug"]
+    dir_idx = info["dir_idx"]
+    granular_range = info["granular_range"]
 
     # create folder
-    folder_dir = os.path.join(data_dir, obj)
+    folder_dir = os.path.join(data_dir, "carrots_%d" % dir_idx)
     os.system('mkdir -p ' + folder_dir)
 
     # set env 
@@ -42,7 +44,9 @@ def gen_data(info):
         epi_dir = os.path.join(folder_dir, "episode_%d" % idx_episode)
         os.system("mkdir -p %s" % epi_dir)
         
-        particle_pos_list, eef_pos_list, step_list, contact_list = env.reset(dir=epi_dir)
+        particle_pos_list, eef_pos_list, step_list, contact_list = env.reset(dir=epi_dir, 
+                                                                             property_params=granular_range)
+        print("property_params:", granular_range)
         
         # save property
         property = env.get_property()
@@ -111,19 +115,26 @@ def gen_data(info):
     env.close()
 
 ###multiprocessing
-bases = [25, 50, 75, 100, 125, 150, 175]
-# bases = [0]
-for base in bases:
-    print("base:", base)
-    infos=[]
-    for i in range(n_worker):
-        info = {
-            "epi": base+i*n_episode//n_worker,
-            "debug": False,
-        }
-        infos.append(info)
-    pool = mp.Pool(processes=n_worker)
-    pool.map(gen_data, infos)
+dir_idx_list = [2, 3, 4]
+granular_range_list = np.array([[0.12, 0.14], [0.14, 0.16], [0.16, 0.18]])
+bases = [0, 25, 50, 75, 100, 125, 150, 175]
+
+for i in range(3):
+    dir_idx = dir_idx_list[i]
+    granular_range = granular_range_list[i]
+    for base in bases:
+        print("base:", base)
+        infos=[]
+        for i in range(n_worker):
+            info = {
+                "epi": base+i*n_episode//n_worker,
+                "debug": False,
+                "dir_idx": dir_idx,
+                "granular_range": granular_range,
+            }
+            infos.append(info)
+        pool = mp.Pool(processes=n_worker)
+        pool.map(gen_data, infos)
 
 
 # info = {

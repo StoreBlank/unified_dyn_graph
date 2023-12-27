@@ -164,13 +164,18 @@ class FlexEnv(gym.Env):
         if obj == 'carrots':
             radius = 0.03
     
-            num_granular_ft_x = rand_float(2, 10)
-            num_granular_ft_y = np.random.randint(2, 4)
-            num_granular_ft_z = rand_float(2, 10)
+            num_granular_ft_x = rand_int(2, 11)
+            num_granular_ft_y = rand_int(2, 4)
+            num_granular_ft_z = rand_int(2, 11)
             num_granular_ft = [num_granular_ft_x, num_granular_ft_y, num_granular_ft_z] 
             num_granular = int(num_granular_ft_x * num_granular_ft_y * num_granular_ft_z)
             
-            granular_scale = rand_float(0.1, 0.12) #rand_float(0.1, 0.2)
+            # if property_params == None:
+            #     granular_scale = rand_float(0.18, 0.2) #rand_float(0.1, 0.2)
+            # else:
+            granular_scale = rand_float(property_params[0], property_params[1])
+            
+            
             pos_granular = [-1.0, 1., -0.8]
             granular_dis = 0.1 #rand_float(0.1, 0.3)
 

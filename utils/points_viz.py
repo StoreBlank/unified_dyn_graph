@@ -1,6 +1,34 @@
 import numpy as np
 import cv2
 import os
+import glob
+import PIL.Image as Image
+
+def merge_video(image_path, video_path):
+    f_names = os.listdir(image_path)
+    image_names = []
+    for f_name in f_names:
+        if '_color.jpg' in f_name:
+            image_names.append(f_name)
+
+    image_names.sort(key=lambda x: int(x.split('_')[0]))
+        
+    # print(image_names)
+
+    fourcc = cv2.VideoWriter_fourcc('M', 'P', '4', 'V')
+    fps = 60
+
+    img = Image.open(os.path.join(image_path, image_names[0]))
+
+    video_writer = cv2.VideoWriter(video_path, fourcc, fps, img.size)
+
+    for img_name in image_names:
+        img = cv2.imread(os.path.join(image_path, img_name))
+        video_writer.write(img)
+
+    print("Video merged!")
+
+    video_writer.release()
 
 def viz_points_single_frame(img, points, cam_intr, cam_extr):
     
@@ -24,24 +52,58 @@ def viz_points_single_frame(img, points, cam_intr, cam_extr):
         cv2.circle(img, (int(points_proj[k, 0]), int(points_proj[k, 1])), point_size,
                    point_color, -1)
 
-    cv2.imwrite("point_viz.jpg", img)
- 
+    # cv2.imwrite("point_viz.jpg", img)
+    return img
+
+def viz_eef(episode_idx, data_dir, out_dir, cam_view=0):
+    
+    os.makedirs(out_dir, exist_ok=True)
+    
+    n_frames = len(list(glob.glob(os.path.join(data_dir, f"episode_{episode_idx}/camera_0/*_color.jpg"))))
+    print(f"Episode {episode_idx} has {n_frames} frames.")
+    eef_pos_path = os.path.join(data_dir, f"episode_{episode_idx}/eef_pos.npy")
+    eef_pos = np.load(eef_pos_path)
+    
+    cam_intr_path = os.path.join(data_dir, "camera_intrinsic_params.npy")
+    cam_extr_path = os.path.join(data_dir, "camera_extrinsic_matrix.npy")
+    cam_intrs, cam_extrs = np.load(cam_intr_path), np.load(cam_extr_path)
+    cam_intr, cam_extr = cam_intrs[cam_view], cam_extrs[cam_view]
+    
+    for i in range(n_frames):
+        raw_img_path = os.path.join(data_dir, f"episode_{episode_idx}/camera_{cam_view}/{i}_color.jpg")
+        raw_img = cv2.imread(raw_img_path)
+        eef_points = eef_pos[i].reshape((1, 3))
+        img = viz_points_single_frame(raw_img, eef_points, cam_intr, cam_extr)
+        cv2.imwrite(os.path.join(out_dir, f"{i}_color.jpg"), img)
+    
+    # make video
+    video_path = os.path.join(out_dir, f"episode_{episode_idx}.mp4")
+    merge_video(out_dir, video_path)
+    print(f"Video saved to {video_path}.")
+        
         
 if __name__ == "__main__":
     i = np.random.randint(0, 200)
-    img_path = f'/mnt/sda/data/carrots/episode_0/camera_0/{i}_color.jpg'
-    img = cv2.imread(img_path)
+    data_name = 'carrots_5'
+    epi_idx = 24
     
-    eef_points_path = '/mnt/sda/data/carrots/episode_0/eef_pos.npy'
-    eef_points = np.load(eef_points_path)
-    eef_points = eef_points[i]
-    # eef_points[1] -= 0.9
-    eef_points = eef_points.reshape((1, 3))
+    # img_path = f'/mnt/sda/data/{data_name}/episode_{epi_idx}/camera_0/{i}_color.jpg'
+    # img = cv2.imread(img_path)
     
-    cam_intr_path = '/mnt/sda/data/carrots/camera_intrinsic_params.npy'
-    cam_extr_path = '/mnt/sda/data/carrots/camera_extrinsic_matrix.npy'
-    cam_intr, cam_extr = np.load(cam_intr_path), np.load(cam_extr_path)
+    # eef_points_path = f'/mnt/sda/data/{data_name}/episode_{epi_idx}/eef_pos.npy'
+    # eef_points = np.load(eef_points_path)
+    # eef_points = eef_points[i]
+    # # eef_points[1] -= 0.9
+    # eef_points = eef_points.reshape((1, 3))
     
-    viz_points_single_frame(img, eef_points, cam_intr[0], cam_extr[0])
+    # cam_intr_path = f'/mnt/sda/data/{data_name}/camera_intrinsic_params.npy'
+    # cam_extr_path = f'/mnt/sda/data/{data_name}/camera_extrinsic_matrix.npy'
+    # cam_intr, cam_extr = np.load(cam_intr_path), np.load(cam_extr_path)
+    
+    # viz_points_single_frame(img, eef_points, cam_intr[0], cam_extr[0])
+    
+    data_dir = f'/mnt/sda/data/{data_name}'
+    out_dir = f'/mnt/sda/viz_eef/{data_name}'
+    viz_eef(epi_idx, data_dir, out_dir)
     
     
