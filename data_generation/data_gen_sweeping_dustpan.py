@@ -5,6 +5,7 @@ import pyflex
 import cv2
 import json
 import multiprocessing as mp
+from scipy.spatial.distance import cdist
 
 from utils_env import rand_float, rand_int, quatFromAxisAngle, quaternion_multuply
 from data_generation.utils import add_table, set_light, set_camera
@@ -88,6 +89,9 @@ def data_gen_sweeping(info):
         sponge_color = np.array([204/255, 102/255, 0.])
         pyflex.add_mesh('assets/mesh/sponge.obj', sponge_scale, 0, sponge_color, 
                         sponge_pos_origin, sponge_quat_origin, False)
+        
+        tool_obj_threshold = 0.5 # TODO
+    
     elif sponge_choice == 2:
         sponge_scale = 8. #rand_float(8., 12.) 
         sponge_pos_x = 0.
@@ -103,6 +107,8 @@ def data_gen_sweeping(info):
         sponge_color = np.array([204/255, 102/255, 0.])
         pyflex.add_mesh('assets/mesh/sponge_2.obj', sponge_scale, 0, sponge_color, 
                         sponge_pos_origin, sponge_quat_origin, False)
+        
+        tool_obj_threshold = 0.5
     
     sponge_pos_prev = sponge_pos_origin
     sponge_quat_prev = sponge_quat_origin
@@ -118,6 +124,7 @@ def data_gen_sweeping(info):
         pyflex.add_mesh('assets/mesh/dustpan.obj',dustpan_scale, 0, 
                     dustpan_color,dustpan_pos,dustpan_quat, False)
         obj_shape_states[0] = np.concatenate([dustpan_pos,dustpan_pos,dustpan_quat,dustpan_quat])
+        tool_2_state = np.concatenate([dustpan_pos, dustpan_quat])
 
     ## Light and camera setting
     screenHeight, screenWidth = 720, 720
@@ -131,8 +138,8 @@ def data_gen_sweeping(info):
     count = 0
     step_list = []
     particle_pos_list = []
-    tool_pos_list = []
-    tool_quat_list = []
+    tool_states_list = []
+    contact_list = []
     pick_pos_prev = [dustpan_pos.copy()]
     
     for p in range(n_push):
@@ -222,7 +229,7 @@ def data_gen_sweeping(info):
                     os.system('mkdir -p ' + cam_dir)
                     
                     # save camera params
-                    if p == 0 and i == 0:
+                    if p == 0 and i == n_stay_still+1:
                         cam_intrinsic_params[j] = get_camera_intrinsics(screenHeight, screenWidth)
                         cam_extrinsic_matrix[j] = get_camera_extrinsics()
                     
@@ -236,9 +243,15 @@ def data_gen_sweeping(info):
                         sampled_pos = particle_pos[sampled_idx]
                         particle_pos_list.append(sampled_pos)
                         # save tool pos
-                        tool_pos_list.append(sponge_pos.copy())
-                        tool_quat_list.append(sponge_quat.copy())
-            
+                        tool_state = np.concatenate([sponge_pos, sponge_quat])
+                        tool_states_list.append(tool_state)
+                        # save contact
+                        tool_obj_dist = np.min(cdist(sponge_pos[[0, 2]].reshape(1, 2), particle_pos[:, [0, 2]]))
+                        # print(tool_obj_dist)
+                        if tool_obj_dist < tool_obj_threshold:
+                            contact_list.append(count)
+                            # print(f"contact at {count}")
+                        
                 count += 1
             
             pyflex.step()
@@ -259,55 +272,57 @@ def data_gen_sweeping(info):
     
     # save info
     if not debug:
-        np.save(os.path.join(folder_dir, 'cam_intrinsic_params.npy'), cam_intrinsic_params)
-        np.save(os.path.join(folder_dir, 'cam_extrinsic_matrix.npy'), cam_extrinsic_matrix)
+        np.save(os.path.join(folder_dir, 'camera_intrinsic_params.npy'), cam_intrinsic_params)
+        np.save(os.path.join(folder_dir, 'camera_extrinsic_matrix.npy'), cam_extrinsic_matrix)
         np.save(os.path.join(epi_dir, 'steps.npy'), np.array(step_list))
         np.save(os.path.join(epi_dir, 'particles_pos.npy'), np.array(particle_pos_list))
-        np.save(os.path.join(epi_dir, 'tool_pos.npy'), np.array(tool_pos_list))
-        np.save(os.path.join(epi_dir, 'tool_quat.npy'), np.array(tool_quat_list))
+        np.save(os.path.join(epi_dir, 'tool_states.npy'), np.array(tool_states_list))
+        np.save(os.path.join(epi_dir, 'contact.npy'), np.array(contact_list))
         with open(os.path.join(epi_dir, 'property_params.json'), 'w') as fp:
             json.dump(property_params, fp)
+        if with_dustpan:
+            np.save(os.path.join(epi_dir, 'tool_2_states.npy'), np.array([tool_2_state]))
     
     pyflex.clean()
     
     print(f'done episode {epi}!!!! total time: {time.time() - epi_start_time}')
 
 ### data generation for scooping
-epi_num = np.random.randint(1000)
-info = {
-    "epi": epi_num,
-    "n_time_step": 500,
-    "n_push": 5,
-    "num_sample_points": 2000,
-    "with_dustpan": True,
-    "headless": False,
-    "data_root_dir": "data_dense",
-    "debug": True,
-}
-data_gen_sweeping(info)
+# epi_num = np.random.randint(1000)
+# info = {
+#     "epi": epi_num,
+#     "n_time_step": 500,
+#     "n_push": 5,
+#     "num_sample_points": 2000,
+#     "with_dustpan": True,
+#     "headless": True,
+#     "data_root_dir": "data_dense",
+#     "debug": False,
+# }
+# data_gen_sweeping(info)
 
 ## multiprocessing
-# n_worker = 25
-# n_episode = 25
-# # end_base = int(1000 / 5)
-# # bases = [i for i in range(0, end_base, n_episode)]
-# bases = [0, 25, 50, 75]
-# print(bases)
-# print(len(bases))
-# for base in bases:
-#     print("base:", base)
-#     infos=[]
-#     for i in range(n_worker):
-#         info = {
-#             "epi": base+i*n_episode//n_worker,
-#             "n_time_step": 500,
-#             "n_push": 5,
-#             "num_sample_points": 2000,
-#             "with_dustpan": True,
-#             "headless": True,
-#             "data_root_dir": "/mnt/sda/data",
-#             "debug": False,
-#         }
-#         infos.append(info)
-#     pool = mp.Pool(processes=n_worker)
-#     pool.map(data_gen_sweeping, infos)
+n_worker = 25
+n_episode = 25
+# end_base = int(1000 / 5)
+# bases = [i for i in range(0, end_base, n_episode)]
+bases = [0]
+print(bases)
+print(len(bases))
+for base in bases:
+    print("base:", base)
+    infos=[]
+    for i in range(n_worker):
+        info = {
+            "epi": base+i*n_episode//n_worker,
+            "n_time_step": 500,
+            "n_push": 5,
+            "num_sample_points": 2000,
+            "with_dustpan": True,
+            "headless": True,
+            "data_root_dir": "/mnt/sda/data",
+            "debug": False,
+        }
+        infos.append(info)
+    pool = mp.Pool(processes=n_worker)
+    pool.map(data_gen_sweeping, infos)
