@@ -96,7 +96,10 @@ def viz_tool_one_point(episode_idx, data_dir, out_dir, cam_view=0):
     video_path = os.path.join(out_dir, f"episode_{episode_idx}.mp4")
     merge_video(out_dir, video_path)
     print(f"Video saved to {video_path}.")
+
     
+
+#### visualization     
 def viz_1(agrs):
     """viz points in one frame"""
     i = args.idx #np.random.randint(0, 200)
