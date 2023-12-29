@@ -206,49 +206,6 @@ class FlexEnv(gym.Env):
             # print(property_params)
             self.property = property_param
         
-        elif obj == 'coffee':
-            radius = 0.03
-            
-            global_scale = 4
-            scale = rand_float(0.2, 0.3) * global_scale / 8.0
-            
-            blob_r = rand_float(0.2, 0.8)
-            x = - blob_r * global_scale / 8.0
-            y = 0.5
-            z = - blob_r * global_scale / 8.0
-            
-            if 0.5 <= blob_r < 0.8:
-                space_scale = rand_float(1.1, 2.)
-            else:
-                space_scale = rand_float(1.1, 3.)
-            inter_space = space_scale * scale
-            
-            num_x = int(abs(x/1.) / scale + 1) * 2
-            num_y = np.random.randint(1, 4)
-            num_z = int(abs(z/1.) / scale + 1) * 2
-            num_coffee = num_x * num_z * num_y 
-            
-            mass = rand_float(0.1, 10.) #10g-1000g
-            
-            staticFriction = 0.0
-            dynamicFriction = rand_float(0.1, 1.0)
-            draw_skin = 1
-            radius = 0.03
-            
-            self.scene_params = np.array([
-                scale, x, y, z, staticFriction, dynamicFriction, draw_skin, radius,
-                num_x, num_y, num_z, inter_space, mass])
-
-            temp = np.array([0])
-            pyflex.set_scene(20, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
-            
-            self.property = {'particle_radius': radius,
-                             'num_particles': self.get_num_particles(),
-                             'rand_scale': scale,
-                             'blob_r': blob_r,
-                             'num_granule': num_coffee,
-                             'dynamic_friction': dynamicFriction,
-                             'mass': mass}
         else:
             raise ValueError('obj not defined')
     

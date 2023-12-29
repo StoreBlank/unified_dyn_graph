@@ -74,7 +74,7 @@ def set_light(screenHeight, screenWidth):
     pyflex.set_light_fov(70.)
     
 
-def set_camera(cam_dis, cam_height, camera_view):
+def set_camera(camera_view, cam_dis=6., cam_height=10.):
     if camera_view == 1:
         camPos = np.array([cam_dis, cam_height, cam_dis])
         camAngle = np.array([np.deg2rad(45.), -np.deg2rad(45.), 0.])
@@ -93,7 +93,7 @@ def set_camera(cam_dis, cam_height, camera_view):
     return camPos, camAngle
     
 
-def init_multiview_camera(cam_dis = 3, cam_height = 4.5):
+def init_multiview_camera(cam_dis = 6., cam_height = 10.):
     camPos_list = []
     camAngle_list = []
 
@@ -111,7 +111,7 @@ def init_multiview_camera(cam_dis = 3, cam_height = 4.5):
     return camPos_list, camAngle_list, cam_intrinsic_params, cam_extrinsic_matrix
 
 def add_table(table_height, table_length=4.5, table_width=3.5):
-    halfEdge = np.array([table_length, table_height, table_width])
+    halfEdge = np.array([table_width, table_height, table_length])
     center = np.array([0.0, 0.0, 0.0])
     quats = quatFromAxisAngle(axis=np.array([0., 1., 0.]), angle=0.)
     hideShape = 0

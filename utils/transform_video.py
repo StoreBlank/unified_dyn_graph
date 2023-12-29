@@ -43,15 +43,17 @@ if __name__ == '__main__':
     #     merge_video(image_path, video_path)
     
     epi_num = 10
+    l = np.random.choice(100, epi_num, replace=False)
+    print(l)
     for n in range(epi_num):
-        #i = np.random.randint(0, 100)
-        i = n
+        # i = n
+        i = l[n]
         #j = np.random.randint(0, 4)
         j = 0
-        epi_path = f"/mnt/sda/data/granular_scooping_board/episode_{i}/camera_{j}"
-        image_path = f"/mnt/sda/data/granular_scooping_board/episode_{i}/camera_{j}"
-        video_dir = f"/mnt/sda/videos/granular_scooping_board" 
-        video_path = f"/mnt/sda/videos/granular_scooping_board/video_{i}.mp4" 
+        epi_path = f"/mnt/sda/data/granular_sweeping_dustpan/episode_{i}/camera_{j}"
+        image_path = f"/mnt/sda/data/granular_sweeping_dustpan/episode_{i}/camera_{j}"
+        video_dir = f"/mnt/sda/videos/granular_sweeping_dustpan" 
+        video_path = f"/mnt/sda/videos/granular_sweeping_dustpan/video_{i}.mp4" 
         os.makedirs(video_dir, exist_ok=True)
         merge_video(image_path, video_path)
     
