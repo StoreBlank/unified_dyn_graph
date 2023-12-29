@@ -42,12 +42,12 @@ if __name__ == '__main__':
     #     video_path = f"/media/baoyu/sumsung/video/granular_scooping/video_{i}.mp4" 
     #     merge_video(image_path, video_path)
     
-    epi_num = 10
-    l = np.random.choice(100, epi_num, replace=False)
-    print(l)
+    epi_num = 25
+    # l = np.random.choice(100, epi_num, replace=False)
+    # print(l)
     for n in range(epi_num):
-        # i = n
-        i = l[n]
+        i = n
+        # i = l[n]
         #j = np.random.randint(0, 4)
         j = 0
         epi_path = f"/mnt/sda/data/granular_sweeping_dustpan/episode_{i}/camera_{j}"

@@ -229,7 +229,7 @@ def data_gen_sweeping(info):
                     os.system('mkdir -p ' + cam_dir)
                     
                     # save camera params
-                    if p == 0 and i == n_stay_still+1:
+                    if p == 0:
                         cam_intrinsic_params[j] = get_camera_intrinsics(screenHeight, screenWidth)
                         cam_extrinsic_matrix[j] = get_camera_extrinsics()
                     
