@@ -121,18 +121,31 @@ def rotation_to_quaternion(rot):
 
     return q
 
-def degs_to_quat(deg_xyz, init_rot):
-    deg_x, deg_y, deg_z = deg_xyz
-    rad_x, rad_y, rad_z = np.deg2rad(deg_x), np.deg2rad(deg_y), np.deg2rad(deg_z)
+def quaternion_to_rotation_matrix(q):
+    # Extract the values from q
+    q1, q2, q3, w = q
     
-    rot = init_rot
-    rot_y = np.array([[np.cos(rad_x), 0., np.sin(rad_x)], [0., 1., 0.], [-np.sin(rad_x), 0., np.cos(rad_x)]])
-    rot_x = np.array([[1., 0., 0.], [0., np.cos(rad_y), -np.sin(rad_y)], [0., np.sin(rad_y), np.cos(rad_y)]])
-    rot_z = np.array([[np.cos(rad_z), -np.sin(rad_z), 0.], [np.sin(rad_z), np.cos(rad_z), 0.], [0., 0., 1.]])
-    rot = rot @ rot_z @ rot_y @ rot_x
+    # First row of the rotation matrix
+    r00 = 1 - 2 * (q2 ** 2 + q3 ** 2)
+    r01 = 2 * (q1 * q2 - q3 * w)
+    r02 = 2 * (q1 * q3 + q2 * w)
     
-    quat = rotation_to_quaternion(rot)
-    return quat
+    # Second row of the rotation matrix
+    r10 = 2 * (q1 * q2 + q3 * w)
+    r11 = 1 - 2 * (q1 ** 2 + q3 ** 2)
+    r12 = 2 * (q2 * q3 - q1 * w)
+    
+    # Third row of the rotation matrix
+    r20 = 2 * (q1 * q3 - q2 * w)
+    r21 = 2 * (q2 * q3 + q1 * w)
+    r22 = 1 - 2 * (q1 ** 2 + q2 ** 2)
+    
+    # Combine all rows into a single matrix
+    rotation_matrix = np.array([[r00, r01, r02],
+                                [r10, r11, r12],
+                                [r20, r21, r22]])
+    
+    return rotation_matrix
     
 
 def find_min_distance(X, Z, k):

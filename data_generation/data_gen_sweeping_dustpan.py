@@ -87,7 +87,7 @@ def data_gen_sweeping(info):
         sponge_quat = sponge_quat_origin.copy()
         
         sponge_color = np.array([204/255, 102/255, 0.])
-        pyflex.add_mesh('assets/mesh/sponge.obj', sponge_scale, 0, sponge_color, 
+        pyflex.add_mesh('assets/mesh/sponge2.obj', sponge_scale, 0, sponge_color, 
                         sponge_pos_origin, sponge_quat_origin, False)
         
         tool_obj_threshold = 0.5 # TODO
@@ -105,7 +105,7 @@ def data_gen_sweeping(info):
         sponge_quat_origin = quatFromAxisAngle(sponge_quat_axis, np.deg2rad(angle))
         
         sponge_color = np.array([204/255, 102/255, 0.])
-        pyflex.add_mesh('assets/mesh/sponge_2.obj', sponge_scale, 0, sponge_color, 
+        pyflex.add_mesh('assets/mesh/sponge.obj', sponge_scale, 0, sponge_color, 
                         sponge_pos_origin, sponge_quat_origin, False)
         
         tool_obj_threshold = 0.5
@@ -124,7 +124,6 @@ def data_gen_sweeping(info):
         pyflex.add_mesh('assets/mesh/dustpan.obj',dustpan_scale, 0, 
                     dustpan_color,dustpan_pos,dustpan_quat, False)
         obj_shape_states[0] = np.concatenate([dustpan_pos,dustpan_pos,dustpan_quat,dustpan_quat])
-        tool_2_state = np.concatenate([dustpan_pos, dustpan_quat])
 
     ## Light and camera setting
     screenHeight, screenWidth = 720, 720
@@ -138,7 +137,8 @@ def data_gen_sweeping(info):
     count = 0
     step_list = []
     particle_pos_list = []
-    tool_states_list = []
+    sponge_states_list = []
+    dustpan_states_list = []
     contact_list = []
     pick_pos_prev = [dustpan_pos.copy()]
     
@@ -242,9 +242,11 @@ def data_gen_sweeping(info):
                         particle_pos = pyflex.get_positions().reshape(-1, 4)[:, :3]
                         sampled_pos = particle_pos[sampled_idx]
                         particle_pos_list.append(sampled_pos)
-                        # save tool pos
-                        tool_state = np.concatenate([sponge_pos, sponge_quat])
-                        tool_states_list.append(tool_state)
+                        # save tool states
+                        sponge_state = np.concatenate([sponge_pos, sponge_quat])
+                        sponge_states_list.append(sponge_state)
+                        duatpan_state = np.concatenate([dustpan_pos, dustpan_quat])
+                        dustpan_states_list.append(duatpan_state)
                         # save contact
                         tool_obj_dist = np.min(cdist(sponge_pos[[0, 2]].reshape(1, 2), particle_pos[:, [0, 2]]))
                         # print(tool_obj_dist)
@@ -276,12 +278,11 @@ def data_gen_sweeping(info):
         np.save(os.path.join(folder_dir, 'camera_extrinsic_matrix.npy'), cam_extrinsic_matrix)
         np.save(os.path.join(epi_dir, 'steps.npy'), np.array(step_list))
         np.save(os.path.join(epi_dir, 'particles_pos.npy'), np.array(particle_pos_list))
-        np.save(os.path.join(epi_dir, 'tool_states.npy'), np.array(tool_states_list))
+        np.save(os.path.join(epi_dir, 'sponge_states.npy'), np.array(sponge_states_list))
+        np.save(os.path.join(epi_dir, 'dustpan_states.npy'), np.array(dustpan_states_list))
         np.save(os.path.join(epi_dir, 'contact.npy'), np.array(contact_list))
         with open(os.path.join(epi_dir, 'property_params.json'), 'w') as fp:
             json.dump(property_params, fp)
-        if with_dustpan:
-            np.save(os.path.join(epi_dir, 'tool_2_states.npy'), np.array([tool_2_state]))
     
     pyflex.clean()
     
