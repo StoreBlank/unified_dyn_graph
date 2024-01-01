@@ -307,7 +307,7 @@ n_worker = 25
 n_episode = 25
 # end_base = int(1000 / 5)
 # bases = [i for i in range(0, end_base, n_episode)]
-bases = [0]
+bases = [25, 50, 75, 100, 125, 150, 175]
 print(bases)
 print(len(bases))
 for base in bases:

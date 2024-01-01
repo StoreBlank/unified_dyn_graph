@@ -99,7 +99,7 @@ def viz_tool_one_point(episode_idx, data_dir, out_dir, cam_view=0):
     merge_video(out_dir, video_path)
     print(f"Video saved to {video_path}.")
 
-def viz_tool_ptcl_one_frame(args, tool_names, tool_scale, tool_mesh_dir, vis=False, sample_points=50):
+def viz_tool_ptcl_one_frame(args, tool_names, tool_scale, tool_mesh_dir, sample_points=50):
     # load image
     img_path = f'/mnt/sda/data/{args.data_name}/episode_{args.epi_idx}/camera_0/{args.idx}_color.jpg'
     img = cv2.imread(img_path)
@@ -110,19 +110,18 @@ def viz_tool_ptcl_one_frame(args, tool_names, tool_scale, tool_mesh_dir, vis=Fal
     cam_intr, cam_extr = np.load(cam_intr_path), np.load(cam_extr_path)
     
     n_tools = len(tool_names)
+    points_list = []
     for i in range(n_tools):
         # convert mesh to point cloud
         tool_mesh_path = os.path.join(tool_mesh_dir, f'{tool_names[i]}.obj')
         tool_mesh = o3d.io.read_triangle_mesh(tool_mesh_path)
-        tool_surface = o3d.geometry.TriangleMesh.sample_points_poisson_disk(tool_mesh, sample_points)
+        
+        tool_surface = o3d.geometry.TriangleMesh.sample_points_poisson_disk(tool_mesh, 100)
+        # tool_surface = o3d.geometry.TriangleMesh.sample_points_uniformly(tool_mesh, sample_points)
         
         # scale the point cloud
         tool_surface.points = o3d.utility.Vector3dVector(np.asarray(tool_surface.points) * tool_scale[i])
-        
-        if vis:
-            # o3d.visualization.draw_geometries([tool_surface])
-            # visualize the world coordinate frame
-            o3d.visualization.draw_geometries([tool_surface, o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5)])
+        points_list.append(tool_surface)
             
         # load the pos and orientation of the tool
         tool_points_path = f'/mnt/sda/data/{args.data_name}/episode_{args.epi_idx}/{tool_names[i]}_states.npy' 
@@ -135,7 +134,7 @@ def viz_tool_ptcl_one_frame(args, tool_names, tool_scale, tool_mesh_dir, vis=Fal
         tool_pos = tool_points[args.idx, :3]
         tool_surface.translate(tool_pos)
         
-        if vis:
+        if args.vis:
             o3d.visualization.draw_geometries([tool_surface, o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5, origin=tool_pos)])
         
         tool_surface_points = np.asarray(tool_surface.points)
@@ -157,9 +156,11 @@ def viz_graph_one_frame(args, tool_names, tool_scale, tool_mesh_dir):
     particles_pos = particles[args.idx]
     print(f'frame {args.idx}  has {particles_pos.shape[0]} particles')
     
-    # random sample 100 particles
-    obj_idx = np.random.choice(particles_pos.shape[0], 100, replace=False)
+    # random sample particles
+    obj_sample_points = 500
+    obj_idx = np.random.choice(particles_pos.shape[0], obj_sample_points, replace=False)
     sample_particles_pos = particles_pos[obj_idx]
+    # sample_particles_pos = particles_pos.copy()
     
     # draw tool particles
     processed_img = viz_tool_ptcl_one_frame(args, tool_names, tool_scale, tool_mesh_dir, vis=False)
@@ -167,7 +168,70 @@ def viz_graph_one_frame(args, tool_names, tool_scale, tool_mesh_dir):
     processed_img = viz_points_single_frame(processed_img, sample_particles_pos, cam_intr[0], cam_extr[0], group=2)
     
     return processed_img
+
+def viz_tools(args, data_dir, out_dir, tool_names, tool_scale, tool_mesh_dir):
+    
+    os.makedirs(out_dir, exist_ok=True)
+    
+    n_frames = len(list(glob.glob(os.path.join(data_dir, f"episode_{args.epi_idx}/camera_0/*_color.jpg"))))
+    print(f"Episode {args.epi_idx} has {n_frames} frames.")
+    
+    # load camera
+    cam_intr_path = os.path.join(data_dir, 'camera_intrinsic_params.npy') 
+    cam_extr_path = os.path.join(data_dir, 'camera_extrinsic_matrix.npy')
+    cam_intr, cam_extr = np.load(cam_intr_path), np.load(cam_extr_path)
+    
+    # get tool surface points
+    n_tools = len(tool_names)
+    tool_surface_points_list = []
+    for i in range(n_tools):
+        # convert mesh to point cloud
+        tool_mesh_path = os.path.join(tool_mesh_dir, f'{tool_names[i]}.obj')
+        tool_mesh = o3d.io.read_triangle_mesh(tool_mesh_path)
         
+        tool_surface = o3d.geometry.TriangleMesh.sample_points_poisson_disk(tool_mesh, 100)
+        # tool_surface = o3d.geometry.TriangleMesh.sample_points_uniformly(tool_mesh, sample_points)
+        
+        # scale the point cloud
+        tool_surface.points = o3d.utility.Vector3dVector(np.asarray(tool_surface.points) * tool_scale[i])
+        tool_surface_points_list.append(tool_surface.points)
+            
+    # translate and rotate the tool surface for each frame
+    for i in range(n_frames):
+        # load image
+        img_path = os.path.join(data_dir, f"episode_{args.epi_idx}/camera_0/{i}_color.jpg")
+        img = cv2.imread(img_path)
+        
+        for j in range(n_tools):
+            # load tool surface
+            tool_surface_i = o3d.geometry.PointCloud()
+            tool_surface_i.points = o3d.utility.Vector3dVector(tool_surface_points_list[j])
+        
+            # load the pos and orientation of the tool
+            tool_points_path = os.path.join(data_dir, f"episode_{args.epi_idx}/{tool_names[j]}_states.npy")
+            tool_points = np.load(tool_points_path)
+        
+            tool_ori = tool_points[i, 3:]
+            tool_rot = quaternion_to_rotation_matrix(tool_ori)
+            tool_surface_i.rotate(tool_rot)
+        
+            tool_pos = tool_points[i, :3]
+            tool_surface_i.translate(tool_pos)
+        
+            if args.vis:
+                o3d.visualization.draw_geometries([tool_surface_i, o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5, origin=tool_pos)])
+        
+            tool_surface_i_points = np.asarray(tool_surface_i.points)
+        
+            # visualize points
+            img = viz_points_single_frame(img, tool_surface_i_points, cam_intr[0], cam_extr[0], group=j)
+        
+        cv2.imwrite(os.path.join(out_dir, f"{i}_color.jpg"), img)
+    
+    # make video
+    video_path = os.path.join(out_dir, f"episode_{args.epi_idx}.mp4")
+    merge_video(out_dir, video_path)
+    print(f"Video saved to {video_path}.")
     
     
 
@@ -219,19 +283,30 @@ def viz_2(args):
     out_dir = f'/mnt/sda/viz_tool/{data_name}/{str(epi_idx).fill(3)}'
     viz_tool_one_point(epi_idx, data_dir, out_dir)
 
-def viz_3(args, vis=False):
+def viz_3(args):
     """viz tool surface in a frame"""
     data_root = f'/mnt/sda/data/{args.data_name}'
     tool_mesh_dir = os.path.join(data_root, 'geometries/tools')
     tool_names = ['dustpan', 'sponge']
     tool_scale = [1.1, 8.0]
     
-    # processed_img = viz_tool_ptcl_one_frame(args, tool_names, tool_scale, tool_mesh_dir, vis)
-    processed_img = viz_graph_one_frame(args, tool_names, tool_scale, tool_mesh_dir)
+    processed_img = viz_tool_ptcl_one_frame(args, tool_names, tool_scale, tool_mesh_dir)
+    # processed_img = viz_graph_one_frame(args, tool_names, tool_scale, tool_mesh_dir)
     
     out_dir = f'/mnt/sda/viz_tool/{args.data_name}'
     os.makedirs(out_dir, exist_ok=True)
     cv2.imwrite(os.path.join(out_dir, f"{args.idx}_tool.jpg"), processed_img)
+
+def viz_4(args):
+    """viz tool frames"""
+    data_root = f'/mnt/sda/data/{args.data_name}'
+    tool_mesh_dir = os.path.join(data_root, 'geometries/tools')
+    tool_names = ['dustpan', 'sponge']
+    tool_scale = [1.1, 8.0]
+    
+    # viz_tools(args, data_dir, out_dir, tool_names, tool_scale, tool_mesh_dir):
+    out_dir = f'/mnt/sda/viz_tool/{args.data_name}/{args.epi_idx}'
+    viz_tools(args, data_root, out_dir, tool_names, tool_scale, tool_mesh_dir)
     
     
 if __name__ == "__main__":
@@ -239,6 +314,7 @@ if __name__ == "__main__":
     parser.add_argument('--data_name', type=str, default='granular_sweeping_dustpan')
     parser.add_argument('--epi_idx', type=int, default=0)
     parser.add_argument('--idx', type=int, default=0)
+    parser.add_argument('--vis', type=bool, default=False)
     args = parser.parse_args()
     
     # args.idx = np.random.randint(0, 200)
@@ -250,5 +326,8 @@ if __name__ == "__main__":
     # viz_2(args)
     
     ### viz tool surface in a frame
-    viz_3(args)
+    # viz_3(args)
+    
+    ### viz tool frames
+    viz_4(args)
     
