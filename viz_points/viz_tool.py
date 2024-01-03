@@ -5,8 +5,10 @@ import glob
 import PIL.Image as Image
 import argparse
 import open3d as o3d
+import torch
 
-from utils_env import quaternion_to_rotation_matrix
+from dgl.geometry import farthest_point_sampler
+from utils_env import quaternion_to_rotation_matrix, fps_rad_idx
 
 def merge_video(image_path, video_path):
     f_names = os.listdir(image_path)
@@ -99,7 +101,7 @@ def viz_tool_one_point(episode_idx, data_dir, out_dir, cam_view=0):
     merge_video(out_dir, video_path)
     print(f"Video saved to {video_path}.")
 
-def viz_tool_ptcl_one_frame(args, tool_names, tool_scale, tool_mesh_dir, sample_points=50):
+def viz_tool_ptcl_one_frame(args, tool_names, tool_scale, tool_mesh_dir, sample_points=100, fps=True):
     # load image
     img_path = f'/mnt/sda/data/{args.data_name}/episode_{args.epi_idx}/camera_0/{args.idx}_color.jpg'
     img = cv2.imread(img_path)
@@ -116,7 +118,7 @@ def viz_tool_ptcl_one_frame(args, tool_names, tool_scale, tool_mesh_dir, sample_
         tool_mesh_path = os.path.join(tool_mesh_dir, f'{tool_names[i]}.obj')
         tool_mesh = o3d.io.read_triangle_mesh(tool_mesh_path)
         
-        tool_surface = o3d.geometry.TriangleMesh.sample_points_poisson_disk(tool_mesh, 100)
+        tool_surface = o3d.geometry.TriangleMesh.sample_points_poisson_disk(tool_mesh, 10000)
         # tool_surface = o3d.geometry.TriangleMesh.sample_points_uniformly(tool_mesh, sample_points)
         
         # scale the point cloud
@@ -138,6 +140,30 @@ def viz_tool_ptcl_one_frame(args, tool_names, tool_scale, tool_mesh_dir, sample_
             o3d.visualization.draw_geometries([tool_surface, o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5, origin=tool_pos)])
         
         tool_surface_points = np.asarray(tool_surface.points)
+        
+        if fps:
+            particle_tensor = torch.from_numpy(tool_surface_points).float().unsqueeze(0)
+            fps_idx_tensor = farthest_point_sampler(particle_tensor, sample_points)[0]
+            fps_idx_1 = fps_idx_tensor.numpy().astype(np.int32)
+            # print(f'fps_idx_1: {fps_idx_1}')
+            # fps_idx = fps_idx_1
+            
+            # downsample to uniform radius
+            downsample_particle = particle_tensor[0, fps_idx_1, :].numpy()
+            fps_radius = 0.1
+            _, fps_idx_2 = fps_rad_idx(downsample_particle, fps_radius)
+            fps_idx_2 = fps_idx_2.astype(np.int32)
+            fps_idx = fps_idx_1[fps_idx_2]
+            print(f'tool {tool_names[i]} has {fps_idx.shape[0]} sample points.')
+            
+            # obtain fps tool surface points
+            tool_surface_points = tool_surface_points[fps_idx]
+            if args.vis:
+                # visualize fps points
+                fps_points = o3d.geometry.PointCloud()
+                fps_points.points = o3d.utility.Vector3dVector(tool_surface_points)
+                o3d.visualization.draw_geometries([fps_points, o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5, origin=tool_pos)])
+                
         
         # visualize points
         processed_img = viz_points_single_frame(processed_img, tool_surface_points, cam_intr[0], cam_extr[0], group=i)
@@ -169,7 +195,7 @@ def viz_graph_one_frame(args, tool_names, tool_scale, tool_mesh_dir):
     
     return processed_img
 
-def viz_tools(args, data_dir, out_dir, tool_names, tool_scale, tool_mesh_dir):
+def viz_tools(args, data_dir, out_dir, tool_names, tool_scale, tool_mesh_dir, sample_points=100, fps=True):
     
     os.makedirs(out_dir, exist_ok=True)
     
@@ -189,12 +215,35 @@ def viz_tools(args, data_dir, out_dir, tool_names, tool_scale, tool_mesh_dir):
         tool_mesh_path = os.path.join(tool_mesh_dir, f'{tool_names[i]}.obj')
         tool_mesh = o3d.io.read_triangle_mesh(tool_mesh_path)
         
-        tool_surface = o3d.geometry.TriangleMesh.sample_points_poisson_disk(tool_mesh, 100)
+        tool_surface = o3d.geometry.TriangleMesh.sample_points_poisson_disk(tool_mesh, 10000)
         # tool_surface = o3d.geometry.TriangleMesh.sample_points_uniformly(tool_mesh, sample_points)
         
         # scale the point cloud
         tool_surface.points = o3d.utility.Vector3dVector(np.asarray(tool_surface.points) * tool_scale[i])
-        tool_surface_points_list.append(tool_surface.points)
+        
+        tool_surface_points = np.asarray(tool_surface.points)
+        if fps:
+            particle_tensor = torch.from_numpy(tool_surface_points).float().unsqueeze(0)
+            fps_idx_tensor = farthest_point_sampler(particle_tensor, sample_points)[0]
+            fps_idx_1 = fps_idx_tensor.numpy().astype(np.int32)
+            
+            # downsample to uniform radius
+            downsample_particle = particle_tensor[0, fps_idx_1, :].numpy()
+            fps_radius = 0.1
+            _, fps_idx_2 = fps_rad_idx(downsample_particle, fps_radius)
+            fps_idx_2 = fps_idx_2.astype(np.int32)
+            fps_idx = fps_idx_1[fps_idx_2]
+            print(f'tool {tool_names[i]} has {fps_idx.shape[0]} sample points.')
+            
+            # obtain fps tool surface points
+            tool_surface_points = tool_surface_points[fps_idx]
+            if args.vis:
+                # visualize fps points
+                fps_points = o3d.geometry.PointCloud()
+                fps_points.points = o3d.utility.Vector3dVector(tool_surface_points)
+                o3d.visualization.draw_geometries([fps_points, o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5, origin=tool_pos)])
+        
+        tool_surface_points_list.append(tool_surface_points)
             
     # translate and rotate the tool surface for each frame
     for i in range(n_frames):
