@@ -324,11 +324,6 @@
       <geometry>
         <mesh filename="xarm_gripper/meshes/stick_2cm.obj"/>
       </geometry>
-      <!-- <material
-        name="">
-        <color
-          rgba="0.89804 0.91765 0.92941 1" />
-      </material> -->
       <material name="White">
         <color rgba="1.0 1.0 1.0 1.0"/>
       </material>

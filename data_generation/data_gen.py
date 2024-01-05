@@ -32,7 +32,6 @@ def gen_data(info):
     os.system('mkdir -p ' + folder_dir)
 
     # set env 
-    # set env 
     env = FlexEnv(config)
     np.random.seed(idx_episode)
     print('episode start:', idx_episode)

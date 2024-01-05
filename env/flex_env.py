@@ -85,7 +85,7 @@ class FlexEnv(gym.Env):
         self.fps_number = config['dataset']['fps_number']
         self.obj_shape_states = None
         
-        self.stick_len = 0.9
+        self.stick_len = 1.0
         
     
     ###TODO: action class
@@ -192,14 +192,14 @@ class FlexEnv(gym.Env):
             # # random choose a folder in cloth_dir
             # cloth_folder = os.path.join(cloth_dir, np.random.choice(os.listdir(cloth_dir)))
             # path = os.path.join(cloth_folder, 'Tshirt_processed.obj')
-            path = "../assets/cloth3d/Tshirt2.obj"
+            path = "assets/cloth3d/Tshirt2.obj"
             
             retval = load_cloth(path)
             mesh_verts = retval[0]
             mesh_faces = retval[1]
             mesh_stretch_edges, mesh_bend_edges, mesh_shear_edges = retval[2:]
 
-            mesh_verts = mesh_verts * 3.
+            mesh_verts = mesh_verts * 6.
             
             # cloth_pos = [rand_float(-1., 0.), rand_float(1., 3.), rand_float(-0.5, 0.5)]
             cloth_pos = [-0.9, 1., 0.]
@@ -273,7 +273,7 @@ class FlexEnv(gym.Env):
             
             trans = [-0.5, 2., 0.]
             
-            z_rotation = rand_float(70, 80)
+            z_rotation = 0. #rand_float(70, 80)
             y_rotation = 0. #np.random.choice([0, 30, 45, 60])
             rot = Rotation.from_euler('xyz', [0, y_rotation, z_rotation], degrees=True)
             rotate = rot.as_quat()
@@ -682,9 +682,9 @@ class FlexEnv(gym.Env):
         self.table_shape_states[0] = np.concatenate([center, center, quats, quats])
         
         # table for robot
-        robot_table_height = 0.525
-        robot_table_width = 1.0
-        robot_table_length = 1.0
+        robot_table_height = 0.5
+        robot_table_width = 126 / 200
+        robot_table_length = 126 / 200
         halfEdge = np.array([robot_table_width, robot_table_height, robot_table_length])
         center = np.array([-wkspace_width-robot_table_width, 0.0, 0.0])
         quats = quatFromAxisAngle(axis=np.array([0., 1., 0.]), angle=0.)
@@ -700,9 +700,9 @@ class FlexEnv(gym.Env):
             self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'assets/xarm/xarm6_with_gripper_2.urdf', robot_base_pos, robot_base_orn, globalScaling=5) 
             self.rest_joints = np.zeros(13)
         else:
-            robot_base_pos = [-wkspace_width-1.0, 0., wkspace_height]
+            robot_base_pos = [-wkspace_width-0.6, 0., wkspace_height]
             robot_base_orn = [0, 0, 0, 1]
-            self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'assets/xarm/xarm6_with_gripper.urdf', robot_base_pos, robot_base_orn, globalScaling=9) 
+            self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'assets/xarm/xarm6_with_gripper.urdf', robot_base_pos, robot_base_orn, globalScaling=10.0) 
             self.rest_joints = np.zeros(8)
 
         pyflex.set_shape_states(self.robot_to_shape_states(pyflex.getRobotShapeStates(self.flex_robot_helper)))
