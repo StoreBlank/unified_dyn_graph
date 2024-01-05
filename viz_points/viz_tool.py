@@ -150,7 +150,7 @@ def viz_tool_ptcl_one_frame(args, tool_names, tool_scale, tool_mesh_dir, sample_
             
             # downsample to uniform radius
             downsample_particle = particle_tensor[0, fps_idx_1, :].numpy()
-            fps_radius = 0.1
+            fps_radius = 0.15
             _, fps_idx_2 = fps_rad_idx(downsample_particle, fps_radius)
             fps_idx_2 = fps_idx_2.astype(np.int32)
             fps_idx = fps_idx_1[fps_idx_2]
@@ -375,8 +375,8 @@ if __name__ == "__main__":
     # viz_2(args)
     
     ### viz tool surface in a frame
-    # viz_3(args)
+    viz_3(args)
     
     ### viz tool frames
-    viz_4(args)
+    # viz_4(args)
     

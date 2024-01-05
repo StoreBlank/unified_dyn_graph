@@ -22,121 +22,86 @@ cam_view = config['dataset']['camera_view']
 os.system("mkdir -p %s" % data_dir)
 
 def gen_data(info):
-    base_epi = info["base_epi"]
-    n_epi_per_worker = info["n_epi_per_worker"]
-    thread_idx = info["thread_idx"]
-    verbose = info["verbose"]
+    start_time = time.time()
+    
+    idx_episode = info["epi"]
     debug = info["debug"]
-
+    
     # create folder
     folder_dir = os.path.join(data_dir, obj)
     os.system('mkdir -p ' + folder_dir)
 
     # set env 
+    # set env 
     env = FlexEnv(config)
-    np.random.seed(round(time.time() * 1000 + thread_idx) % 2 ** 32)
-
-    idx_episode = base_epi
-    while idx_episode < base_epi + n_epi_per_worker:
-        start_epi_time = time.time()
-        print('episode:', idx_episode)
+    np.random.seed(idx_episode)
+    print('episode start:', idx_episode)
+    
+    if debug:
+        particle_pos_list, eef_pos_list, step_list, contact_list = env.reset() 
+    else:
+        epi_dir = os.path.join(folder_dir, "episode_%d" % idx_episode)
+        os.system("mkdir -p %s" % epi_dir)
         
-        if debug:
-            n_steps = env.reset() 
-        else:
-            epi_dir = os.path.join(folder_dir, "episode_%d" % idx_episode)
-            os.system("mkdir -p %s" % epi_dir)
-            n_steps = env.reset(dir=epi_dir)
-            # save property
-            property = env.get_property()
-            with open(os.path.join(epi_dir, 'property.json'), 'w') as f:
-                json.dump(property, f)
+        particle_pos_list, eef_pos_list, step_list, contact_list = env.reset(dir=epi_dir)
         
-        actions = np.zeros((n_timestep, action_dim))
-        color_threshold = 0.1
-        
-        #### actions TODO]
-        ## cloth bag rigid objects
-        # us = [[1.3, 0.55, -1., -0.3], 
-        #       [-1., -1, 1., 0.],
-        #       [-1, -1, 1., 1.]]
-        
-        ## stirring
-        # us = [[0., -0.1, 0.5, -0.1],
-        #       [0.2, -0.5, 0.2, 0.]]
-        
-        ## scooping
-        # us = [[0., 1.3, 0.1, -0.2],]
-
-        # time step
-        img = env.render()
-        last_img = img.copy()
-        steps_list = []
-        contacts_list = []
-        for idx_timestep in range(n_timestep):
-            if verbose:
-                print('timestep %d' % idx_timestep)
+        # save property
+        property = env.get_property()
+        with open(os.path.join(epi_dir, 'property.json'), 'w') as f:
+            json.dump(property, f)
+    
+    actions = np.zeros((n_timestep, action_dim))
+    color_threshold = 0.01
+    
+    # n_pushes
+    img = env.render()
+    last_img = img.copy()
+    stuck = False
+    for idx_timestep in range(n_timestep):
+        color_diff = 0
+        prev_particle_pos_list, prev_eef_pos_list, prev_step_list, prev_contact_list = particle_pos_list.copy(), eef_pos_list.copy(), step_list.copy(), contact_list.copy()
+        for k in range(10):
+            u = None
+            u = env.sample_action()
+    
+            # step
+            if debug:
+                img, particle_pos_list, eef_pos_list, step_list, contact_list = env.step(u, particle_pos_list=particle_pos_list, eef_pos_list=eef_pos_list, step_list=step_list, contact_list=contact_list)
+            else: 
+                img, particle_pos_list, eef_pos_list, step_list, contact_list = env.step(u, epi_dir, particle_pos_list, eef_pos_list, step_list, contact_list)
             
-            color_diff = 0
-            while color_diff < color_threshold:
-                u = None
-                u = env.sample_action()
+            # check whether action is valid 
+            color_diff = np.mean(np.abs(img[:, :, :3] - last_img[:, :, :3]))
             
-                # u = [-0.2, -1., 0., 1.] #bottle_granular
-                # u = [0.0, 1., 0.0, -1.] #folding cloth
+            
+            if color_diff < color_threshold:
+                particle_pos_list, eef_pos_list, step_list, contact_list = prev_particle_pos_list, prev_eef_pos_list, prev_step_list, prev_contact_list
+                if k == 9:
+                    stuck = True
+                    print('The process is stucked on episode %d timestep %d!!!!' % (idx_episode, idx_timestep))
+            else:
+                break
                 
-                # u = [-1., 0., 1., 0.] #-x -> +x
-                
-                # center_x, center_z = env.get_obj_center()
-                # u = [center_x, 2.0, center_x, -1.5] #-z -> +z
-                # center_x += 0.1
-                # u = [center_x, -2, center_x, 2.]
-                  
-                # u = us[idx_timestep]
-        
-                # step
-                prev_steps = n_steps
-                if debug:
-                    img, n_steps, contact = env.step(u)
-                else: 
-                    img, n_steps, contact = env.step(u, n_steps, epi_dir)
-                
-                # check whether action is valid 
-                color_diff = np.mean(np.abs(img[:, :, :3] - last_img[:, :, :3]))
-                if color_diff < color_threshold:
-                    n_steps = prev_steps
-                else:
-                    steps_list.append(n_steps)
-                    # contacts_list.append(contact)
-                
-               
-
+        if not stuck:
             actions[idx_timestep] = u
             last_img = img.copy()
-
-            if verbose:
-                print('action: ', u)
-                print('num particles: ', env.get_positions().shape[0] // 4)
-                print('particle positions: ', env.get_positions().reshape(-1, 4))
-                print('\n')
-            
-            # check whether the object is inside the workspace
-            if not env.inside_workspace():
-                print("Object outside workspace!")
-                break
-            
-            print('episode %d timestep %d done!!! step: %d' % (idx_episode, idx_timestep, n_steps))       
+            if not debug:
+                print('episode %d timestep %d done!!! step: %d' % (idx_episode, idx_timestep, step_list[-1]))
+        else:
+            break       
+    
+    # save actions and steps and end effector positions
+    if not debug:
+        np.save(os.path.join(epi_dir, 'actions.npy'), actions)
+        np.save(os.path.join(epi_dir, 'particles_pos'), particle_pos_list)
+        np.save(os.path.join(epi_dir, 'eef_pos.npy'), eef_pos_list)
+        np.save(os.path.join(epi_dir, 'steps.npy'), step_list)
+        np.save(os.path.join(epi_dir, 'contact.npy'), contact_list)
         
-        # save actions and steps and end effector positions
-        if not debug:
-            np.save(os.path.join(epi_dir, 'actions.npy'), actions)
-            np.save(os.path.join(epi_dir, 'steps.npy'), np.array(steps_list))
-            # np.save(os.path.join(epi_dir, 'contacts.npy'), np.array(contacts_list))
-
-        end_epi_time = time.time()
-        print("Finish episode %d!!!!" % idx_episode)
-        print('episiode %d time: ' % idx_episode, end_epi_time - start_epi_time)
-        idx_episode += 1
+    end_time = time.time()
+    print("Finish episode %d!!!!" % idx_episode)
+    print(f"Episode {idx_episode} step list: {step_list}")
+    print('episiode %d time: ' % idx_episode, end_time - start_time)
         
     # save camera params
     if not debug:
@@ -147,31 +112,23 @@ def gen_data(info):
     env.close()
 
 ###multiprocessing
-# bases = [210, 240, 270, 300, 330, 360, 390, 420, 450, 480]
-# bases = [207, 281,  327, 331, 353, 364, 391]
-bases = [0, 25]
-for base in bases:
-    print("base:", base)
-    infos=[]
-    for i in range(n_worker):
-        info = {
-            "base_epi": base+i*n_episode//n_worker,
-            "n_epi_per_worker": n_episode//n_worker,
-            "thread_idx": i,
-            "verbose": False,
-            "debug": False,
-        }
-        infos.append(info)
-    pool = mp.Pool(processes=n_worker)
-    pool.map(gen_data, infos)
+# bases = [0, 25]
+# for base in bases:
+#     print("base:", base)
+#     infos=[]
+#     for i in range(n_worker):
+#         info = {
+#             "epi": base+i*n_episode//n_worker,
+#             "debug": False,
+#         }
+#         infos.append(info)
+#     pool = mp.Pool(processes=n_worker)
+#     pool.map(gen_data, infos)
 
 
-# info = {
-#     "base_epi": 0,
-#     "n_epi_per_worker": n_episode,
-#     "thread_idx": 1,
-#     "verbose": False,
-#     "debug":True,
-# }
-# gen_data(info)
+info = {
+    "epi": 0,
+    "debug": True,
+}
+gen_data(info)
 

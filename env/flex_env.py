@@ -22,7 +22,7 @@ pyflex.getRobotShapeStates = FlexRobotHelper.getRobotShapeStates
 # utils
 from utils_env import load_cloth
 from utils_env import rand_float, rand_int, quatFromAxisAngle, find_min_distance
-from utils_env import fps_rad, recenter
+from utils_env import fps_with_idx
 
 class FlexEnv(gym.Env):
     def __init__(self, config=None) -> None:
@@ -66,7 +66,6 @@ class FlexEnv(gym.Env):
 
         # set up camera
         self.camera_view = config['dataset']['camera_view']
-        self.camera_radius = config['dataset']['camera_radius']
 
         # define action space
         self.action_dim = 4
@@ -77,11 +76,17 @@ class FlexEnv(gym.Env):
         
         # others
         self.count = 0
+        self.particle_pos_list = []
+        self.eef_pos_list = []
+        self.step_list = []
+        self.contact_list = []
+        
         self.fps = config['dataset']['fps']
-        self.particle_num_threshold = 0
+        self.fps_number = config['dataset']['fps_number']
         self.obj_shape_states = None
         
-    
+        self.stick_len = 0.9
+        
     
     ###TODO: action class
     def _set_pos(self, picker_pos, particle_pos):
@@ -113,7 +118,7 @@ class FlexEnv(gym.Env):
         n_robot_links = robot_states.shape[0]
         n_table = self.table_shape_states.shape[0]
         
-        if self.obj_shape_states == None:
+        if self.obj_shape_states == None: #TODO
             shape_states = np.zeros((n_table + n_robot_links, 14))
             shape_states[:n_table] = self.table_shape_states # set shape states for table
             shape_states[n_table:] = robot_states # set shape states for robot
@@ -650,30 +655,6 @@ class FlexEnv(gym.Env):
             
             temp = np.array([0])
             pyflex.set_scene(34, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
-        
-        elif obj == 'bowl_granular':
-            
-            radius = 0.03
-            bowl_pos = [-0.3, 0.5, -0.3]
-            bowl_mass = 1e100
-            bowl_scale = 1.2
-            
-            num_granular_ft = [5, 5, 5] # low 5, medium 10, high 20
-            granular_scale = 0.1
-            pos_granular = [0.1, 1., 0.1]
-            granular_dis = 0.
-            
-            spoon_scale = 1.
-            spoon_mass = 10.
-            spoon_rotation = 0.1
-            
-            draw_mesh = 1
-            
-            self.scene_params = np.array([radius, *bowl_pos, *num_granular_ft, granular_scale, *pos_granular, granular_dis, 
-                                          draw_mesh, bowl_mass, bowl_scale, spoon_scale, spoon_mass, spoon_rotation])
-            
-            temp = np.array([0])
-            pyflex.set_scene(35, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
             
         else:
             raise ValueError('obj not defined')
@@ -739,20 +720,28 @@ class FlexEnv(gym.Env):
                 # create dir with cameras
                 cam_dir = os.path.join(dir, 'camera_%d' % (j))
                 os.system('mkdir -p %s' % (cam_dir))
+                
+                if self.cam_intrinsic_params[j].sum() == 0 or self.cam_extrinsic_matrix[j].sum() == 0:
+                        self.cam_intrinsic_params[j] = self.get_camera_intrinsics()
+                        self.cam_extrinsic_matrix[j] = self.get_camera_extrinsics()
 
                 img = self.render()
                 # rgb and depth images
                 cv2.imwrite(os.path.join(cam_dir, '%d_color.jpg' % self.count), img[:, :, :3][..., ::-1])
                 cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % self.count), (img[:, :, -1]*1000).astype(np.uint16))
-                
-                # particles
                 if j == 0:
+                    # save particle pos
                     particles = self.get_positions().reshape(-1, 4)
-                    # if self.fps and particles.shape[0] < self.particle_num_threshold:
-                    #     # sample points
-                        
-                    with open(os.path.join(cam_dir, '%d_particles.npy' % self.count), 'wb') as f:
-                        np.save(f, particles)
+                    particles_pos = particles[:, :3]
+                    if self.fps:
+                        _, self.sampled_idx = fps_with_idx(particles_pos, self.fps_number)
+                        particles_pos = particles_pos[self.sampled_idx]
+                    self.particle_pos_list.append(particles_pos)
+                    # save eef pos
+                    robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
+                    eef_pos = robot_shape_states[-1][:3] # actual eef position
+                    eef_pos[1] -= self.stick_len
+                    self.eef_pos_list.append(eef_pos)
             self.count += 1
             
         # update robot shape states
@@ -776,7 +765,7 @@ class FlexEnv(gym.Env):
         for _ in range(400):
             pyflex.step()
         
-        # initial render
+         # initial render
         if dir != None:
             for j in range(len(self.camPos_list)):
                 pyflex.set_camPos(self.camPos_list[j])
@@ -790,20 +779,34 @@ class FlexEnv(gym.Env):
                 cv2.imwrite(os.path.join(cam_dir, '%d_color.jpg' % self.count), img[:, :, :3][..., ::-1])
                 cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % self.count), (img[:, :, -1]*1000).astype(np.uint16))
                 if j == 0:
-                    with open(os.path.join(cam_dir, '%d_particles.npy' % self.count), 'wb') as f:
-                        np.save(f, self.get_positions().reshape(-1, 4))
-                if self.cam_intrinsic_params[j].sum() == 0 or self.cam_extrinsic_matrix[j].sum() == 0:
-                        self.cam_intrinsic_params[j] = self.get_camera_intrinsics()
-                        self.cam_extrinsic_matrix[j] = self.get_camera_extrinsics()
+                    # save particle pos
+                    particles = self.get_positions().reshape(-1, 4)
+                    particles_pos = particles[:, :3]
+                    if self.fps:
+                        particles_pos = particles_pos[self.sampled_idx]
+                    self.particle_pos_list.append(particles_pos)
+                    # save eef pos
+                    robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
+                    eef_pos = robot_shape_states[-1][:3] # actual eef position
+                    eef_pos[1] -= self.stick_len
+                    self.eef_pos_list.append(eef_pos)
             self.count += 1
+            self.step_list.append(self.count)
         
-        return self.count
+        return self.particle_pos_list, self.eef_pos_list, self.step_list, self.contact_list
         
-    def step(self, action, prev_counts=0, dir=None):
+    def step(self, action, dir=None, particle_pos_list = None, eef_pos_list = None, step_list = None, contact_list = None):
+        if dir != None:
+            self.particle_pos_list = particle_pos_list
+            self.eef_pos_list = eef_pos_list
+            self.step_list = step_list
+            self.contact_list = contact_list
+            self.count = self.step_list[-1]
+        
         if self.gripper:
             h = 1.35 #TODO change
         else:
-            h = 0.5 + 0.9
+            h = 0.5 + self.stick_len
         s_2d = np.concatenate([action[:2], [h]])
         e_2d = np.concatenate([action[2:], [h]])
 
@@ -811,9 +814,9 @@ class FlexEnv(gym.Env):
         if (s_2d - e_2d)[0] == 0:
             pusher_angle = np.pi/2
         else:
-            # pusher_angle = np.arctan((s_2d - e_2d)[1] / (s_2d - e_2d)[0])
+            pusher_angle = np.arctan((s_2d - e_2d)[1] / (s_2d - e_2d)[0])
             # pusher_angle = -np.arctan((s_2d - e_2d)[1] / (s_2d - e_2d)[0])
-            pusher_angle = -np.pi/4
+            # pusher_angle = -np.pi/4
         # pusher_angle = np.pi/2
         
         # robot orientation
@@ -845,9 +848,6 @@ class FlexEnv(gym.Env):
         else:
             speed = 1.0/100.
         
-        self.count = prev_counts
-        self.contact = []
-        
         # set up gripper
         if self.gripper:
             if self.grasp:
@@ -861,7 +861,7 @@ class FlexEnv(gym.Env):
             steps = int(np.linalg.norm(e-s)/speed) + 1
             
             for i in range(steps):
-                end_effector_pos = s + (e-s) * i / steps
+                end_effector_pos = s + (e-s) * i / steps # expected eef position
                 end_effector_orn = p.getQuaternionFromEuler(orn)
                 jointPoses = p.calculateInverseKinematics(self.robotId, 
                                                         self.end_idx, 
@@ -960,7 +960,7 @@ class FlexEnv(gym.Env):
                 robot_obj_dist = np.min(cdist(end_effector_pos[:2].reshape(1, 2), obj_pos))
                 
                 if dir != None:
-                    if robot_obj_dist < 0.3 and i % 4 == 0: #contact
+                    if robot_obj_dist < 0.2 and i % 10 == 0: #contact
                         for j in range(len(self.camPos_list)):
                             pyflex.set_camPos(self.camPos_list[j])
                             pyflex.set_camAngle(self.camAngle_list[j])
@@ -973,12 +973,20 @@ class FlexEnv(gym.Env):
                             cv2.imwrite(os.path.join(cam_dir, '%d_color.jpg' % self.count), img[:, :, :3][..., ::-1])
                             cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % self.count), (img[:, :, -1]*1000).astype(np.uint16))
                             if j == 0:
-                                with open(os.path.join(cam_dir, '%d_particles.npy' % self.count), 'wb') as f:
-                                    np.save(f, self.get_positions().reshape(-1, 4))
-                                with open(os.path.join(cam_dir, '%d_endeffector.npy' % self.count), 'wb') as f:
-                                    np.save(f, end_effector_pos)
+                                # save particle pos
+                                particles = self.get_positions().reshape(-1, 4)
+                                particles_pos = particles[:, :3]
+                                if self.fps:
+                                    particles_pos = particles_pos[self.sampled_idx]
+                                self.particle_pos_list.append(particles_pos)
+                                # save eef pos
+                                robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
+                                eef_pos = robot_shape_states[-1][:3] # actual eef position
+                                eef_pos[1] -= self.stick_len
+                                self.eef_pos_list.append(eef_pos)  
                         self.count += 1
-                        self.contact.append(self.count)
+                        self.contact_list.append(self.count)
+                        
                     elif i % 20 == 0:
                         for j in range(len(self.camPos_list)):
                             pyflex.set_camPos(self.camPos_list[j])
@@ -992,10 +1000,17 @@ class FlexEnv(gym.Env):
                             cv2.imwrite(os.path.join(cam_dir, '%d_color.jpg' % self.count), img[:, :, :3][..., ::-1])
                             cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % self.count), (img[:, :, -1]*1000).astype(np.uint16))
                             if j == 0:
-                                with open(os.path.join(cam_dir, '%d_particles.npy' % self.count), 'wb') as f:
-                                    np.save(f, self.get_positions().reshape(-1, 4))
-                                with open(os.path.join(cam_dir, '%d_endeffector.npy' % self.count), 'wb') as f:
-                                    np.save(f, end_effector_pos)
+                                # save particle pos
+                                particles = self.get_positions().reshape(-1, 4)
+                                particles_pos = particles[:, :3]
+                                if self.fps:
+                                    particles_pos = particles_pos[self.sampled_idx]
+                                self.particle_pos_list.append(particles_pos)
+                                # save eef pos
+                                robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
+                                eef_pos = robot_shape_states[-1][:3] # actual eef position
+                                eef_pos[1] -= self.stick_len
+                                self.eef_pos_list.append(eef_pos)
                         self.count += 1
                     
                 self.reset_robot()
@@ -1038,14 +1053,22 @@ class FlexEnv(gym.Env):
                 cv2.imwrite(os.path.join(cam_dir, '%d_color.jpg' % self.count), img[:, :, :3][..., ::-1])
                 cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % self.count), (img[:, :, -1]*1000).astype(np.uint16))
                 if j == 0:
-                    with open(os.path.join(cam_dir, '%d_particles.npy' % self.count), 'wb') as f:
-                        np.save(f, self.get_positions().reshape(-1, 4))
-                    with open(os.path.join(cam_dir, '%d_endeffector.npy' % self.count), 'wb') as f:
-                            np.save(f, np.array([-2., 0., h]))
+                    # save particle pos
+                    particles = self.get_positions().reshape(-1, 4)
+                    particles_pos = particles[:, :3]
+                    if self.fps:
+                        particles_pos = particles_pos[self.sampled_idx]
+                    self.particle_pos_list.append(particles_pos)
+                    # save eef pos
+                    robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
+                    eef_pos = robot_shape_states[-1][:3] # actual eef position
+                    eef_pos[1] -= self.stick_len
+                    self.eef_pos_list.append(eef_pos)
             self.count += 1
+            self.step_list.append(self.count)
         
         obs = self.render()
-        return obs, self.count, self.contact
+        return obs, self.particle_pos_list, self.eef_pos_list, self.step_list, self.contact_list
     
     def render(self, no_return=False):
         pyflex.step()
