@@ -1,9 +1,9 @@
 dataset:
   folder: "/mnt/sda/data" #'data_dense' #"/media/baoyu/sumsung/granular"
-  n_worker: 25
-  n_episode: 25
+  n_worker: 1
+  n_episode: 1
   n_timestep: 10
-  obj: "carrots" 
+  obj: "rope2" 
   wkspc_w: 2.5
   headless: False
   robot_type: 'xarm6' 
