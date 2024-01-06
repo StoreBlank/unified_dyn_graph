@@ -85,7 +85,7 @@ class FlexEnv(gym.Env):
         self.fps_number = config['dataset']['fps_number']
         self.obj_shape_states = None
         
-        self.stick_len = 0.9
+        self.stick_len = 1.0
         
     ### shape states
     def robot_to_shape_states(self, robot_states):
@@ -246,7 +246,7 @@ class FlexEnv(gym.Env):
         ## add robot
         robot_base_pos = [-wkspace_width-1.0, 0., wkspace_height]
         robot_base_orn = [0, 0, 0, 1]
-        self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'assets/xarm/xarm6_with_gripper.urdf', robot_base_pos, robot_base_orn, globalScaling=9) 
+        self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'assets/xarm/xarm6_with_gripper.urdf', robot_base_pos, robot_base_orn, globalScaling=10.) 
         self.rest_joints = np.zeros(8)
 
         pyflex.set_shape_states(self.robot_to_shape_states(pyflex.getRobotShapeStates(self.flex_robot_helper)))

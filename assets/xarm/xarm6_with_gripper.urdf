@@ -322,7 +322,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="xarm_gripper/meshes/stick_2cm.obj"/>
+        <mesh filename="xarm_gripper/meshes/cynlinder.obj"/>
       </geometry>
       <material name="White">
         <color rgba="1.0 1.0 1.0 1.0"/>

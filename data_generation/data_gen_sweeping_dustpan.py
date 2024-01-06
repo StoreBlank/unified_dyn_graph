@@ -218,6 +218,7 @@ def data_gen_sweeping(info):
             
             pyflex.set_shape_states(shape_states)
             
+            # save info
             if not debug and i % 5 == 0 and n_stay_still < i < n_up:
                 num_cam = len(camPos_list)
                 for j in range(num_cam):

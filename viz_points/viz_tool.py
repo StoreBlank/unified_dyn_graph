@@ -36,7 +36,7 @@ def merge_video(image_path, video_path):
 
     video_writer.release()
 
-def viz_one_point_single_frame(img, point, cam_intr, cam_extr, point_color=(0, 0, 255), point_size=3):
+def viz_one_point_single_frame(img, point, cam_intr, cam_extr, point_color=(0, 0, 255), point_size=1):
     
     # transform point
     num_point = 1 #point.shape[0]
@@ -195,7 +195,7 @@ def viz_graph_one_frame(args, tool_names, tool_scale, tool_mesh_dir):
     
     return processed_img
 
-def viz_tools(args, data_dir, out_dir, tool_names, tool_scale, tool_mesh_dir, sample_points=100, fps=True):
+def viz_tools(args, data_dir, out_dir, tool_names, tool_scale, tool_mesh_dir, sample_points=1000, fps=True):
     
     os.makedirs(out_dir, exist_ok=True)
     
@@ -229,7 +229,7 @@ def viz_tools(args, data_dir, out_dir, tool_names, tool_scale, tool_mesh_dir, sa
             
             # downsample to uniform radius
             downsample_particle = particle_tensor[0, fps_idx_1, :].numpy()
-            fps_radius = 0.1
+            fps_radius = 0.01
             _, fps_idx_2 = fps_rad_idx(downsample_particle, fps_radius)
             fps_idx_2 = fps_idx_2.astype(np.int32)
             fps_idx = fps_idx_1[fps_idx_2]
@@ -375,8 +375,8 @@ if __name__ == "__main__":
     # viz_2(args)
     
     ### viz tool surface in a frame
-    viz_3(args)
+    # viz_3(args)
     
     ### viz tool frames
-    # viz_4(args)
+    viz_4(args)
     

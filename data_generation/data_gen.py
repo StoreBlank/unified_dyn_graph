@@ -45,12 +45,15 @@ def gen_data(info):
         particle_pos_list, eef_pos_list, step_list, contact_list = env.reset(dir=epi_dir)
         
         # save property
-        property = env.get_property()
+        property_params = env.get_property()
         with open(os.path.join(epi_dir, 'property.json'), 'w') as f:
-            json.dump(property, f)
+            json.dump(property_params, f)
+    
+    obj_size = env.get_obj_size()
+    print("obj_size:", obj_size)
     
     actions = np.zeros((n_timestep, action_dim))
-    color_threshold = 0.01
+    color_threshold = 0.01 # granular objects
     
     # n_pushes
     img = env.render()
@@ -62,6 +65,10 @@ def gen_data(info):
         for k in range(10):
             u = None
             u = env.sample_action()
+            if u is None:
+                stuck = True
+                print("No valid action found!")
+                break
     
             # step
             if debug:
@@ -100,18 +107,21 @@ def gen_data(info):
     end_time = time.time()
     print("Finish episode %d!!!!" % idx_episode)
     print(f"Episode {idx_episode} step list: {step_list}")
-    print('episiode %d time: ' % idx_episode, end_time - start_time)
-        
-    # save camera params
+    print('Episode %d time: ' % idx_episode, end_time - start_time)
+    
     if not debug:
+        print(f'Episode {idx_episode} physics property: {property_params}.')
+        # save camera params
         cam_intrinsic_params, cam_extrinsic_matrix = env.get_camera_params()
         np.save(os.path.join(folder_dir, 'camera_intrinsic_params.npy'), cam_intrinsic_params)
         np.save(os.path.join(folder_dir, 'camera_extrinsic_matrix.npy'), cam_extrinsic_matrix)
             
     env.close()
 
-###multiprocessing
-# bases = [0, 25]
+#### multiprocessing
+# bases = [0 + 25*n for n in range(8)]
+# bases = [0]
+# print(bases)
 # for base in bases:
 #     print("base:", base)
 #     infos=[]
@@ -126,7 +136,7 @@ def gen_data(info):
 
 
 info = {
-    "epi": 0,
+    "epi": 13,
     "debug": True,
 }
 gen_data(info)
