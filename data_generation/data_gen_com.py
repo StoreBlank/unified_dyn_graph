@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import time
-from env.flex_env import FlexEnv
+from env.flex_env_com import FlexEnv
 import json
 import multiprocessing as mp
 
