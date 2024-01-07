@@ -22,7 +22,7 @@ pyflex.getRobotShapeStates = FlexRobotHelper.getRobotShapeStates
 # utils
 from utils_env import load_cloth
 from utils_env import rand_float, rand_int, quatFromAxisAngle, find_min_distance
-from utils_env import fps_with_idx
+from utils_env import fps_with_idx, quaternion_multuply
 
 class FlexEnv(gym.Env):
     def __init__(self, config=None) -> None:
@@ -85,7 +85,11 @@ class FlexEnv(gym.Env):
         self.fps_number = config['dataset']['fps_number']
         self.obj_shape_states = None
         
-        self.stick_len = 1.0 # 100mm
+        # carrots: 180mm others: 100mm
+        if self.obj in ['carrots']:
+            self.stick_len = 1.3
+        else:
+            self.stick_len = 1.0
         
     
     ###TODO: action class
@@ -254,14 +258,14 @@ class FlexEnv(gym.Env):
         
         elif obj == 'rope':
             
-            radius = 0.05
+            radius = 0.1
             
             if self.physics == "random":
-                length = 4.0 #rand_float(0.5, 2.5)
-                thickness = 3.0 #rand_float(1., 3.0)
+                length = 1.0 #rand_float(0.4, 2.5)
+                thickness = 1.0 #rand_float(0.8, 2.0)
                 scale = np.array([length, thickness, thickness]) * 50 # length, extension, thickness
-                cluster_spacing = rand_float(2, 8) # change the stiffness of the rope
-                dynamicFriction = rand_float(0.1, 0.7)
+                cluster_spacing = 4 #rand_float(2, 8) # change the stiffness of the rope
+                dynamicFriction = rand_float(0.2, 0.8)
             elif self.physics == "grid":
                 length = property_params['length']
                 thickness = property_params['thickness']
@@ -269,9 +273,9 @@ class FlexEnv(gym.Env):
                 cluster_spacing = property_params['cluster_spacing']
                 dynamicFriction = property_params['dynamic_friction']
             
-            trans = [-1.0, 2., 2.0]
+            trans = [-1.0, 2., 0.0]
             
-            z_rotation = rand_float(70, 80)
+            z_rotation = rand_float(60, 80)
             y_rotation = 0. #np.random.choice([0, 30, 45, 60])
             rot = Rotation.from_euler('xyz', [0, y_rotation, z_rotation], degrees=True)
             rotate = rot.as_quat()
@@ -282,7 +286,7 @@ class FlexEnv(gym.Env):
             link_radius = 0. 
             link_stiffness = 1.
 
-            global_stiffness = 0.
+            global_stiffness = 0. 
 
             surface_sampling = 0.
             volume_sampling = 4.
@@ -293,12 +297,12 @@ class FlexEnv(gym.Env):
             cluster_plastic_threshold = 0.
             cluster_plastic_creep = 0.
 
-            particleFriction = 0.25
+            particleFriction = 0.
             
             draw_mesh = 0
 
             relaxtion_factor = 1.
-            collisionDistance = radius * 0.5
+            collisionDistance = radius #radius * 0.5
             
             self.scene_params = np.array([*scale, *trans, radius, 
                                             cluster_spacing, cluster_radius, cluster_stiffness,
@@ -318,6 +322,7 @@ class FlexEnv(gym.Env):
                              'dynamic_friction': dynamicFriction,
                              'cluster_spacing': cluster_spacing,
                              'global_stiffness': global_stiffness,}
+            # print(self.property)
         
         elif obj == 'carrots':
             radius = 0.03
@@ -681,6 +686,11 @@ class FlexEnv(gym.Env):
             robot_base_orn = [0, 0, 0, 1]
             self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'assets/xarm/xarm6_with_gripper_2.urdf', robot_base_pos, robot_base_orn, globalScaling=5) 
             self.rest_joints = np.zeros(13)
+        elif self.obj in ['carrots']:
+            robot_base_pos = [-wkspace_width-0.6, 0., wkspace_height]
+            robot_base_orn = [0, 0, 0, 1]
+            self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'assets/xarm/xarm6_with_gripper_board.urdf', robot_base_pos, robot_base_orn, globalScaling=10.0) 
+            self.rest_joints = np.zeros(8)
         else:
             robot_base_pos = [-wkspace_width-0.6, 0., wkspace_height]
             robot_base_orn = [0, 0, 0, 1]
@@ -825,8 +835,10 @@ class FlexEnv(gym.Env):
             self.reset_robot(self.rest_joints)
 
         # set robot speed
-        if self.obj in ["Tshirt", "rope_cloth", "rope"]:
+        if self.obj in ["Tshirt", "rope_cloth"]:
             speed = 1.0/300.
+        if self.obj in ["rope"]:
+            speed = 1.0/300
         else:
             speed = 1.0/100.
         
@@ -1065,10 +1077,8 @@ class FlexEnv(gym.Env):
     def sample_action(self):
         if self.obj in ['mustard_bottle', 'power_drill', 'rigid_objects']:
             action = self.sample_rigid_actions()
-        elif self.obj in ['rope']:
-            action = self.sample_rope_actions()
-        elif self.obj in ['Tshirt', 'carrots', 'coffee']:
-            action = self.sample_cloth_actions()
+        elif self.obj in ['Tshirt', 'carrots', 'coffee', 'rope']:
+            action = self.sample_deform_actions()
         else:
             raise ValueError('action not defined')
         return action
@@ -1110,35 +1120,7 @@ class FlexEnv(gym.Env):
         action = np.concatenate([startpoint_pos.reshape(-1), endpoint_pos.reshape(-1)], axis=0)
         return action
     
-    def sample_rope_actions(self):
-        positions = self.get_positions().reshape(-1, 4)
-        positions[:, 2] *= -1 # align with the coordinates
-        num_points = positions.shape[0]
-        pos_xz = positions[:, [0, 2]]
-
-        while True:
-            # random choose a start point which can not be overlapped with the object
-            startpoint_pos = np.random.uniform(-self.wkspc_w // 2 - 1, self.wkspc_w // 2 + 1., size=(1, 2))
-            startpoint_pos_ = startpoint_pos.reshape(-1)
-            # choose end points which is the expolation of the start point and obj point
-            pickpoint = np.random.randint(0, num_points - 1)
-            obj_pos = positions[pickpoint, [0, 2]]
-            slope = (obj_pos[1] - startpoint_pos_[1]) / (obj_pos[0] - startpoint_pos_[0])
-            if obj_pos[0] < startpoint_pos_[0]:
-                x_end = obj_pos[0] - rand_float(0.4, 0.6)
-            else:
-                x_end = obj_pos[0] + rand_float(0.4, 0.6)
-            z_end = slope * (x_end - startpoint_pos_[0]) + startpoint_pos_[1]
-            endpoint_pos = np.array([x_end, z_end])
-            # check the start point should not be too close to the object
-            # check the end point should not be exceed the workspace
-            if np.min(cdist(startpoint_pos, pos_xz)) > 0.2 and np.abs(x_end) < 2.5 and np.abs(z_end) < 2.5:
-                break
-        
-        action = np.concatenate([startpoint_pos.reshape(-1), endpoint_pos.reshape(-1)], axis=0)
-        return action
-    
-    def sample_cloth_actions(self):
+    def sample_deform_actions(self):
         positions = self.get_positions().reshape(-1, 4)
         positions[:, 2] *= -1 # align with the coordinates
         num_points = positions.shape[0]
@@ -1146,13 +1128,13 @@ class FlexEnv(gym.Env):
 
         # random choose a start point which can not be overlapped with the object
         valid = False
-        for _ in range(20):
+        for _ in range(100):
             startpoint_pos_origin = np.random.uniform(-self.wkspc_w // 2 - 1, self.wkspc_w // 2 + 1., size=(1, 2))
             startpoint_pos = startpoint_pos_origin.copy()
             startpoint_pos = startpoint_pos.reshape(-1)
 
             # choose end points which is the expolation of the start point and obj point
-            pickpoint = np.random.randint(0, num_points - 1)
+            pickpoint = np.random.randint(0, num_points)
             obj_pos = positions[pickpoint, [0, 2]]
             slope = (obj_pos[1] - startpoint_pos[1]) / (obj_pos[0] - startpoint_pos[0])
             if obj_pos[0] < startpoint_pos[0]:

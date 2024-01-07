@@ -49,8 +49,8 @@ def gen_data(info):
         with open(os.path.join(epi_dir, 'property.json'), 'w') as f:
             json.dump(property_params, f)
     
-    obj_size = env.get_obj_size()
-    print("obj_size:", obj_size)
+    # obj_size = env.get_obj_size()
+    # print("obj_size:", obj_size)
     
     actions = np.zeros((n_timestep, action_dim))
     color_threshold = 0.01 # granular objects
@@ -67,7 +67,7 @@ def gen_data(info):
             u = env.sample_action()
             if u is None:
                 stuck = True
-                print("No valid action found!")
+                print(f"Episode {idx_episode} timestep {idx_timestep}: No valid action found!")
                 break
     
             # step
@@ -105,7 +105,7 @@ def gen_data(info):
         np.save(os.path.join(epi_dir, 'contact.npy'), contact_list)
         
     end_time = time.time()
-    print("Finish episode %d!!!!" % idx_episode)
+    # print("Finish episode %d!!!!" % idx_episode)
     print(f"Episode {idx_episode} step list: {step_list}")
     print('Episode %d time: ' % idx_episode, end_time - start_time)
     
@@ -118,26 +118,26 @@ def gen_data(info):
             
     env.close()
 
-#### multiprocessing
-# bases = [0 + 25*n for n in range(8)]
+### multiprocessing
+bases = [0 + 20*n for n in range(10)]
 # bases = [0]
-# print(bases)
-# for base in bases:
-#     print("base:", base)
-#     infos=[]
-#     for i in range(n_worker):
-#         info = {
-#             "epi": base+i*n_episode//n_worker,
-#             "debug": False,
-#         }
-#         infos.append(info)
-#     pool = mp.Pool(processes=n_worker)
-#     pool.map(gen_data, infos)
+print(bases)
+for base in bases:
+    print("base:", base)
+    infos=[]
+    for i in range(n_worker):
+        info = {
+            "epi": base+i*n_episode//n_worker,
+            "debug": False,
+        }
+        infos.append(info)
+    pool = mp.Pool(processes=n_worker)
+    pool.map(gen_data, infos)
 
 
-info = {
-    "epi": 13,
-    "debug": True,
-}
-gen_data(info)
+# info = {
+#     "epi": 0,
+#     "debug": True,
+# }
+# gen_data(info)
 
