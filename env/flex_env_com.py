@@ -202,8 +202,8 @@ class FlexEnv(gym.Env):
             x = 0.
             y = 1. #3.5
             z = 0. #-3.3
-            obj_type = 1 #obj_types[index]
-            size = 0.5 #obj_sizes[index]
+            obj_type = obj_types[index] #1 #obj_types[index]
+            size = obj_sizes[index] #0.5 #obj_sizes[index]
             draw_mesh = 0
 
             radius = 0.1
