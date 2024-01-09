@@ -9,7 +9,7 @@ from utils_env import load_yaml
 from utils_env import rand_float, rand_int, quatFromAxisAngle, find_min_distance
 
 # load config
-config = load_yaml("config/data_gen/gnn_dyn.yaml")
+config = load_yaml("config/data_gen/gnn_dyn_com.yaml")
 data_dir = config['dataset']['folder']
 n_worker = config['dataset']['n_worker']
 n_episode = config['dataset']['n_episode']
@@ -51,6 +51,8 @@ def gen_data(info):
     
     # obj_size = env.get_obj_size()
     # print("obj_size:", obj_size)
+    obj_center = env.get_obj_center()
+    print("obj_center before push:", obj_center)
     
     
     actions = np.zeros((n_timestep, action_dim))
@@ -98,7 +100,10 @@ def gen_data(info):
             if not debug:
                 print('episode %d timestep %d done!!! step: %d' % (idx_episode, idx_timestep, step_list[-1]))
         else:
-            break       
+            break     
+    
+    obj_center = env.get_obj_center()
+    print("obj_center after push:", obj_center)  
     
     # save actions and steps and end effector positions
     if not debug:
@@ -140,8 +145,8 @@ def gen_data(info):
 
 
 info = {
-    "epi": 0,
-    "debug": True,
+    "epi": 11,
+    "debug": False,
 }
 gen_data(info)
 

@@ -127,27 +127,27 @@ def gen_data(info):
 
 ### multiprocessing
 # bases = [0]
-bases = [0 + 5*n for n in range(80)]
-print(bases)
+# bases = [0 + 5*n for n in range(80)]
+# print(bases)
 
-for base in bases:
-    print("base:", base)
-    infos=[]
-    for i in range(n_worker):
-        info = {
-            "epi": base+i*n_episode//n_worker,
-            "debug": False,
-            "thres_idx": base,
-        }
-        infos.append(info)
-    pool = mp.Pool(processes=n_worker)
-    pool.map(gen_data, infos)
+# for base in bases:
+#     print("base:", base)
+#     infos=[]
+#     for i in range(n_worker):
+#         info = {
+#             "epi": base+i*n_episode//n_worker,
+#             "debug": False,
+#             "thres_idx": base,
+#         }
+#         infos.append(info)
+#     pool = mp.Pool(processes=n_worker)
+#     pool.map(gen_data, infos)
 
 
-# info = {
-#     "epi": 3,
-#     "debug": False,
-#     "thres_idx": 0,
-# }
-# gen_data(info)
+info = {
+    "epi": 3,
+    "debug": True,
+    "thres_idx": 0,
+}
+gen_data(info)
 

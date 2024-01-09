@@ -197,13 +197,13 @@ class FlexEnv(gym.Env):
             obj_sizes = [0.8, 1.0, 0.7, 0.8, 0.6, 0.6, 0.6, 0.2, #3-10
                          0.3, 0.3, 0.4, 0.4, 0.35, 0.8, 0.8, 0.8, 0.8, 0.8] #11-20
             
-            index = 1 #np.random.randint(0, len(obj_types))
+            index = 0 #np.random.randint(0, len(obj_types))
             
             x = 0.
             y = 1. #3.5
             z = 0. #-3.3
-            obj_type = obj_types[index] #1 #obj_types[index]
-            size = obj_sizes[index] #0.5 #obj_sizes[index]
+            obj_type = 2 #1 #obj_types[index]
+            size = 1. #0.5 #obj_sizes[index]
             draw_mesh = 0
 
             radius = 0.1
@@ -212,6 +212,7 @@ class FlexEnv(gym.Env):
             dynamicFriction = 0.5 #rand_float(0.1, 0.7)
             staticFriction = 0.
             viscosity = 2.
+            
             
             rotation = 0. #rand_float(0., 360.)
             springStiffness = 1.0
@@ -232,25 +233,59 @@ class FlexEnv(gym.Env):
             num_particles = self.get_num_particles()
             print('num_particles:', num_particles)
             
-            # set inner particle mass to 0
-            new_particle_pos = self.get_positions().reshape(-1, 4).copy()
-            # new_particle_pos[:, 3] = 0
-            particle_x, particle_y, particle_z = new_particle_pos[:, 0], new_particle_pos[:, 1], new_particle_pos[:, 2]
-            center_x, center_y, center_z = np.mean(particle_x), np.mean(particle_y), np.mean(particle_z)
-            min_x, min_y, min_z = np.min(particle_x), np.min(particle_y), np.min(particle_z)
-            max_x, max_y, max_z = np.max(particle_x), np.max(particle_y), np.max(particle_z)
-            
-            com_index = []
-            for i in range(num_particles):
-                particle = new_particle_pos[i]
-                if np.linalg.norm(particle[:3] - np.array([max_x, min_y, min_z])) < 0.2 or \
-                    np.linalg.norm(particle[:3] - np.array([max_x, min_y, max_z])) < 0.2:
-                    new_particle_pos[i, 3] = 1e30
-                    com_index.append(i)
-            print('num of com index:', len(com_index))
-            print('com index:', com_index)
-            pyflex.set_positions(new_particle_pos)
-            print(new_particle_pos)
+            ### change center of mass
+            n_weight = 1
+            if n_weight > 0:
+                new_particle_pos = self.get_positions().reshape(-1, 4).copy()
+                particle_x, particle_y, particle_z = new_particle_pos[:, 0], new_particle_pos[:, 1], new_particle_pos[:, 2]
+                center_x, center_y, center_z = np.mean(particle_x), np.mean(particle_y), np.mean(particle_z)
+                min_x, min_y, min_z = np.min(particle_x), np.min(particle_y), np.min(particle_z)
+                max_x, max_y, max_z = np.max(particle_x), np.max(particle_y), np.max(particle_z)
+                # print('center:', center_x, center_y, center_z)
+                # print('min:', min_x, min_y, min_z)
+                # print('max:', max_x, max_y, max_z)
+                p0 = np.array([min_x, min_y, min_z]) #np.array([(min_x+center_x)/2, min_y, (min_z+center_z)/2])
+                p1 = np.array([max_x, min_y, min_z]) #np.array([(max_x+center_x)/2, min_y, (min_z+center_z)/2])
+                p2 = np.array([max_x, min_y, max_z]) #np.array([(max_x+center_x)/2, min_y, (max_z+center_z)/2])
+                p3 = np.array([min_x, min_y, max_z]) #np.array([(min_x+center_x)/2, min_y, (max_z+center_z)/2])
+                ps = [p0, p1, p2, p3]
+                # print(ps)
+
+                if n_weight == 1:
+                    choose_pos = 0 #np.random.randint(0, 4)
+                    
+                    def choose_one_pos(choose_pos, ps, particle_pos):
+                        out_particle_pos = particle_pos.copy()
+                        com_index = []
+                        for i, particle in enumerate(particle_pos):
+                            if np.linalg.norm(particle[:3] - ps[choose_pos]) < 0.5:
+                                out_particle_pos[i, 3] = 1e30
+                                com_index.append(i)
+                        return out_particle_pos, com_index
+                            
+                    new_particle_pos, com_index = choose_one_pos(choose_pos, ps, new_particle_pos)
+                    # print(len(com_index))
+                    # print(com_index)
+                    pyflex.set_positions(new_particle_pos)
+                
+                elif n_weight == 2:
+                    # choose_pos = np.random.choose(4, 2, replace=False)
+                    choose_pos = np.array([0, 2])
+                    
+                    def choose_two_pos(choose_pos, ps, particle_pos):
+                        out_particle_pos = particle_pos.copy()
+                        com_index = []
+                        for i, particle in enumerate(particle_pos):
+                            if np.linalg.norm(particle[:3] - ps[choose_pos[0]]) < 0.5 \
+                                or np.linalg.norm(particle[:3] - ps[choose_pos[1]]) < 0.5:
+                                out_particle_pos[i, 3] = 1e30
+                                com_index.append(i)
+                        return out_particle_pos, com_index
+                    
+                    new_particle_pos, com_index = choose_two_pos(choose_pos, ps, new_particle_pos)
+                    # print(len(com_index))
+                    # print(com_index)
+                    pyflex.set_positions(new_particle_pos)    
             
 
             
@@ -320,7 +355,7 @@ class FlexEnv(gym.Env):
                 img = self.render()
                 # rgb and depth images
                 cv2.imwrite(os.path.join(cam_dir, '%d_color.jpg' % self.count), img[:, :, :3][..., ::-1])
-                cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % self.count), (img[:, :, -1]*1000).astype(np.uint16))
+                # cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % self.count), (img[:, :, -1]*1000).astype(np.uint16))
                 if j == 0:
                     # save particle pos
                     particles = self.get_positions().reshape(-1, 4)
@@ -369,7 +404,7 @@ class FlexEnv(gym.Env):
 
                 img = self.render()
                 cv2.imwrite(os.path.join(cam_dir, '%d_color.jpg' % self.count), img[:, :, :3][..., ::-1])
-                cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % self.count), (img[:, :, -1]*1000).astype(np.uint16))
+                # cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % self.count), (img[:, :, -1]*1000).astype(np.uint16))
                 if j == 0:
                     # save particle pos
                     particles = self.get_positions().reshape(-1, 4)
@@ -453,70 +488,6 @@ class FlexEnv(gym.Env):
                     
                 self.reset_robot(jointPoses)
                 pyflex.step()
-                
-                ## gripper control
-                if self.gripper and self.grasp and i_p >= 1:
-                    grasp_thresd = 0.1 #0.1
-                    obj_pos = self.get_positions().reshape(-1, 4)[:, :3]
-                    new_particle_pos = self.get_positions().reshape(-1, 4).copy()
-                    
-                    ### grasping 
-                    if i_p == 1:
-                        close = 0
-                        start = 0
-                        end = 0.7 #wood:0.35 #0.7
-                        close_steps = 50 #500
-                        for j in range(close_steps):
-                            robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper) # 9: left finger; 12: right finger
-                            left_finger_pos, right_finger_pos = robot_shape_states[9][:3], robot_shape_states[12][:3]
-                            #print(left_finger_pos, right_finger_pos)
-                            left_finger_pos[1], right_finger_pos[1] = left_finger_pos[1] - 0.2, right_finger_pos[1] - 0.2 #0.2
-                            new_finger_pos = (left_finger_pos + right_finger_pos) / 2
-                            
-                            if j == 0:
-                                # fine the k pick point
-                                pick_k = 500 #wood:100 #rope:5 #cloth:80
-                                left_min_dist, left_pick_index = find_min_distance(left_finger_pos, obj_pos, pick_k)
-                                right_min_dist, right_pick_index = find_min_distance(right_finger_pos, obj_pos, pick_k)
-                                if self.obj in ['rigid_granular']:
-                                    pick_index = np.concatenate([left_pick_index, right_pick_index])
-                                    # min_dist = np.max([left_min_dist, right_min_dist])
-                                else:
-                                    min_dist, pick_index = find_min_distance(new_finger_pos, obj_pos, pick_k)
-                                # save the original setting for restoring
-                                pick_origin = new_particle_pos[pick_index]
-                            
-                            if left_min_dist <= grasp_thresd or right_min_dist <= grasp_thresd:
-                                    new_particle_pos[left_pick_index, :3] = left_finger_pos
-                                    new_particle_pos[left_pick_index, 3] = 0
-                                    new_particle_pos[right_pick_index, :3] = right_finger_pos
-                                    new_particle_pos[right_pick_index, 3] = 0
-                            self._set_pos(new_finger_pos, new_particle_pos)
-                            
-                            # close the gripper slowly 
-                            close += (end - start) / close_steps
-                            self.robot_close_gripper(close)
-                            pyflex.step()
-                    
-                    # find finger positions
-                    robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper) # 9: left finger; 12: right finger
-                    left_finger_pos, right_finger_pos = robot_shape_states[9][:3], robot_shape_states[12][:3]
-                    left_finger_pos[1], right_finger_pos[1] = left_finger_pos[1] - 0.2, right_finger_pos[1] - 0.2
-                    new_finger_pos = (left_finger_pos + right_finger_pos) / 2
-                    # connect pick pick point to the finger
-                    if self.obj in ['rigid_granular']:
-                        new_particle_pos[left_pick_index, :3] = left_finger_pos
-                        new_particle_pos[left_pick_index, 3] = 0
-                        new_particle_pos[right_pick_index, :3] = right_finger_pos
-                        new_particle_pos[right_pick_index, 3] = 0
-                    else:
-                        new_particle_pos[pick_index, :3] = new_finger_pos
-                        new_particle_pos[pick_index, 3] = 0
-                    self._set_pos(new_finger_pos, new_particle_pos)
-                
-                # reset robot
-                self.reset_robot(jointPoses)
-                pyflex.step()
 
                 # save img in each step
                 obj_pos = self.get_positions().reshape(-1, 4)[:, [0, 2]]
@@ -535,7 +506,7 @@ class FlexEnv(gym.Env):
 
                             img = self.render()
                             cv2.imwrite(os.path.join(cam_dir, '%d_color.jpg' % self.count), img[:, :, :3][..., ::-1])
-                            cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % self.count), (img[:, :, -1]*1000).astype(np.uint16))
+                            # cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % self.count), (img[:, :, -1]*1000).astype(np.uint16))
                             if j == 0:
                                 # save particle pos
                                 particles = self.get_positions().reshape(-1, 4)
@@ -562,7 +533,7 @@ class FlexEnv(gym.Env):
 
                             img = self.render()
                             cv2.imwrite(os.path.join(cam_dir, '%d_color.jpg' % self.count), img[:, :, :3][..., ::-1])
-                            cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % self.count), (img[:, :, -1]*1000).astype(np.uint16))
+                            # cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % self.count), (img[:, :, -1]*1000).astype(np.uint16))
                             if j == 0:
                                 # save particle pos
                                 particles = self.get_positions().reshape(-1, 4)
@@ -585,19 +556,6 @@ class FlexEnv(gym.Env):
                         
             self.last_ee = end_effector_pos.copy()
         
-        # set up gripper
-        if self.gripper:
-            if self.grasp:
-                self.robot_open_gripper()
-            else:
-                self.robot_close_gripper(0.7)
-        
-        # reset the mass for the pick points
-        if self.gripper and self.grasp:
-            new_particle_pos[pick_index, 3] = pick_origin[:, 3]
-            self._reset_pos(new_particle_pos)
-        
-        
         self.reset_robot()
         
         for i in range(2):
@@ -615,7 +573,7 @@ class FlexEnv(gym.Env):
 
                 img = self.render()
                 cv2.imwrite(os.path.join(cam_dir, '%d_color.jpg' % self.count), img[:, :, :3][..., ::-1])
-                cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % self.count), (img[:, :, -1]*1000).astype(np.uint16))
+                # cv2.imwrite(os.path.join(cam_dir, '%d_depth.png' % self.count), (img[:, :, -1]*1000).astype(np.uint16))
                 if j == 0:
                     # save particle pos
                     particles = self.get_positions().reshape(-1, 4)

@@ -262,8 +262,8 @@ class FlexEnv(gym.Env):
             radius = 0.03
             
             if self.physics == "random":
-                length = rand_float(2.5, 5.0)
-                thickness = rand_float(2.5, 4.0)
+                length = 2.5 #rand_float(2.5, 5.0)
+                thickness = 4.0 #rand_float(2.5, 4.0)
                 scale = np.array([length, thickness, thickness]) * 50 # length, extension, thickness
                 cluster_spacing = rand_float(2, 12) # change the stiffness of the rope
                 dynamicFriction = rand_float(0.1, 0.45)
@@ -335,12 +335,12 @@ class FlexEnv(gym.Env):
             num_granular_ft = [num_granular_ft_x, num_granular_ft_y, num_granular_ft_z] 
             num_granular = int(num_granular_ft_x * num_granular_ft_y * num_granular_ft_z)
             
-            granular_scale = 0.1 #rand_float(0.1, 0.2)
+            granular_scale = 0.2 #rand_float(0.1, 0.2)
             
             pos_granular = [-1., 1., 0.]
             granular_dis = rand_float(0.1, 0.3)
 
-            draw_mesh = 0
+            draw_mesh = 1
             
             shapeCollisionMargin = 0.01
             collisionDistance = 0.03

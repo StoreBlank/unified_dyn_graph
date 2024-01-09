@@ -16,7 +16,7 @@ def merge_video(image_path, video_path):
     # print(image_names)
 
     fourcc = cv2.VideoWriter_fourcc('M', 'P', '4', 'V')
-    fps = 60
+    fps = 10
 
     img = Image.open(os.path.join(image_path, image_names[0]))
 
@@ -31,41 +31,36 @@ def merge_video(image_path, video_path):
     video_writer.release()
 
 if __name__ == '__main__':
-    # epi_num = 10
-    # for n in range(epi_num):
-    #     #i = np.random.randint(0, 100)
+    # epi_start = 10
+    # epi_num = 20
+    # # l = np.random.choice(100, epi_num, replace=False)
+    # # print(l)
+    # for n in range(epi_start, epi_num):
     #     i = n
+    #     # i = l[n]
     #     #j = np.random.randint(0, 4)
     #     j = 0
-    #     epi_path = f"/media/baoyu/sumsung/granular_scooping/episode_{i}/camera_{j}"
-    #     image_path = f"/media/baoyu/sumsung/granular_scooping/episode_{i}/camera_{j}"
-    #     video_path = f"/media/baoyu/sumsung/video/granular_scooping/video_{i}.mp4" 
+    #     epi_path = f"/mnt/sda/data/rope/episode_{i}/camera_{j}"
+    #     image_path = f"/mnt/sda/data/rope/episode_{i}/camera_{j}"
+    #     video_dir = f"/mnt/sda/videos/rope" 
+    #     video_path = f"/mnt/sda/videos/rope/video_{i}.mp4" 
+    #     os.makedirs(video_dir, exist_ok=True)
     #     merge_video(image_path, video_path)
     
     epi_start = 10
     epi_num = 20
     # l = np.random.choice(100, epi_num, replace=False)
     # print(l)
-    for n in range(epi_start, epi_num):
+    for n in range(9, 13):
         i = n
         # i = l[n]
         #j = np.random.randint(0, 4)
         j = 0
-        epi_path = f"/mnt/sda/data/rope/episode_{i}/camera_{j}"
-        image_path = f"/mnt/sda/data/rope/episode_{i}/camera_{j}"
-        video_dir = f"/mnt/sda/videos/rope" 
-        video_path = f"/mnt/sda/videos/rope/video_{i}.mp4" 
+        epi_path = f"/mnt/sda/data/rigid_object/episode_{i}/camera_{j}"
+        image_path = f"/mnt/sda/data/rigid_object/episode_{i}/camera_{j}"
+        video_dir = f"/mnt/sda/videos/rigid_object" 
+        video_path = f"/mnt/sda/videos/rigid_object/video_{i}.mp4" 
         os.makedirs(video_dir, exist_ok=True)
         merge_video(image_path, video_path)
-    
-    # for i in range(1):
-    #     image_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/breadslice/episode_0"
-    #     video_path = f"videos/fluid_r01.mp4" 
-    #     merge_video(image_path, video_path)
-
-    # for i in range(10):
-    #     image_path = f"/home/baoyu/2023/unified_dyn_graph/data_dense/granular_sweeping/episode_{i}/camera_0"
-    #     video_path = f"videos/sweeping_{i}.mp4" 
-    #     merge_video(image_path, video_path)
     
     
