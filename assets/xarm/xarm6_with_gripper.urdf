@@ -306,8 +306,6 @@
   <gazebo reference="link6">
     <selfCollide>true</selfCollide>
   </gazebo>
-  <!-- gazebo plugin -->
-  <!-- <xacro:gazebo_ros_control_plugin namespace="${ns}"/> -->
   <joint name="gripper_fix" type="fixed">
     <parent link="link6"/>
     <child link="xarm_gripper_base_link"/>
@@ -331,8 +329,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <!-- <mesh filename="xarm_gripper/meshes/finger_v2.obj"/> -->
-        <mesh filename="xarm_gripper/meshes/finger.obj"/>
+        <mesh filename="xarm_gripper/meshes/cylinder.obj"/>
       </geometry>
     </collision>
   </link>

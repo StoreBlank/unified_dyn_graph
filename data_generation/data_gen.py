@@ -39,13 +39,13 @@ def gen_data(info):
     print('episode start:', idx_episode)
     
     if debug:
-        particle_pos_list, eef_pos_list, step_list, contact_list = env.reset() 
+        particle_pos_list, eef_states_list, step_list, contact_list = env.reset() 
         property_params = env.get_property()
     else:
         epi_dir = os.path.join(folder_dir, "episode_%d" % idx_episode)
         os.system("mkdir -p %s" % epi_dir)
         
-        particle_pos_list, eef_pos_list, step_list, contact_list = env.reset(dir=epi_dir)
+        particle_pos_list, eef_states_list, step_list, contact_list = env.reset(dir=epi_dir)
         
         # save property
         property_params = env.get_property()
@@ -67,7 +67,7 @@ def gen_data(info):
         center_x, center_y, center_z = env.get_obj_center()
         
         color_diff = 0
-        prev_particle_pos_list, prev_eef_pos_list, prev_step_list, prev_contact_list = particle_pos_list.copy(), eef_pos_list.copy(), step_list.copy(), contact_list.copy()
+        prev_particle_pos_list, prev_eef_states_list, prev_step_list, prev_contact_list = particle_pos_list.copy(), eef_states_list.copy(), step_list.copy(), contact_list.copy()
         for k in range(10):
             u = None
             u = env.sample_action()
@@ -79,16 +79,16 @@ def gen_data(info):
     
             # step
             if debug:
-                img, particle_pos_list, eef_pos_list, step_list, contact_list = env.step(u, particle_pos_list=particle_pos_list, eef_pos_list=eef_pos_list, step_list=step_list, contact_list=contact_list)
+                img, particle_pos_list, eef_states_list, step_list, contact_list = env.step(u, particle_pos_list=particle_pos_list, eef_states_list=eef_states_list, step_list=step_list, contact_list=contact_list)
             else: 
-                img, particle_pos_list, eef_pos_list, step_list, contact_list = env.step(u, epi_dir, particle_pos_list, eef_pos_list, step_list, contact_list)
+                img, particle_pos_list, eef_states_list, step_list, contact_list = env.step(u, epi_dir, particle_pos_list, eef_states_list, step_list, contact_list)
             
             # check whether action is valid 
             color_diff = np.mean(np.abs(img[:, :, :3] - last_img[:, :, :3]))
             
             
             if color_diff < color_threshold:
-                particle_pos_list, eef_pos_list, step_list, contact_list = prev_particle_pos_list, prev_eef_pos_list, prev_step_list, prev_contact_list
+                particle_pos_list, eef_states_list, step_list, contact_list = prev_particle_pos_list, prev_eef_states_list, prev_step_list, prev_contact_list
                 if k == 9:
                     stuck = True
                     print('The process is stucked on episode %d timestep %d!!!!' % (idx_episode, idx_timestep))
@@ -107,7 +107,7 @@ def gen_data(info):
     if not debug:
         np.save(os.path.join(epi_dir, 'actions.npy'), actions)
         np.save(os.path.join(epi_dir, 'particles_pos'), particle_pos_list)
-        np.save(os.path.join(epi_dir, 'eef_pos.npy'), eef_pos_list)
+        np.save(os.path.join(epi_dir, 'eef_states.npy'), eef_states_list)
         np.save(os.path.join(epi_dir, 'steps.npy'), step_list)
         np.save(os.path.join(epi_dir, 'contact.npy'), contact_list)
         
@@ -126,28 +126,28 @@ def gen_data(info):
     env.close()
 
 ### multiprocessing
-# bases = [0]
+bases = [0]
 # bases = [0 + 5*n for n in range(80)]
-# print(bases)
+print(bases)
 
-# for base in bases:
-#     print("base:", base)
-#     infos=[]
-#     for i in range(n_worker):
-#         info = {
-#             "epi": base+i*n_episode//n_worker,
-#             "debug": False,
-#             "thres_idx": base,
-#         }
-#         infos.append(info)
-#     pool = mp.Pool(processes=n_worker)
-#     pool.map(gen_data, infos)
+for base in bases:
+    print("base:", base)
+    infos=[]
+    for i in range(n_worker):
+        info = {
+            "epi": base+i*n_episode//n_worker,
+            "debug": False,
+            "thres_idx": base,
+        }
+        infos.append(info)
+    pool = mp.Pool(processes=n_worker)
+    pool.map(gen_data, infos)
 
 
-info = {
-    "epi": 3,
-    "debug": True,
-    "thres_idx": 0,
-}
-gen_data(info)
+# info = {
+#     "epi": 3,
+#     "debug": True,
+#     "thres_idx": 0,
+# }
+# gen_data(info)
 

@@ -5,6 +5,8 @@ import glob
 import PIL.Image as Image
 import argparse
 
+from utils_env import quaternion_to_rotation_matrix
+
 def merge_video(image_path, video_path):
     f_names = os.listdir(image_path)
     image_names = []
@@ -17,7 +19,7 @@ def merge_video(image_path, video_path):
     # print(image_names)
 
     fourcc = cv2.VideoWriter_fourcc('M', 'P', '4', 'V')
-    fps = 60
+    fps = 20
 
     img = Image.open(os.path.join(image_path, image_names[0]))
 
@@ -34,7 +36,7 @@ def merge_video(image_path, video_path):
 def viz_points_single_frame(img, points, cam_intr, cam_extr):
     
     # TODO: calibrate the tool point
-    points[:, 2] -= 0.02
+    # points[:, 2] -= 0.02
     
     # transform points
     num_points = points.shape[0]
@@ -50,7 +52,7 @@ def viz_points_single_frame(img, points, cam_intr, cam_extr):
     points_proj[:, 1] = points_homo[:, 1] * fy / points_homo[:, 2] + cy
     
     # visualize
-    point_size = 5
+    point_size = 1
     point_color = (0, 0, 255)
     for k in range(points_proj.shape[0]):
         cv2.circle(img, (int(points_proj[k, 0]), int(points_proj[k, 1])), point_size,
@@ -65,8 +67,8 @@ def viz_eef(episode_idx, data_dir, out_dir, cam_view=0):
     
     n_frames = len(list(glob.glob(os.path.join(data_dir, f"episode_{episode_idx}/camera_0/*_color.jpg"))))
     print(f"Episode {episode_idx} has {n_frames} frames.")
-    eef_pos_path = os.path.join(data_dir, f"episode_{episode_idx}/eef_pos.npy")
-    eef_pos = np.load(eef_pos_path)
+    eef_pos_path = os.path.join(data_dir, f"episode_{episode_idx}/eef_states.npy")
+    eef_states = np.load(eef_pos_path)
     
     cam_intr_path = os.path.join(data_dir, "camera_intrinsic_params.npy")
     cam_extr_path = os.path.join(data_dir, "camera_extrinsic_matrix.npy")
@@ -76,8 +78,14 @@ def viz_eef(episode_idx, data_dir, out_dir, cam_view=0):
     for i in range(n_frames):
         raw_img_path = os.path.join(data_dir, f"episode_{episode_idx}/camera_{cam_view}/{i}_color.jpg")
         raw_img = cv2.imread(raw_img_path)
-        eef_points = eef_pos[i].reshape((1, 3))
-        img = viz_points_single_frame(raw_img, eef_points, cam_intr, cam_extr)
+        
+        # print(eef_states[i])
+        eef_pos = eef_states[i][0:3]
+        eef_ori = eef_states[i][6:10]
+        eef_rot_mat = quaternion_to_rotation_matrix(eef_ori)
+        eef_final_pos = eef_pos + np.dot(eef_rot_mat, np.array([0., 0., 1.])).reshape((1, 3))
+        
+        img = viz_points_single_frame(raw_img, eef_final_pos, cam_intr, cam_extr)
         cv2.imwrite(os.path.join(out_dir, f"{i}_color.jpg"), img)
     
     # make video
@@ -102,7 +110,7 @@ if __name__ == "__main__":
     
     # eef_points_path = f'/mnt/sda/data/{data_name}/episode_{epi_idx}/eef_pos.npy'
     # eef_points = np.load(eef_points_path)
-    # eef_points = eef_points[i]
+    # eef_points = eef_points[i][:3]
     # eef_points = eef_points.reshape((1, 3))
     # print(f'frame {i} eef pos: {eef_points}')
     
@@ -110,7 +118,8 @@ if __name__ == "__main__":
     # cam_extr_path = f'/mnt/sda/data/{data_name}/camera_extrinsic_matrix.npy'
     # cam_intr, cam_extr = np.load(cam_intr_path), np.load(cam_extr_path)
     
-    # viz_points_single_frame(img, eef_points, cam_intr[0], cam_extr[0])
+    # img = viz_points_single_frame(img, eef_points, cam_intr[0], cam_extr[0])
+    
     
     data_dir = f'/mnt/sda/data/{data_name}'
     out_dir = f'/mnt/sda/viz_eef/{data_name}'

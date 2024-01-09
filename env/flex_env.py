@@ -77,7 +77,7 @@ class FlexEnv(gym.Env):
         # others
         self.count = 0
         self.particle_pos_list = []
-        self.eef_pos_list = []
+        self.eef_states_list = []
         self.step_list = []
         self.contact_list = []
         
@@ -262,8 +262,8 @@ class FlexEnv(gym.Env):
             radius = 0.03
             
             if self.physics == "random":
-                length = 2.5 #rand_float(2.5, 5.0)
-                thickness = 4.0 #rand_float(2.5, 4.0)
+                length = rand_float(2.5, 5.0)
+                thickness = rand_float(2.5, 4.0)
                 scale = np.array([length, thickness, thickness]) * 50 # length, extension, thickness
                 cluster_spacing = rand_float(2, 12) # change the stiffness of the rope
                 dynamicFriction = rand_float(0.1, 0.45)
@@ -736,9 +736,8 @@ class FlexEnv(gym.Env):
                     self.particle_pos_list.append(particles_pos)
                     # save eef pos
                     robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
-                    eef_pos = robot_shape_states[-1][:3] # actual eef position
-                    eef_pos[1] -= self.stick_len
-                    self.eef_pos_list.append(eef_pos)
+                    eef_states = robot_shape_states[-1] # actual eef position
+                    self.eef_states_list.append(eef_states)
             self.count += 1
             
         # update robot shape states
@@ -784,18 +783,17 @@ class FlexEnv(gym.Env):
                     self.particle_pos_list.append(particles_pos)
                     # save eef pos
                     robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
-                    eef_pos = robot_shape_states[-1][:3] # actual eef position
-                    eef_pos[1] -= self.stick_len
-                    self.eef_pos_list.append(eef_pos)
+                    eef_states = robot_shape_states[-1] # actual eef position
+                    self.eef_states_list.append(eef_states)
             self.count += 1
             self.step_list.append(self.count)
         
-        return self.particle_pos_list, self.eef_pos_list, self.step_list, self.contact_list
+        return self.particle_pos_list, self.eef_states_list, self.step_list, self.contact_list
         
-    def step(self, action, dir=None, particle_pos_list = None, eef_pos_list = None, step_list = None, contact_list = None):
+    def step(self, action, dir=None, particle_pos_list = None, eef_states_list = None, step_list = None, contact_list = None):
         if dir != None:
             self.particle_pos_list = particle_pos_list
-            self.eef_pos_list = eef_pos_list
+            self.eef_states_list = eef_states_list
             self.step_list = step_list
             self.contact_list = contact_list
             self.count = self.step_list[-1]
@@ -980,9 +978,8 @@ class FlexEnv(gym.Env):
                                 self.particle_pos_list.append(particles_pos)
                                 # save eef pos
                                 robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
-                                eef_pos = robot_shape_states[-1][:3] # actual eef position
-                                eef_pos[1] -= self.stick_len
-                                self.eef_pos_list.append(eef_pos)  
+                                eef_states = robot_shape_states[-1] # actual eef position
+                                self.eef_states_list.append(eef_states)  
                         self.count += 1
                         self.contact_list.append(self.count)
                         
@@ -1007,9 +1004,8 @@ class FlexEnv(gym.Env):
                                 self.particle_pos_list.append(particles_pos)
                                 # save eef pos
                                 robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
-                                eef_pos = robot_shape_states[-1][:3] # actual eef position
-                                eef_pos[1] -= self.stick_len
-                                self.eef_pos_list.append(eef_pos)
+                                eef_states = robot_shape_states[-1] # actual eef position
+                                self.eef_states_list.append(eef_states)
                         self.count += 1
                     
                 self.reset_robot()
@@ -1060,14 +1056,13 @@ class FlexEnv(gym.Env):
                     self.particle_pos_list.append(particles_pos)
                     # save eef pos
                     robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
-                    eef_pos = robot_shape_states[-1][:3] # actual eef position
-                    eef_pos[1] -= self.stick_len
-                    self.eef_pos_list.append(eef_pos)
+                    eef_states = robot_shape_states[-1] # actual eef position
+                    self.eef_states_list.append(eef_states)
             self.count += 1
             self.step_list.append(self.count)
         
         obs = self.render()
-        return obs, self.particle_pos_list, self.eef_pos_list, self.step_list, self.contact_list
+        return obs, self.particle_pos_list, self.eef_states_list, self.step_list, self.contact_list
     
     def render(self, no_return=False):
         pyflex.step()
