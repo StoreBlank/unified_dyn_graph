@@ -34,8 +34,8 @@ def gen_data(info):
 
     # set env 
     env = FlexEnv(config)
-    np.random.seed(idx_episode)
-    # np.random.seed(round(time.time() * 1000 + thres_idx) % 2 ** 32)
+    # np.random.seed(idx_episode)
+    np.random.seed(round(time.time() * 1000 + thres_idx) % 2 ** 32)
     print('episode start:', idx_episode)
     
     if debug:
@@ -127,7 +127,10 @@ def gen_data(info):
 
 ### multiprocessing
 bases = [0]
-# bases = [0 + 5*n for n in range(80)]
+num_episode = 1000
+num_bases = num_episode // n_worker
+bases = [0 + 5*n for n in range(num_bases)]
+print(f"num_bases: {len(bases)}")
 print(bases)
 
 for base in bases:
