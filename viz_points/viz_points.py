@@ -78,14 +78,59 @@ def viz_eef(episode_idx, data_dir, out_dir, cam_view=0):
     for i in range(n_frames):
         raw_img_path = os.path.join(data_dir, f"episode_{episode_idx}/camera_{cam_view}/{i}_color.jpg")
         raw_img = cv2.imread(raw_img_path)
-        
-        # print(eef_states[i])
+
         eef_pos = eef_states[i][0:3]
         eef_ori = eef_states[i][6:10]
         eef_rot_mat = quaternion_to_rotation_matrix(eef_ori)
-        eef_final_pos = eef_pos + np.dot(eef_rot_mat, np.array([0., 0., 1.])).reshape((1, 3))
+        eef_final_pos = eef_pos + np.dot(eef_rot_mat, np.array([0., 0., 1.0])).reshape((1, 3))
         
         img = viz_points_single_frame(raw_img, eef_final_pos, cam_intr, cam_extr)
+        cv2.imwrite(os.path.join(out_dir, f"{i}_color.jpg"), img)
+    
+    # make video
+    video_path = os.path.join(out_dir, f"episode_{episode_idx}.mp4")
+    merge_video(out_dir, video_path)
+    print(f"Video saved to {video_path}.")
+
+def viz_granular_eef(episode_idx, data_dir, out_dir, cam_view=0):
+    
+    os.makedirs(out_dir, exist_ok=True)
+    
+    n_frames = len(list(glob.glob(os.path.join(data_dir, f"episode_{episode_idx}/camera_0/*_color.jpg"))))
+    print(f"Episode {episode_idx} has {n_frames} frames.")
+    eef_pos_path = os.path.join(data_dir, f"episode_{episode_idx}/eef_states.npy")
+    eef_states = np.load(eef_pos_path)
+    
+    cam_intr_path = os.path.join(data_dir, "camera_intrinsic_params.npy")
+    cam_extr_path = os.path.join(data_dir, "camera_extrinsic_matrix.npy")
+    cam_intrs, cam_extrs = np.load(cam_intr_path), np.load(cam_extr_path)
+    cam_intr, cam_extr = cam_intrs[cam_view], cam_extrs[cam_view]
+    
+    # x_max: +-0.51
+    # h_max: 1.26
+    # thickness: 0.09
+    n_eef_points = 5
+    h = 1.25
+    z = 0.045
+    eef_point_pos = np.array([
+        [0.5, z, h],
+        [-0.5, z, h],
+        [0, z, h],
+        [0.25, z, h],
+        [-0.25, z, h]
+    ])
+    for i in range(n_frames):
+        raw_img_path = os.path.join(data_dir, f"episode_{episode_idx}/camera_{cam_view}/{i}_color.jpg")
+        raw_img = cv2.imread(raw_img_path)
+        
+        for j in range(n_eef_points):
+            eef_pos = eef_states[i][0:3]
+            eef_ori = eef_states[i][6:10]
+            eef_rot_mat = quaternion_to_rotation_matrix(eef_ori)
+            eef_final_pos = eef_pos + np.dot(eef_rot_mat, eef_point_pos[j]).reshape((1, 3))
+            
+            img = viz_points_single_frame(raw_img, eef_final_pos, cam_intr, cam_extr)
+        
         cv2.imwrite(os.path.join(out_dir, f"{i}_color.jpg"), img)
     
     # make video
@@ -96,7 +141,7 @@ def viz_eef(episode_idx, data_dir, out_dir, cam_view=0):
         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_name', type=str, default='rope')
+    parser.add_argument('--data_name', type=str, default='carrots')
     parser.add_argument('--epi_idx', type=int, default=0)
     parser.add_argument('--idx', type=int, default=3)
     args = parser.parse_args()
@@ -123,6 +168,7 @@ if __name__ == "__main__":
     
     data_dir = f'/mnt/sda/data/{data_name}'
     out_dir = f'/mnt/sda/viz_eef/{data_name}'
-    viz_eef(epi_idx, data_dir, out_dir)
+    # viz_eef(epi_idx, data_dir, out_dir)
+    viz_granular_eef(epi_idx, data_dir, out_dir)
     
     

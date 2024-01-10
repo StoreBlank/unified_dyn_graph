@@ -144,7 +144,6 @@ class FlexEnv(gym.Env):
             jointType = info[2]
             if (jointType == p.JOINT_PRISMATIC or jointType == p.JOINT_REVOLUTE):
                 pyflex.resetJointState(self.flex_robot_helper, j, jointPositions[index])
-                # print(j, 'jointPositions', jointPositions[index])
                 index = index + 1
                 
         pyflex.set_shape_states(self.robot_to_shape_states(pyflex.getRobotShapeStates(self.flex_robot_helper)))
@@ -335,7 +334,7 @@ class FlexEnv(gym.Env):
             num_granular_ft = [num_granular_ft_x, num_granular_ft_y, num_granular_ft_z] 
             num_granular = int(num_granular_ft_x * num_granular_ft_y * num_granular_ft_z)
             
-            granular_scale = 0.2 #rand_float(0.1, 0.2)
+            granular_scale = rand_float(0.1, 0.2)
             
             pos_granular = [-1., 1., 0.]
             granular_dis = rand_float(0.1, 0.3)
@@ -674,7 +673,7 @@ class FlexEnv(gym.Env):
         self.table_shape_states[0] = np.concatenate([center, center, quats, quats])
         
         # table for robot
-        robot_table_height = 0.5
+        robot_table_height = 0.5+0.3
         robot_table_width = 126 / 200 # 126mm
         robot_table_length = 126 / 200 # 126mm
         halfEdge = np.array([robot_table_width, robot_table_height, robot_table_length])
@@ -692,16 +691,16 @@ class FlexEnv(gym.Env):
             self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'assets/xarm/xarm6_with_gripper_2.urdf', robot_base_pos, robot_base_orn, globalScaling=5) 
             self.rest_joints = np.zeros(13)
         elif self.obj in ['carrots']:
-            robot_base_pos = [-wkspace_width-0.6, 0., wkspace_height]
+            robot_base_pos = [-wkspace_width-0.6, 0., wkspace_height+0.3]
             robot_base_orn = [0, 0, 0, 1]
             self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'assets/xarm/xarm6_with_gripper_board.urdf', robot_base_pos, robot_base_orn, globalScaling=10.0) 
             self.rest_joints = np.zeros(8)
         else:
-            robot_base_pos = [-wkspace_width-0.6, 0., wkspace_height]
+            robot_base_pos = [-wkspace_width-0.6, 0., wkspace_height+0.3]
             robot_base_orn = [0, 0, 0, 1]
             self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'assets/xarm/xarm6_with_gripper.urdf', robot_base_pos, robot_base_orn, globalScaling=10.0) 
             self.rest_joints = np.zeros(8)
-
+        
         pyflex.set_shape_states(self.robot_to_shape_states(pyflex.getRobotShapeStates(self.flex_robot_helper)))
         
         for _ in range(30):
@@ -838,10 +837,8 @@ class FlexEnv(gym.Env):
             self.reset_robot(self.rest_joints)
 
         # set robot speed
-        if self.obj in ["Tshirt", "rope_cloth"]:
+        if self.obj in ["Tshirt", "rope_cloth", "rope"]:
             speed = 1.0/300.
-        if self.obj in ["rope"]:
-            speed = 1.0/300
         else:
             speed = 1.0/100.
         
@@ -868,7 +865,7 @@ class FlexEnv(gym.Env):
                                                         self.joints_upper.tolist(),
                                                         (self.joints_upper - self.joints_lower).tolist(),
                                                         self.rest_joints)
-                    
+                # print('jointPoses:', jointPoses)
                 self.reset_robot(jointPoses)
                 pyflex.step()
                 

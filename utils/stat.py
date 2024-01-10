@@ -21,6 +21,29 @@ def get_rope_property_params(data_dir, epi_start, epi_end):
             property_params = json.load(f)
         print(f'Episode {i}, thickness: {property_params["thickness"]}, friction: {property_params["dynamic_friction"]}, stiffness: {property_params["cluster_spacing"]}')
 
+def get_rope_normalized_property_params(data_dir, epi_start, epi_end):
+    thickness_list = []
+    friction_list = []
+    stiffness_list = []
+    for i in range(epi_start, epi_end):
+        epi_dir = os.path.join(data_dir, f'episode_{i}')
+        with open(os.path.join(epi_dir, 'property_params.json'), 'r') as f:
+            property_params = json.load(f)
+        thickness_list.append(property_params['thickness'])
+        friction_list.append(property_params['dynamic_friction'])
+        stiffness_list.append(property_params['cluster_spacing'])
+    
+    # normalization
+    thickness_list, friction_list, stiffness_list = np.array(thickness_list), np.array(friction_list), np.array(stiffness_list)
+    thickness_list = (thickness_list - np.min(thickness_list)) / (np.max(thickness_list) - np.min(thickness_list))
+    friction_list = (friction_list - np.min(friction_list)) / (np.max(friction_list) - np.min(friction_list))
+    stiffness_list = (stiffness_list - np.min(stiffness_list)) / (np.max(stiffness_list) - np.min(stiffness_list))
+    
+    print(f'thickness: min: {np.min(thickness_list)}, max: {np.max(thickness_list)}')
+    print(f'friction: min: {np.min(friction_list)}, max: {np.max(friction_list)}')
+    print(f'stiffness: min: {np.min(stiffness_list)}, max: {np.max(stiffness_list)}')
+        
+
 def get_rope_property_stat(data_dir, out_dir, epi_start, epi_end):
     
     os.makedirs(out_dir, exist_ok=True)
@@ -100,13 +123,14 @@ if __name__ == "__main__":
     data_name = 'rope'
     data_dir = f'/mnt/sda/data/{data_name}'
     
-    # epi_start = 0
-    # epi_end = 5
+    epi_start = 0
+    epi_end = 1000
     # get_rope_property_params(data_dir, epi_start, epi_end)
+    get_rope_normalized_property_params(data_dir, epi_start, epi_end)
     
-    epi_idx = 999
+    # epi_idx = 999
     # get_eef_pos(data_dir, epi_idx)
-    get_steps(data_dir, epi_idx)
+    # get_steps(data_dir, epi_idx)
     
     # epi_start = 0
     # epi_end = 1000

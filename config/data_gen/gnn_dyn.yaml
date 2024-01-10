@@ -3,7 +3,7 @@ dataset:
   n_worker: 5
   n_episode: 5
   n_timestep: 5
-  obj: "rope" 
+  obj: "carrots" 
   wkspc_w: 4.0
   headless: True
   robot_type: 'xarm6' 
