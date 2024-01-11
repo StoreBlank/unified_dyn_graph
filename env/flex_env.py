@@ -1127,9 +1127,12 @@ class FlexEnv(gym.Env):
         center_x, center_z = np.median(pos_x), np.median(pos_z)
         chosen_points = []
         for idx, (x, z) in enumerate(zip(pos_x, pos_z)):
-            if np.sqrt((x-center_x)**2 + (z-center_z)**2) < 1.0:
+            if np.sqrt((x-center_x)**2 + (z-center_z)**2) < 2.0:
                 chosen_points.append(idx)
         # print(f'chosen points {len(chosen_points)} out of {num_points}.')
+        if len(chosen_points) == 0:
+            print('no chosen points')
+            chosen_points = np.arange(num_points)
         
         # random choose a start point which can not be overlapped with the object
         valid = False

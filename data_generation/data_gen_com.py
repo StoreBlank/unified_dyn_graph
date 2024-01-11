@@ -54,6 +54,20 @@ def gen_data(info):
     obj_center = env.get_obj_center()
     print("obj_center before push:", obj_center)
     
+    def get_com(particle_pos):
+        num_particles = particle_pos.shape[0]
+        center_of_mass = 0
+        overall_mass = 0
+        for i in range(num_particles):
+            center_of_mass += particle_pos[i, :3] * (1/particle_pos[i, 3])
+            overall_mass += 1/particle_pos[i, 3]
+        center_of_mass /= overall_mass 
+        return center_of_mass
+    
+    particle_pos = env.get_positions().reshape((-1, 4))
+    com = get_com(particle_pos)
+    print("com:", com)
+    
     
     actions = np.zeros((n_timestep, action_dim))
     color_threshold = 0.01 # granular objects
@@ -71,6 +85,7 @@ def gen_data(info):
             u = None
             # u = env.sample_action()
             u = [center_x, center_z+2., center_x, center_z-2.]
+            # u = [0., 0., 0., 0.]
             if u is None:
                 stuck = True
                 print(f"Episode {idx_episode} timestep {idx_timestep}: No valid action found!")
@@ -145,7 +160,7 @@ def gen_data(info):
 
 
 info = {
-    "epi": 11,
+    "epi": 0,
     "debug": False,
 }
 gen_data(info)

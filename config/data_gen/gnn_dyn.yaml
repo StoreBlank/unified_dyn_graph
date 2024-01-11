@@ -1,7 +1,7 @@
 dataset:
   folder: "/mnt/sda/data" #'data_dense' #"/media/baoyu/sumsung/granular"
-  n_worker: 5
-  n_episode: 5
+  n_worker: 6
+  n_episode: 6
   n_timestep: 5
   obj: "carrots" 
   wkspc_w: 4.0

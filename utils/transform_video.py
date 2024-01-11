@@ -51,15 +51,15 @@ if __name__ == '__main__':
     epi_num = 20
     # l = np.random.choice(100, epi_num, replace=False)
     # print(l)
-    for n in range(9, 13):
+    for n in range(1):
         i = n
         # i = l[n]
         #j = np.random.randint(0, 4)
         j = 0
-        epi_path = f"/mnt/sda/data/rigid_object/episode_{i}/camera_{j}"
-        image_path = f"/mnt/sda/data/rigid_object/episode_{i}/camera_{j}"
-        video_dir = f"/mnt/sda/videos/rigid_object" 
-        video_path = f"/mnt/sda/videos/rigid_object/video_{i}.mp4" 
+        epi_path = f"/mnt/sda/data/softbox/episode_{i}/camera_{j}"
+        image_path = f"/mnt/sda/data/softbox/episode_{i}/camera_{j}"
+        video_dir = f"/mnt/sda/videos/softbox" 
+        video_path = f"/mnt/sda/videos/softbox/video_{i}.mp4" 
         os.makedirs(video_dir, exist_ok=True)
         merge_video(image_path, video_path)
     

@@ -4,6 +4,7 @@ import os
 import glob
 import PIL.Image as Image
 import argparse
+import open3d as o3d
 
 from utils_env import quaternion_to_rotation_matrix
 
@@ -34,9 +35,6 @@ def merge_video(image_path, video_path):
     video_writer.release()
 
 def viz_points_single_frame(img, points, cam_intr, cam_extr):
-    
-    # TODO: calibrate the tool point
-    # points[:, 2] -= 0.02
     
     # transform points
     num_points = points.shape[0]
@@ -92,58 +90,34 @@ def viz_eef(episode_idx, data_dir, out_dir, cam_view=0):
     merge_video(out_dir, video_path)
     print(f"Video saved to {video_path}.")
 
-def viz_granular_eef(episode_idx, data_dir, out_dir, cam_view=0):
+def viz_com():
+    mesh_dir = '/home/baoyu/2023/dyn-res-pile-manip/PyFleX/data/rigid/cube_mesh.ply'
     
-    os.makedirs(out_dir, exist_ok=True)
+    mesh = o3d.io.read_triangle_mesh(mesh_dir)
+    mesh_surface = o3d.geometry.TriangleMesh.sample_points_poisson_disk(mesh, 1000)
+    mesh_surface.points = o3d.utility.Vector3dVector(np.asarray(mesh_surface.points) * 0.1)
+    # pcd = o3d.io.read_point_cloud(mesh_dir)
     
-    n_frames = len(list(glob.glob(os.path.join(data_dir, f"episode_{episode_idx}/camera_0/*_color.jpg"))))
-    print(f"Episode {episode_idx} has {n_frames} frames.")
-    eef_states = np.load(os.path.join(data_dir, f"episode_{episode_idx}/eef_states.npy"))
+    ### box
+    # point = [1.0007548,  0.8705431, 0.99984574] # center
+    # point = [1.35843, 0.7781663, 0.54386675]
+    # point = [0.4164542, 0.7628534, 0.41931963]
     
-    cam_intr_path = os.path.join(data_dir, "camera_intrinsic_params.npy")
-    cam_extr_path = os.path.join(data_dir, "camera_extrinsic_matrix.npy")
-    cam_intrs, cam_extrs = np.load(cam_intr_path), np.load(cam_extr_path)
-    cam_intr, cam_extr = cam_intrs[cam_view], cam_extrs[cam_view]
+    ### softbox
+    # point = [1.0135212, 0.7611266, 0.5034287]
+    point = [0.43059102, 0.7527378, 0.42992964]
+
+    point[1] -= 0.5
     
-    # x_max: +-0.51
-    # h_max: 1.26
-    # thickness: 0.09
-    n_eef_points = 5
-    h = 1.25
-    z = 0.045
-    eef_point_pos = np.array([
-        [0.5, z, h],
-        [-0.5, z, h],
-        [0, z, h],
-        [0.25, z, h],
-        [-0.25, z, h]
-    ])
-    processed_eef_states = np.zeros([n_frames, n_eef_points, 3])
-    for i in range(n_frames):
-        raw_img_path = os.path.join(data_dir, f"episode_{episode_idx}/camera_{cam_view}/{i}_color.jpg")
-        raw_img = cv2.imread(raw_img_path)
-        
-        for j in range(n_eef_points):
-            eef_pos = eef_states[i][0:3]
-            eef_ori = eef_states[i][6:10]
-            eef_rot_mat = quaternion_to_rotation_matrix(eef_ori)
-            eef_final_pos = eef_pos + np.dot(eef_rot_mat, eef_point_pos[j])
-            processed_eef_states[i, j] = eef_final_pos
-            
-            img = viz_points_single_frame(raw_img, eef_final_pos.reshape((1, 3)), cam_intr, cam_extr)
-        
-        cv2.imwrite(os.path.join(out_dir, f"{i}_color.jpg"), img)
-    print(f"Processed eef states: {processed_eef_states}")
+    o3d.visualization.draw_geometries([mesh_surface, o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5, origin=point), o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5, origin=[0,0,0])])
+    # o3d.visualization.draw_geometries([mesh_surface, o3d.geometry.TriangleMesh.create_coordinate_frame(size=5.0, origin=[0,0,0])])
     
-    # make video
-    video_path = os.path.join(out_dir, f"episode_{episode_idx}.mp4")
-    merge_video(out_dir, video_path)
-    print(f"Video saved to {video_path}.")
-        
+
+
         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_name', type=str, default='carrots')
+    parser.add_argument('--data_name', type=str, default='rigid_object_toy')
     parser.add_argument('--epi_idx', type=int, default=0)
     parser.add_argument('--idx', type=int, default=3)
     args = parser.parse_args()
@@ -152,25 +126,28 @@ if __name__ == "__main__":
     data_name = args.data_name 
     epi_idx = args.epi_idx
     
-    # img_path = f'/mnt/sda/data/{data_name}/episode_{epi_idx}/camera_0/{i}_color.jpg'
-    # img = cv2.imread(img_path)
+    img_path = f'/mnt/sda/data/{data_name}/episode_{epi_idx}/camera_0/{i}_color.jpg'
+    img = cv2.imread(img_path)
     
-    # eef_points_path = f'/mnt/sda/data/{data_name}/episode_{epi_idx}/eef_pos.npy'
-    # eef_points = np.load(eef_points_path)
-    # eef_points = eef_points[i][:3]
-    # eef_points = eef_points.reshape((1, 3))
-    # print(f'frame {i} eef pos: {eef_points}')
+    # points = np.array([
+    #     [0., 0., 0.],
+    #     [0., 1., 0.],
+    #     [0., 2., 0.],
+    # ])
+    # # points = np.array([0.45693636, 0.91621566, 0.3613073]).reshape((1, 3))
+    # # points = np.array([0.4612493, 0.914831, 0.37645993]).reshape((1, 3))
     
     # cam_intr_path = f'/mnt/sda/data/{data_name}/camera_intrinsic_params.npy'
     # cam_extr_path = f'/mnt/sda/data/{data_name}/camera_extrinsic_matrix.npy'
     # cam_intr, cam_extr = np.load(cam_intr_path), np.load(cam_extr_path)
     
-    # img = viz_points_single_frame(img, eef_points, cam_intr[0], cam_extr[0])
+    # img = viz_points_single_frame(img, points, cam_intr[0], cam_extr[0])
+    # cv2.imwrite("point_viz.jpg", img)
     
     
-    data_dir = f'/mnt/sda/data/{data_name}'
-    out_dir = f'/mnt/sda/viz_eef/{data_name}'
+    # data_dir = f'/mnt/sda/data/{data_name}'
+    # out_dir = f'/mnt/sda/viz_eef/{data_name}'
     # viz_eef(epi_idx, data_dir, out_dir)
-    viz_granular_eef(epi_idx, data_dir, out_dir)
     
+    viz_com()
     

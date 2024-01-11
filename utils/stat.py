@@ -120,6 +120,7 @@ def get_rope_epi(data_dir, epi_start, epi_end):
     print(f'stiffness min: {stiffness_min_idx}, max: {stiffness_max_idx}')
 
 if __name__ == "__main__":
+    
     data_name = 'rope'
     data_dir = f'/mnt/sda/data/{data_name}'
     

@@ -3,7 +3,7 @@ dataset:
   n_worker: 5
   n_episode: 5
   n_timestep: 1
-  obj: "rigid_object" 
+  obj: "softbox"
   wkspc_w: 4.0
   headless: True
   robot_type: 'xarm6' 

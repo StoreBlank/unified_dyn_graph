@@ -191,28 +191,52 @@ class FlexEnv(gym.Env):
     
     ### TODO: write the scene as a class
     def init_scene(self, obj, property_params):
-        if obj == 'rigid_object':
+        if obj == "rigid_object":
             
+            """
+            1: box
+            2: cube_mesh
+            3: cracker_box
+            4: sugar_box
+            5: tomato_soup_can
+            6: mustard_bottle
+            7: tuna_fish_can
+            8: pudding_box
+            9: gelatin_box
+            10: strawberry
+            11: apple
+            12: lemon
+            13: peach
+            14: pear
+            15: orange
+            16: pitcher_base
+            17: bleach_cleanser
+            18: bowl
+            19: power_drill
+            20: wood_block
+            """
             obj_types = range(3, 21)
-            obj_sizes = [0.8, 1.0, 0.7, 0.8, 0.6, 0.6, 0.6, 0.2, #3-10
+            obj_sizes = [1.0, 1.0, 0.7, 0.8, 0.6, 0.6, 0.6, 0.2, #3-10
                          0.3, 0.3, 0.4, 0.4, 0.35, 0.8, 0.8, 0.8, 0.8, 0.8] #11-20
             
-            index = 0 #np.random.randint(0, len(obj_types))
+            index = 3-3 #np.random.randint(0, len(obj_types))
             
             x = 0.
             y = 1. #3.5
             z = 0. #-3.3
-            obj_type = 2 #1 #obj_types[index]
-            size = 1. #0.5 #obj_sizes[index]
+            obj_type = 2 #obj_types[index]
+            size = 0.1 #obj_sizes[index]
             draw_mesh = 0
 
             radius = 0.1
-            mass = 1e30 #rand_float(0.1, 10.) #10g-1000g
+            
+            mass = 1 #rand_float(0.1, 10.) #10g-1000g
+            mass_weight = 1e50
+            
             rigidStiffness = 1.
-            dynamicFriction = 0.5 #rand_float(0.1, 0.7)
+            dynamicFriction = 0.3 #rand_float(0.1, 0.7)
             staticFriction = 0.
             viscosity = 2.
-            
             
             rotation = 0. #rand_float(0., 360.)
             springStiffness = 1.0
@@ -233,6 +257,14 @@ class FlexEnv(gym.Env):
             num_particles = self.get_num_particles()
             print('num_particles:', num_particles)
             
+            # rest_positions = pyflex.get_restPositions().reshape(-1, 4)
+            # print('rest_positions:', rest_positions.shape)
+            # print('rest_positions:', rest_positions)
+            
+            particle_pos = self.get_positions().reshape(-1, 4)
+            # print('particle_pos:', particle_pos.shape)
+            # print('particle_pos:', particle_pos)
+            
             ### change center of mass
             n_weight = 1
             if n_weight > 0:
@@ -249,6 +281,7 @@ class FlexEnv(gym.Env):
                 p2 = np.array([max_x, min_y, max_z]) #np.array([(max_x+center_x)/2, min_y, (max_z+center_z)/2])
                 p3 = np.array([min_x, min_y, max_z]) #np.array([(min_x+center_x)/2, min_y, (max_z+center_z)/2])
                 ps = [p0, p1, p2, p3]
+                # print('ps:', ps)
                 # print(ps)
 
                 if n_weight == 1:
@@ -258,37 +291,119 @@ class FlexEnv(gym.Env):
                         out_particle_pos = particle_pos.copy()
                         com_index = []
                         for i, particle in enumerate(particle_pos):
-                            if np.linalg.norm(particle[:3] - ps[choose_pos]) < 0.5:
-                                out_particle_pos[i, 3] = 1e30
+                            if np.linalg.norm(particle[:3] - ps[choose_pos]) < 1.0:
+                                out_particle_pos[i, 3] = 1/mass_weight #invMass
                                 com_index.append(i)
                         return out_particle_pos, com_index
                             
                     new_particle_pos, com_index = choose_one_pos(choose_pos, ps, new_particle_pos)
+                    # import ipdb; ipdb.set_trace()
+                    # print(new_particle_pos)
                     # print(len(com_index))
                     # print(com_index)
                     pyflex.set_positions(new_particle_pos)
-                
-                elif n_weight == 2:
-                    # choose_pos = np.random.choose(4, 2, replace=False)
-                    choose_pos = np.array([0, 2])
+
+        
+        elif obj == "softbox":
+            # x = 8.0
+            # y = 8.0
+            # z = 8.0
+            # clusterStiffness = 0.2
+            # clusterPlasticThreshold = 0.0
+            # clusterPlasticCreep = 0.0
+            # scene_params = np.array([x, y, z, clusterStiffness, clusterPlasticThreshold, clusterPlasticCreep])
+            # temp = np.array([0])
+            # pyflex.set_scene(5, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0)
+            
+            radius = 0.1
+            scale = np.array([1., 1., 1.]) * 20
+            cluster_spacing = 10 #rand_float(2, 8) # change the stiffness of the rope
+            dynamicFriction = 0.3 #rand_float(0.1, 0.45)
+            
+            trans = [-0.0, 2., 0.0]
+            
+            z_rotation = 0. #rand_float(60, 70)
+            y_rotation = 0. 
+            rot_1 = Rotation.from_euler('xyz', [0, y_rotation, 0.], degrees=True)
+            rotate_1 = rot_1.as_quat()
+            rot_2 = Rotation.from_euler('xyz', [0, 0, z_rotation], degrees=True)
+            rotate_2 = rot_2.as_quat()
+            rotate = quaternion_multuply(rotate_1, rotate_2)
+            
+            cluster_radius = 0.
+            cluster_stiffness = 0.2
+
+            link_radius = 0. 
+            link_stiffness = 1.
+
+            global_stiffness = 1.
+
+            surface_sampling = 0.
+            volume_sampling = 4.
+
+            skinning_falloff = 5.
+            skinning_max_dist = 100.
+
+            cluster_plastic_threshold = 0.
+            cluster_plastic_creep = 0.
+
+            particleFriction = 0.
+            
+            draw_mesh = 0
+
+            relaxtion_factor = 1.
+            collisionDistance = radius * 0.5
+            
+            self.scene_params = np.array([*scale, *trans, radius, 
+                                            cluster_spacing, cluster_radius, cluster_stiffness,
+                                            link_radius, link_stiffness, global_stiffness,
+                                            surface_sampling, volume_sampling, skinning_falloff, skinning_max_dist,
+                                            cluster_plastic_threshold, cluster_plastic_creep,
+                                            dynamicFriction, particleFriction, draw_mesh, relaxtion_factor, 
+                                            *rotate, collisionDistance])
+            
+            temp = np.array([0])
+            pyflex.set_scene(38, self.scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0) 
+            
+            ### change center of mass
+            mass_weight = 1e30
+            n_weight = 1
+            if n_weight > 0:
+                new_particle_pos = self.get_positions().reshape(-1, 4).copy()
+                particle_x, particle_y, particle_z = new_particle_pos[:, 0], new_particle_pos[:, 1], new_particle_pos[:, 2]
+                center_x, center_y, center_z = np.mean(particle_x), np.mean(particle_y), np.mean(particle_z)
+                min_x, min_y, min_z = np.min(particle_x), np.min(particle_y), np.min(particle_z)
+                max_x, max_y, max_z = np.max(particle_x), np.max(particle_y), np.max(particle_z)
+                # print('center:', center_x, center_y, center_z)
+                # print('min:', min_x, min_y, min_z)
+                # print('max:', max_x, max_y, max_z)
+                p0 = np.array([min_x, min_y, min_z]) #np.array([(min_x+center_x)/2, min_y, (min_z+center_z)/2])
+                p1 = np.array([max_x, min_y, min_z]) #np.array([(max_x+center_x)/2, min_y, (min_z+center_z)/2])
+                p2 = np.array([max_x, min_y, max_z]) #np.array([(max_x+center_x)/2, min_y, (max_z+center_z)/2])
+                p3 = np.array([min_x, min_y, max_z]) #np.array([(min_x+center_x)/2, min_y, (max_z+center_z)/2])
+                ps = [p0, p1, p2, p3]
+                # print('ps:', ps)
+                # print(ps)
+
+                if n_weight == 1:
+                    choose_pos = 0 #np.random.randint(0, 4)
                     
-                    def choose_two_pos(choose_pos, ps, particle_pos):
+                    def choose_one_pos(choose_pos, ps, particle_pos):
                         out_particle_pos = particle_pos.copy()
                         com_index = []
                         for i, particle in enumerate(particle_pos):
-                            if np.linalg.norm(particle[:3] - ps[choose_pos[0]]) < 0.5 \
-                                or np.linalg.norm(particle[:3] - ps[choose_pos[1]]) < 0.5:
-                                out_particle_pos[i, 3] = 1e30
+                            if np.linalg.norm(particle[:3] - ps[choose_pos]) < 1.0:
+                                out_particle_pos[i, 3] = 1/mass_weight #invMass
                                 com_index.append(i)
                         return out_particle_pos, com_index
-                    
-                    new_particle_pos, com_index = choose_two_pos(choose_pos, ps, new_particle_pos)
+                            
+                    new_particle_pos, com_index = choose_one_pos(choose_pos, ps, new_particle_pos)
+                    # import ipdb; ipdb.set_trace()
+                    # print(new_particle_pos)
                     # print(len(com_index))
                     # print(com_index)
-                    pyflex.set_positions(new_particle_pos)    
-            
-
-            
+                    pyflex.set_positions(new_particle_pos)
+        
         else:
             raise ValueError('obj not defined')
     
@@ -460,7 +575,7 @@ class FlexEnv(gym.Env):
             self.reset_robot(self.rest_joints)
 
         # set robot speed
-        speed = 1.0/100.
+        speed = 1.0/300.
         
         # set up gripper
         if self.gripper:
@@ -720,7 +835,7 @@ class FlexEnv(gym.Env):
     def get_obj_center(self):
         particle_pos = self.get_positions().reshape(-1, 4)
         particle_x, particle_y, particle_z = particle_pos[:, 0], particle_pos[:, 1], particle_pos[:, 2]
-        center_x, center_y, center_z = np.mean(particle_x), np.mean(particle_y), np.mean(particle_z)
+        center_x, center_y, center_z = np.median(particle_x), np.median(particle_y), np.median(particle_z)
         return center_x, center_y, center_z
     
     def get_obj_size(self):
