@@ -290,41 +290,41 @@ def data_gen_sweeping(info):
     print(f'done episode {epi}!!!! total time: {time.time() - epi_start_time}')
 
 ### data generation for scooping
-# epi_num = np.random.randint(1000)
-# info = {
-#     "epi": epi_num,
-#     "n_time_step": 500,
-#     "n_push": 5,
-#     "num_sample_points": 2000,
-#     "with_dustpan": True,
-#     "headless": True,
-#     "data_root_dir": "data_dense",
-#     "debug": False,
-# }
-# data_gen_sweeping(info)
+epi_num = np.random.randint(1000)
+info = {
+    "epi": epi_num,
+    "n_time_step": 500,
+    "n_push": 5,
+    "num_sample_points": 2000,
+    "with_dustpan": True,
+    "headless": False,
+    "data_root_dir": "data_dense",
+    "debug": True,
+}
+data_gen_sweeping(info)
 
 ## multiprocessing
-n_worker = 25
-n_episode = 25
-# end_base = int(1000 / 5)
-# bases = [i for i in range(0, end_base, n_episode)]
-bases = [25, 50, 75, 100, 125, 150, 175]
-print(bases)
-print(len(bases))
-for base in bases:
-    print("base:", base)
-    infos=[]
-    for i in range(n_worker):
-        info = {
-            "epi": base+i*n_episode//n_worker,
-            "n_time_step": 500,
-            "n_push": 5,
-            "num_sample_points": 2000,
-            "with_dustpan": True,
-            "headless": True,
-            "data_root_dir": "/mnt/sda/data",
-            "debug": False,
-        }
-        infos.append(info)
-    pool = mp.Pool(processes=n_worker)
-    pool.map(data_gen_sweeping, infos)
+# n_worker = 25
+# n_episode = 25
+# # end_base = int(1000 / 5)
+# # bases = [i for i in range(0, end_base, n_episode)]
+# bases = [25, 50, 75, 100, 125, 150, 175]
+# print(bases)
+# print(len(bases))
+# for base in bases:
+#     print("base:", base)
+#     infos=[]
+#     for i in range(n_worker):
+#         info = {
+#             "epi": base+i*n_episode//n_worker,
+#             "n_time_step": 500,
+#             "n_push": 5,
+#             "num_sample_points": 2000,
+#             "with_dustpan": True,
+#             "headless": True,
+#             "data_root_dir": "/mnt/sda/data",
+#             "debug": False,
+#         }
+#         infos.append(info)
+#     pool = mp.Pool(processes=n_worker)
+#     pool.map(data_gen_sweeping, infos)

@@ -121,17 +121,17 @@ def get_rope_epi(data_dir, epi_start, epi_end):
 
 if __name__ == "__main__":
     
-    data_name = 'rope'
+    data_name = 'granular_sweeping'
     data_dir = f'/mnt/sda/data/{data_name}'
     
     epi_start = 0
     epi_end = 1000
     # get_rope_property_params(data_dir, epi_start, epi_end)
-    get_rope_normalized_property_params(data_dir, epi_start, epi_end)
+    # get_rope_normalized_property_params(data_dir, epi_start, epi_end)
     
-    # epi_idx = 999
+    epi_idx = 0
     # get_eef_pos(data_dir, epi_idx)
-    # get_steps(data_dir, epi_idx)
+    get_steps(data_dir, epi_idx)
     
     # epi_start = 0
     # epi_end = 1000
