@@ -9,7 +9,7 @@ def randomize_pos(init_y):
     # initial start position
     x_range_min, x_range_max = 0., 4. # range for x if not in (2,3)
     z_range_min, z_range_max = 0., 4. # range for z if not in (2,3)
-    range_min, range_max = 3., 4.
+    range_min, range_max = 4., 4.
     # randomly decide whether x or z will be in the range
     if np.random.choice(['x', 'z']) == 'x':
         pos_x = rand_float(range_min, range_max) * np.random.choice([-1., 1.])

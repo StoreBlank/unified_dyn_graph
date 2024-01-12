@@ -92,9 +92,9 @@ def data_gen_sweeping(info):
     elif sponge_choice == 2:
         sponge_scale = 8. #rand_float(8., 12.) 
         sponge_pos_x = 0.
-        sponge_pos_z = 3.
-        sponge_pos_y = table_height + 0.1
-        sponge_pos_origin = np.array([sponge_pos_x, sponge_pos_y, sponge_pos_z])
+        sponge_pos_z = 5.
+        sponge_pos_y = table_height + 0.2
+        sponge_pos_origin = randomize_pos(sponge_pos_y)
         sponge_pos_origin[1] = table_height + 0.8
         
         sponge_quat_axis = np.array([0., 0., 1.])
@@ -130,8 +130,18 @@ def data_gen_sweeping(info):
     for p in range(n_push):
         particle_pos = pyflex.get_positions().reshape(-1, 4)
         num_particle = particle_pos.shape[0]
+        # search valid pick points
+        pos_x, pos_z = particle_pos[:, 0], particle_pos[:, 2]
+        center_x, center_z = np.mean(pos_x), np.mean(pos_z)
+        chosen_points = []
+        for idx, (x, z) in enumerate(zip(pos_x, pos_z)):
+            if np.sqrt((x - center_x)**2 + (z - center_z)**2) < 0.5:
+                chosen_points.append(idx)
+        if len(chosen_points) == 0:
+            print("No chosen points found!")
+            chosen_points = np.arange(num_particle)
         # random pick one particle
-        pick_id = rand_int(0, num_particle)
+        pick_id = np.random.choice(chosen_points)
         pick_pos = particle_pos[pick_id, :3]
         # print(f"pick pos: {pick_pos}")
         
@@ -149,8 +159,8 @@ def data_gen_sweeping(info):
             z_end = pick_pos[2] + rand_float(2.0, 2.5)
         x_end = sponge_pos[0] + slope * (z_end - sponge_pos[2])
         
-        x_end = np.clip(x_end, -2.0, 2.0)
-        z_end = np.clip(z_end, -2.5, 2.5)        
+        x_end = np.clip(x_end, -3.0, 3.0)
+        z_end = np.clip(z_end, -3.0, 3.0)        
         
         sponge_pos_end = np.array([x_end, sponge_pos[1], z_end])
         # print(f"start: {sponge_pos}, end: {sponge_pos_end}")
@@ -274,39 +284,39 @@ def data_gen_sweeping(info):
     print(f'done episode {epi}!!!! total time: {time.time() - epi_start_time}')
 
 ### data generation for scooping
-epi_num = 0 #np.random.randint(1000)
-info = {
-    "epi": epi_num,
-    "n_push": 5,
-    "num_sample_points": 2000,
-    "headless": False,
-    "data_root_dir": "/mnt/sda/data",
-    "debug": True,
-}
-data_gen_sweeping(info)
+# epi_num = 0 #np.random.randint(1000)
+# info = {
+#     "epi": epi_num,
+#     "n_push": 5,
+#     "num_sample_points": 2000,
+#     "headless": False,
+#     "data_root_dir": "/mnt/sda/data",
+#     "debug": True,
+# }
+# data_gen_sweeping(info)
 
 ## multiprocessing
-# n_worker = 25
-# n_episode = 25
-# # end_base = int(1000 / 5)
-# # bases = [i for i in range(0, end_base, n_episode)]
-# bases = [25, 50, 75, 100, 125, 150, 175]
-# print(bases)
-# print(len(bases))
-# for base in bases:
-#     print("base:", base)
-#     infos=[]
-#     for i in range(n_worker):
-#         info = {
-#             "epi": base+i*n_episode//n_worker,
-#             "n_time_step": 500,
-#             "n_push": 5,
-#             "num_sample_points": 2000,
-#             "with_dustpan": True,
-#             "headless": True,
-#             "data_root_dir": "/mnt/sda/data",
-#             "debug": False,
-#         }
-#         infos.append(info)
-#     pool = mp.Pool(processes=n_worker)
-#     pool.map(data_gen_sweeping, infos)
+n_worker = 5
+n_episode = 5
+
+num_episode = 1000
+num_bases = num_episode // n_worker
+bases = [0 + n_worker*n for n in range(1, num_bases)]
+# bases = [0]
+print(bases)
+print(len(bases))
+for base in bases:
+    print("base:", base)
+    infos=[]
+    for i in range(n_worker):
+        info = {
+            "epi": base+i*n_episode//n_worker,
+            "n_push": 5,
+            "num_sample_points": 2000,
+            "headless": True,
+            "data_root_dir": "/mnt/sda/data",
+            "debug": False,
+        }
+        infos.append(info)
+    pool = mp.Pool(processes=n_worker)
+    pool.map(data_gen_sweeping, infos)

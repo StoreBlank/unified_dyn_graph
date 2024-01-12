@@ -195,7 +195,7 @@ def viz_graph_one_frame(args, tool_names, tool_scale, tool_mesh_dir):
     
     return processed_img
 
-def viz_tools(args, data_dir, out_dir, tool_names, tool_scale, tool_mesh_dir, sample_points=1000, fps=True):
+def viz_tools(args, data_dir, out_dir, tool_names, tool_scale, tool_mesh_dir, sample_points=100, fps=True):
     
     os.makedirs(out_dir, exist_ok=True)
     
@@ -246,7 +246,7 @@ def viz_tools(args, data_dir, out_dir, tool_names, tool_scale, tool_mesh_dir, sa
         tool_surface_points_list.append(tool_surface_points)
             
     # translate and rotate the tool surface for each frame
-    for i in range(n_frames):
+    for i in range(2, n_frames):
         # load image
         img_path = os.path.join(data_dir, f"episode_{args.epi_idx}/camera_0/{i}_color.jpg")
         img = cv2.imread(img_path)
@@ -257,7 +257,7 @@ def viz_tools(args, data_dir, out_dir, tool_names, tool_scale, tool_mesh_dir, sa
             tool_surface_i.points = o3d.utility.Vector3dVector(tool_surface_points_list[j])
         
             # load the pos and orientation of the tool
-            tool_points_path = os.path.join(data_dir, f"episode_{args.epi_idx}/{tool_names[j]}_states.npy")
+            tool_points_path = os.path.join(data_dir, f"episode_{args.epi_idx}/eef_states.npy")
             tool_points = np.load(tool_points_path)
         
             tool_ori = tool_points[i, 3:]
@@ -336,8 +336,8 @@ def viz_3(args):
     """viz tool surface in a frame"""
     data_root = f'/mnt/sda/data/{args.data_name}'
     tool_mesh_dir = os.path.join(data_root, 'geometries/tools')
-    tool_names = ['dustpan', 'sponge']
-    tool_scale = [1.1, 8.0]
+    tool_names = ['sponge']
+    tool_scale = [8.0]
     
     processed_img = viz_tool_ptcl_one_frame(args, tool_names, tool_scale, tool_mesh_dir)
     # processed_img = viz_graph_one_frame(args, tool_names, tool_scale, tool_mesh_dir)
@@ -350,8 +350,8 @@ def viz_4(args):
     """viz tool frames"""
     data_root = f'/mnt/sda/data/{args.data_name}'
     tool_mesh_dir = os.path.join(data_root, 'geometries/tools')
-    tool_names = ['dustpan', 'sponge']
-    tool_scale = [1.1, 8.0]
+    tool_names = ['sponge']
+    tool_scale = [8.0]
     
     # viz_tools(args, data_dir, out_dir, tool_names, tool_scale, tool_mesh_dir):
     out_dir = f'/mnt/sda/viz_tool/{args.data_name}/{args.epi_idx}'
@@ -360,7 +360,7 @@ def viz_4(args):
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_name', type=str, default='granular_sweeping_dustpan')
+    parser.add_argument('--data_name', type=str, default='granular_sweeping')
     parser.add_argument('--epi_idx', type=int, default=0)
     parser.add_argument('--idx', type=int, default=0)
     parser.add_argument('--vis', type=bool, default=False)
