@@ -229,7 +229,7 @@ def viz_tools(args, data_dir, out_dir, tool_names, tool_scale, tool_mesh_dir, sa
             
             # downsample to uniform radius
             downsample_particle = particle_tensor[0, fps_idx_1, :].numpy()
-            fps_radius = 0.01
+            fps_radius = 0.15
             _, fps_idx_2 = fps_rad_idx(downsample_particle, fps_radius)
             fps_idx_2 = fps_idx_2.astype(np.int32)
             fps_idx = fps_idx_1[fps_idx_2]
@@ -274,6 +274,119 @@ def viz_tools(args, data_dir, out_dir, tool_names, tool_scale, tool_mesh_dir, sa
         
             # visualize points
             img = viz_points_single_frame(img, tool_surface_i_points, cam_intr[0], cam_extr[0], group=j)
+        
+        cv2.imwrite(os.path.join(out_dir, f"{i}_color.jpg"), img)
+    
+    # make video
+    video_path = os.path.join(out_dir, f"episode_{args.epi_idx}.mp4")
+    merge_video(out_dir, video_path)
+    print(f"Video saved to {video_path}.")
+
+def get_stats(points):
+    xs, ys, zs = points[:, 0], points[:, 1], points[:, 2]
+    min_x, max_x = np.min(xs), np.max(xs)
+    min_y, max_y = np.min(ys), np.max(ys)
+    min_z, max_z = np.min(zs), np.max(zs)
+    print(f'min_x: {min_x}, max_x: {max_x}')
+    print(f'min_y: {min_y}, max_y: {max_y}')
+    print(f'min_z: {min_z}, max_z: {max_z}')
+    return ys
+
+def viz_tool_2(args, data_dir, out_dir, tool_name, tool_scale, tool_mesh_dir, sample_points=100, fps=True):
+    ### extract some points in the specifc areas of the tool
+    
+    os.makedirs(out_dir, exist_ok=True)
+    
+    n_frames = len(list(glob.glob(os.path.join(data_dir, f"episode_{args.epi_idx}/camera_0/*_color.jpg"))))
+    print(f"Episode {args.epi_idx} has {n_frames} frames.")
+    
+    # load camera
+    cam_intr_path = os.path.join(data_dir, 'camera_intrinsic_params.npy') 
+    cam_extr_path = os.path.join(data_dir, 'camera_extrinsic_matrix.npy')
+    cam_intr, cam_extr = np.load(cam_intr_path), np.load(cam_extr_path)
+    
+    # convert mesh to point cloud
+    tool_mesh_path = os.path.join(tool_mesh_dir, f'{tool_name}.obj')
+    tool_mesh = o3d.io.read_triangle_mesh(tool_mesh_path)
+    
+    tool_surface = o3d.geometry.TriangleMesh.sample_points_poisson_disk(tool_mesh, 10000)
+    # tool_surface = o3d.geometry.TriangleMesh.sample_points_uniformly(tool_mesh, sample_points)
+    
+    # scale the point cloud
+    tool_surface.points = o3d.utility.Vector3dVector(np.asarray(tool_surface.points) * tool_scale)
+    if args.vis:
+        o3d.visualization.draw_geometries([tool_surface, o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5, origin=[0,0,0])])
+    
+    # filter points
+    tool_points = np.asarray(tool_surface.points)
+    print(tool_points.shape)
+    
+    # ys = get_stats(tool_points)
+    # filter_idx = np.where(np.abs(ys) < 0.1)[0]
+    # filtered_tool_points = tool_points[filter_idx]
+    # print(filtered_tool_points.shape)
+    
+    ys = get_stats(tool_points)
+    filter_idx = np.where((ys > -0.08) & (ys < -0.07))[0]
+    filtered_tool_points = tool_points[filter_idx]
+    print(filtered_tool_points.shape)
+    ys = get_stats(filtered_tool_points)
+    
+    tool_surface.points = o3d.utility.Vector3dVector(filtered_tool_points)
+    if args.vis:
+        o3d.visualization.draw_geometries([tool_surface, o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5, origin=[0,0,0])])
+    
+    # fps
+    tool_surface_points = np.asarray(tool_surface.points)
+    if fps:
+        particle_tensor = torch.from_numpy(tool_surface_points).float().unsqueeze(0)
+        fps_idx_tensor = farthest_point_sampler(particle_tensor, sample_points)[0]
+        fps_idx_1 = fps_idx_tensor.numpy().astype(np.int32)
+        
+        # downsample to uniform radius
+        downsample_particle = particle_tensor[0, fps_idx_1, :].numpy()
+        fps_radius = 0.1
+        _, fps_idx_2 = fps_rad_idx(downsample_particle, fps_radius)
+        fps_idx_2 = fps_idx_2.astype(np.int32)
+        fps_idx = fps_idx_1[fps_idx_2]
+        print(f'tool {tool_name} has {fps_idx.shape[0]} sample points.')
+        
+        # obtain fps tool surface points
+        tool_surface_points = tool_surface_points[fps_idx]
+        if args.vis:
+            # visualize fps points
+            fps_points = o3d.geometry.PointCloud()
+            fps_points.points = o3d.utility.Vector3dVector(tool_surface_points)
+            o3d.visualization.draw_geometries([fps_points, o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5, origin=[0,0,0])])
+            
+    # translate and rotate the tool surface for each frame
+    for i in range(2, n_frames):
+        # load image
+        img_path = os.path.join(data_dir, f"episode_{args.epi_idx}/camera_0/{i}_color.jpg")
+        img = cv2.imread(img_path)
+        
+        # load tool surface
+        tool_surface_i = o3d.geometry.PointCloud()
+        tool_surface_i.points = o3d.utility.Vector3dVector(tool_surface_points)
+    
+        # load the pos and orientation of the tool
+        tool_points_path = os.path.join(data_dir, f"episode_{args.epi_idx}/eef_states.npy")
+        tool_points = np.load(tool_points_path)
+    
+        tool_ori = tool_points[i, 3:]
+        tool_rot = quaternion_to_rotation_matrix(tool_ori)
+        tool_surface_i.rotate(tool_rot)
+    
+        tool_pos = tool_points[i, :3]
+        tool_surface_i.translate(tool_pos)
+    
+        if args.vis:
+            o3d.visualization.draw_geometries([tool_surface_i, o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5, origin=tool_pos)])
+    
+        tool_surface_i_points = np.asarray(tool_surface_i.points)
+    
+        # visualize points
+        img = viz_points_single_frame(img, tool_surface_i_points, cam_intr[0], cam_extr[0], group=0)
         
         cv2.imwrite(os.path.join(out_dir, f"{i}_color.jpg"), img)
     
@@ -352,16 +465,16 @@ def viz_4(args):
     tool_mesh_dir = os.path.join(data_root, 'geometries/tools')
     tool_names = ['sponge']
     tool_scale = [8.0]
-    
-    # viz_tools(args, data_dir, out_dir, tool_names, tool_scale, tool_mesh_dir):
+
     out_dir = f'/mnt/sda/viz_tool/{args.data_name}/{args.epi_idx}'
-    viz_tools(args, data_root, out_dir, tool_names, tool_scale, tool_mesh_dir)
+    # viz_tools(args, data_root, out_dir, tool_names, tool_scale, tool_mesh_dir)
+    viz_tool_2(args, data_root, out_dir, tool_names[0], tool_scale[0], tool_mesh_dir)
     
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_name', type=str, default='granular_sweeping')
-    parser.add_argument('--epi_idx', type=int, default=0)
+    parser.add_argument('--epi_idx', type=int, default=900)
     parser.add_argument('--idx', type=int, default=0)
     parser.add_argument('--vis', type=bool, default=False)
     args = parser.parse_args()
