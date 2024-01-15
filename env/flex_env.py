@@ -261,21 +261,21 @@ class FlexEnv(gym.Env):
             radius = 0.03
             
             if self.physics == "random":
-                length = rand_float(2.5, 5.0)
-                thickness = rand_float(2.5, 4.0)
+                length = 3.0 #rand_float(2.5, 3.0) #rand_float(2.5, 5.0)
+                thickness = 3.0 #rand_float(2.5, 4.0)
                 scale = np.array([length, thickness, thickness]) * 50 # length, extension, thickness
-                cluster_spacing = rand_float(2, 8) # change the stiffness of the rope
-                dynamicFriction = rand_float(0.1, 0.45)
+                cluster_spacing = 10 #rand_float(2, 8) # change the stiffness of the rope
+                dynamicFriction = 0.3 #rand_float(0.1, 0.45)
             elif self.physics == "grid":
-                length = property_params['length']
-                thickness = property_params['thickness']
+                length = rand_float(2.0, 3.0) #property_params['length']
+                thickness = 4.0 #property_params['thickness']
                 scale = np.array([length, thickness, thickness]) * 50 # length, extension, thickness
-                cluster_spacing = property_params['cluster_spacing']
-                dynamicFriction = property_params['dynamic_friction']
+                cluster_spacing = rand_float(property_params[0], property_params[1])
+                dynamicFriction = 0.3 #property_params['dynamic_friction']
             
             trans = [-0.0, 2., 2.0]
             
-            z_rotation = rand_float(60, 70)
+            z_rotation = rand_float(0, 70) #rand_float(60, 70)
             y_rotation = 90. 
             rot_1 = Rotation.from_euler('xyz', [0, y_rotation, 0.], degrees=True)
             rotate_1 = rot_1.as_quat()
@@ -289,7 +289,7 @@ class FlexEnv(gym.Env):
             link_radius = 0. 
             link_stiffness = 1.
 
-            global_stiffness = 0. 
+            global_stiffness = 0
 
             surface_sampling = 0.
             volume_sampling = 4.
@@ -300,7 +300,7 @@ class FlexEnv(gym.Env):
             cluster_plastic_threshold = 0.
             cluster_plastic_creep = 0.
 
-            particleFriction = 0.
+            particleFriction = 0.25
             
             draw_mesh = 0
 

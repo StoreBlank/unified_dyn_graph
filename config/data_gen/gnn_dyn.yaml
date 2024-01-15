@@ -1,9 +1,9 @@
 dataset:
-  folder: "/mnt/sda/data" #'data_dense' #"/media/baoyu/sumsung/granular"
-  n_worker: 6
-  n_episode: 6
+  folder: "/mnt/sda/data/rope_stiffness" #'data_dense' #"/media/baoyu/sumsung/granular"
+  n_worker: 5
+  n_episode: 5
   n_timestep: 5
-  obj: "carrots" 
+  obj: "rope" 
   wkspc_w: 4.0
   headless: True
   robot_type: 'xarm6' 
@@ -11,6 +11,6 @@ dataset:
   camera_view: 1 # 0, 1, 2, 3, 4
   gripper: False
   grasp: False
-  physics: "random" # "random" or "grid"
+  physics: "grid" # "random" or "grid"
   fps: True
   fps_number: 2000

@@ -28,14 +28,16 @@ def gen_data(info):
     debug = info["debug"]
     thres_idx = info["thres_idx"]
     
+    dir_idx = info["dir_idx"]
+    stiffness = info["stiffness"]
+    
     # create folder
-    folder_dir = os.path.join(data_dir, obj)
+    folder_dir = os.path.join(data_dir, "rope_%d" % dir_idx)
     os.system('mkdir -p ' + folder_dir)
 
     # set env 
     env = FlexEnv(config)
     np.random.seed(idx_episode)
-    # np.random.seed(round(time.time() * 1000 + thres_idx) % 2 ** 32)
     print('episode start:', idx_episode)
     
     if debug:
@@ -45,7 +47,8 @@ def gen_data(info):
         epi_dir = os.path.join(folder_dir, "episode_%d" % idx_episode)
         os.system("mkdir -p %s" % epi_dir)
         
-        particle_pos_list, eef_states_list, step_list, contact_list = env.reset(dir=epi_dir)
+        particle_pos_list, eef_states_list, step_list, contact_list = env.reset(dir=epi_dir,
+                                                                                property_params=stiffness)
         
         # save property
         property_params = env.get_property()
@@ -56,11 +59,7 @@ def gen_data(info):
     obj_size = env.get_obj_size()
     print(f"Episode {idx_episode} has obj_size:", obj_size)
     
-    
-    # read actions
-    # actions = np.load("/mnt/sda/data/rope_stiff/rope_8/rope/episode_0/actions.npy")
     actions = np.zeros((n_timestep, action_dim))
-    
     
     # n_pushes
     color_threshold = 0.01 # granular objects
@@ -75,8 +74,6 @@ def gen_data(info):
         for k in range(10):
             u = None
             u = env.sample_action()
-            # u = [center_x-1, -center_z, center_x+1, -center_z]
-            # u = actions[idx_timestep]
             if u is None:
                 stuck = True
                 print(f"Episode {idx_episode} timestep {idx_timestep}: No valid action found!")
@@ -131,31 +128,42 @@ def gen_data(info):
     env.close()
 
 ### multiprocessing
-# bases = [270]
-# # num_episode = 1000-270
-# # num_bases = num_episode // n_worker
-# # bases = [270 + 5*n for n in range(num_bases)]
-# print(f"num_bases: {len(bases)}")
-# print(bases)
+stiffness_list = np.array([
+    [7, 8],
+    [6, 7],
+    [5, 6],
+    [4, 5],
+    [3, 4],
+    [2, 3],
+])
+num_stiffness = stiffness_list.shape[0]
+dir_idx_list = np.arange(num_stiffness)
+print(f"num_stiffness: {num_stiffness}")
+print(f"dir_idx_list: {dir_idx_list}")
 
-# for base in bases:
-#     print("base:", base)
-#     infos=[]
-#     for i in range(n_worker):
-#         info = {
-#             "epi": base+i*n_episode//n_worker,
-#             "debug": False,
-#             "thres_idx": base,
-#         }
-#         infos.append(info)
-#     pool = mp.Pool(processes=n_worker)
-#     pool.map(gen_data, infos)
+num_episode = 150
+num_bases = num_episode // n_worker
+bases = [0 + n_worker*n for n in range(num_bases)]
+print(f"num_bases: {len(bases)}")
+print(bases)
 
+for j in range(len(dir_idx_list)):
+    dir_idx = dir_idx_list[j]
+    stiffness = stiffness_list[j]
+    print("stiffness:", stiffness)
+    for base in bases:
+        print("base:", base)
+        infos=[]
+        for i in range(n_worker):
+            info = {
+                "epi": base+i*n_episode//n_worker,
+                "debug": False,
+                "dir_idx": dir_idx,
+                "thres_idx": base,
+                "stiffness": stiffness,
+            }
+            infos.append(info)
+        pool = mp.Pool(processes=n_worker)
+        pool.map(gen_data, infos)
 
-info = {
-    "epi": 0,
-    "debug": False,
-    "thres_idx": 0,
-}
-gen_data(info)
 
