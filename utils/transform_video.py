@@ -8,7 +8,7 @@ def merge_video(image_path, video_path):
     f_names = os.listdir(image_path)
     image_names = []
     for f_name in f_names:
-        if '_color.jpg' in f_name:
+        if '*.png' in f_name:
             image_names.append(f_name)
 
     image_names.sort(key=lambda x: int(x.split('_')[0]))
@@ -47,14 +47,20 @@ if __name__ == '__main__':
     #     os.makedirs(video_dir, exist_ok=True)
     #     merge_video(image_path, video_path)
     
-    for n in [0, 1]:
-        i = n
-        j = 0
-        epi_path = f"/mnt/sda/data/rope_stiff/rope_8/rope/episode_{i}/camera_{j}"
-        image_path = f"/mnt/sda/data/rope_stiff/rope_8/rope/episode_{i}/camera_{j}"
-        video_dir = f"/mnt/sda/videos/rope_stiff" 
-        video_path = os.path.join(video_dir, f"rope_{i}.mp4") 
-        os.makedirs(video_dir, exist_ok=True)
-        merge_video(image_path, video_path)
+    # for n in [0, 1]:
+    #     i = n
+    #     j = 0
+    #     epi_path = f"/mnt/sda/data/rope_stiff/rope_8/rope/episode_{i}/camera_{j}"
+    #     image_path = f"/mnt/sda/data/rope_stiff/rope_8/rope/episode_{i}/camera_{j}"
+    #     video_dir = f"/mnt/sda/videos/rope_stiff" 
+    #     video_path = os.path.join(video_dir, f"rope_{i}.mp4") 
+    #     os.makedirs(video_dir, exist_ok=True)
+    #     merge_video(image_path, video_path)
+    
+    for i in range(4):
+        epi_path = f"/mnt/sda/data/box_com/episode_{i:03d}/images"
+        video_path = f"/mnt/sda/videos/box_com/video_{i:03d}.mp4"
+        os.makedirs(os.path.dirname(video_path), exist_ok=True)
+        merge_video(epi_path, video_path)
     
     

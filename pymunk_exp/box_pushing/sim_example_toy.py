@@ -12,7 +12,7 @@ def rand_float(lo, hi):
     return np.random.rand() * (hi - lo) + lo
 
 def convert_coordinates(point, screen_height):
-        return point[0], screen_height - point[1]
+        return np.array([point[0], screen_height - point[1]])
 
 # data type: "custom" or "random"
 def main(args, info):
@@ -41,24 +41,30 @@ def main(args, info):
         friction = args.friction
     elif data_type == "random":
         np.random.seed(epi_idx)
-        center_of_mass = (rand_float(0, box_size[0]), rand_float(0, box_size[1]))
+        center_of_mass = (rand_float(-box_size[0]/2, box_size[0]/2), rand_float(-box_size[1]/2, box_size[1]/2))
         friction = 0.5
     sim.add_box(center_of_mass, friction)
     print(f"Episode {epi_idx}, center of mass: {center_of_mass}, friction: {friction}")
 
     # init pos for pusher
     box_pos = sim.get_obj_state()[:2]
+    box_center = np.array([box_pos[0] - center_of_mass[0], box_pos[1] - center_of_mass[1]])
     # print("box init pos: ", box_pos)
     pusher_choice = np.random.choice([0, 1, 2, 3])
     if pusher_choice == 0: # top to bottom
-        pusher_pos = (box_pos[0] - center_of_mass[0], box_pos[1] + 200)
+        pusher_x = rand_float(box_center[0] - box_size[0] / 2, box_center[0] + box_size[0] / 2) 
+        pusher_y = box_center[1] + box_size[1] / 2 + rand_float(100, 200)
     elif pusher_choice == 1: # bottom to top
-        pusher_pos = (box_pos[0] - center_of_mass[0], box_pos[1] - 200)
+        pusher_x = rand_float(box_center[0] - box_size[0] / 2, box_center[0] + box_size[0] / 2)
+        pusher_y = box_center[1] - box_size[1] / 2 - rand_float(100, 200)
     elif pusher_choice == 2: # left to right
-        pusher_pos = (box_pos[0] - center_of_mass[0] - 200, box_pos[1] - center_of_mass[1])
+        pusher_x = box_center[0] - box_size[0] / 2 - rand_float(100, 200)
+        pusher_y = rand_float(box_center[1] - box_size[1] / 2, box_center[1] + box_size[1] / 2)
     elif pusher_choice == 3: # right to left
-        pusher_pos = (box_pos[0] - center_of_mass[0] + 200, box_pos[1] - center_of_mass[1])
+        pusher_x = box_center[0] + box_size[0] / 2 + rand_float(100, 200)
+        pusher_y = rand_float(box_center[1] - box_size[1] / 2, box_center[1] + box_size[1] / 2)
 
+    pusher_pos = (pusher_x, pusher_y)
     n_iter_rest = 100
     for i in range(n_iter_rest):
         sim.update(pusher_pos)
@@ -93,7 +99,10 @@ def main(args, info):
             
             # save info
             box_init_state = sim.get_obj_state()[:3] # (x, y, theta)
-            box_state = np.array([box_init_state[0] - center_of_mass[0], box_init_state[1] - center_of_mass[1], box_init_state[2]])
+            box_state = np.array([box_init_state[0], box_init_state[1], box_init_state[2]])
+            # box_state[:2] = convert_coordinates(box_state[:2], screen_height)
+            # eef_state = convert_coordinates(np.array(pusher_pos), screen_height)
+            box_state[:2] = box_state[:2]
             eef_state = np.array(pusher_pos)
             box_states.append(box_state)
             eef_states.append(eef_state)
@@ -103,7 +112,12 @@ def main(args, info):
     if not debug:
         np.save(os.path.join(out_dir, "box_states.npy"), np.array(box_states))
         np.save(os.path.join(out_dir, "eef_states.npy"), np.array(eef_states))
-        np.save(os.path.join(out_dir, "center_of_mass.npy"), np.array(center_of_mass))
+        # TODO: save center of mass and friction and box size
+        box_com = np.array([
+            [box_size[0], box_size[1]],
+            [center_of_mass[0], center_of_mass[1]],
+        ])
+        np.save(os.path.join(out_dir, "box_com.npy"), box_com)
     
     end_time = time.time()
     print(f"Episode {epi_idx} finshed!!! Time: {end_time - start_time}")
@@ -118,16 +132,24 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     out_root = "/mnt/sda/data/box"
-    
-    # epi_idx = np.random.randint(0, 1000)
-    for epi_idx in range(10):
+    for epi_idx in range(1000):
         info = {
-            "epi_idx": epi_idx,
-            "out_root": out_root,
-            "data_type": "random",
-            "debug": False,
+        "epi_idx": epi_idx,
+        "out_root": out_root,
+        "data_type": "random",
+        "debug": False,
         }
         main(args, info)
+    
+    # epi_idx = np.random.randint(0, 1000)
+    # epi_idx = 3
+    # info = {
+    #     "epi_idx": epi_idx,
+    #     "out_root": out_root,
+    #     "data_type": "custom",
+    #     "debug": False,
+    # }
+    # main(args, info)
     
     ## multi-processing
     # n_worker = 10
