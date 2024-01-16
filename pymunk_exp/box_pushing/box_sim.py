@@ -18,18 +18,23 @@ import cv2
 import PIL
 
 class BoxSim(pyglet.window.Window):
-    def __init__(self, UPDATE_IMAGE=False):
+    def __init__(self, width, height, UPDATE_IMAGE=False):
         pyglet.window.Window.__init__(self, vsync=False)
         
         self.UPDATE_IMAGE = UPDATE_IMAGE    
 
         # Sim winow parameters. Also define the resolution of the image.
-        self.width = 500
-        self.height = 500
+        self.width = width
+        self.height = height
         self.set_caption('BoxSim')
         
         # Simulation parameters
         self.space = pymunk.Space()
+        
+        # cracker bos: (50x158x210) mm
+        # sugar box: (28x89x175) mm
+        self.box_width = 175
+        self.box_height = 89
         
         self.pusher_body = None
         self.velocity = np.array([0., 0.])
@@ -58,8 +63,7 @@ class BoxSim(pyglet.window.Window):
         self.space.damping = 0.0001 # quasi-static. low value is higher damping.
         self.space.color = pygame.color.THECOLORS["white"]
         
-        self.add_walls()
-        self.add_box()
+        # self.add_walls()
         
         self.wait(1.0) # give some time to stabilize.
         self.render()
@@ -83,18 +87,30 @@ class BoxSim(pyglet.window.Window):
         
         # Create a rectangle box in the middle with an offset center of mass
         self.box_body = pymunk.Body(1.0, 1666) # mass, moment of inertia
-        self.box_body.position = (self.width / 2, self.height / 2 + 100)
+        self.box_body.position = (self.width / 2, self.height / 2)
         self.box_body.center_of_gravity = self.center_of_mass
         
-        self.box_width, self.box_height = 100, 50
+        
         self.box_shape = pymunk.Poly.create_box(self.box_body, (self.box_width, self.box_height))
         self.box_shape.friction = self.friction
         self.box_shape.collision_type = 2
         self.box_shape.color = (0, 0, 255, 255) # blue
         
         self.space.add(self.box_body, self.box_shape) 
+    
+    def add_pusher(self, position):
+        self.pusher_body = pymunk.Body(1e7, float('inf'))
+        
+        self.pusher_body.position = position
+        
+        pusher_radius = 10 # 1 cm
+        self.pusher_shape = pymunk.Circle(self.pusher_body, pusher_radius)
+        self.pusher_shape.friction = 0.6
+        self.pusher_shape.elasticity = 0.1
+        self.pusher_shape.color = (255, 0, 0, 255) # red
+        
+        self.space.add(self.pusher_body, self.pusher_shape)
 
-    # TODO
     def get_obj_state(self):
         # Get the state of the box.
         # Return: (x, y, theta, dx, dy, dtheta)
@@ -103,19 +119,12 @@ class BoxSim(pyglet.window.Window):
         theta = self.box_body.angle
         dx = self.box_body.velocity[0]
         dy = self.box_body.velocity[1]
-        return (x, y, theta, dx, dy)
+        return [x, y, theta, dx, dy]
+    
+    def get_obj_size(self):
+        return [self.box_width, self.box_height]
 
-    def add_pusher(self, position):
-        self.pusher_body = pymunk.Body(1e7, float('inf'))
-        
-        self.pusher_body.position = position
-        
-        self.pusher_shape = pymunk.Circle(self.pusher_body, 10)
-        self.pusher_shape.friction = 0.6
-        self.pusher_shape.elasticity = 0.1
-        self.pusher_shape.color = (255, 0, 0, 255) # red
-        
-        self.space.add(self.pusher_body, self.pusher_shape)
+    
     
     """
     2. Update and Render Sim. 
@@ -171,10 +180,23 @@ class BoxSim(pyglet.window.Window):
 
         if self.UPDATE_IMAGE:
             self.update_image()
-        
-        
+    
+    def update_image(self):
+        pitch = -(self.width * len('RGB'))
+        img_data = pyglet.image.get_buffer_manager().get_color_buffer().get_image_data().get_data('RGB', pitch)
+        pil_im = PIL.Image.frombytes('RGB', (self.width, self.height), img_data)
+        cv_image = np.array(pil_im)[:,:,::-1].copy()
+        self.image = cv_image
 
-
+    def get_current_image(self):
+        return self.image
+    
+    def save_image(self, filename):
+        return pyglet.image.get_buffer_manager().get_color_buffer().save(filename)
+    
+    def close(self):
+        pyglet.window.Window.close(self)
+        
 
 
 

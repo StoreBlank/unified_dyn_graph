@@ -118,23 +118,29 @@ def get_rope_epi(data_dir, epi_start, epi_end):
     print(f'thickness min: {thickness_min_idx}, max: {thickness_max_idx}')
     print(f'friction min: {friction_min_idx}, max: {friction_max_idx}')
     print(f'stiffness min: {stiffness_min_idx}, max: {stiffness_max_idx}')
+    
+    # obtain the epi idx which has average stiffness
+    stiffness_list = np.array(stiffness_list)
+    avg_stiffness = np.mean(stiffness_list)
+    avg_stiffness_idx = np.argmin(np.abs(stiffness_list - avg_stiffness))
+    print(f'avg stiffness idx: {avg_stiffness_idx}')
 
 if __name__ == "__main__":
     
-    data_name = 'granular_sweeping'
+    data_name = 'rope_2'
     data_dir = f'/mnt/sda/data/{data_name}'
     
-    epi_start = 0
-    epi_end = 1000
+    # epi_start = 900
+    # epi_end = 1000
     # get_rope_property_params(data_dir, epi_start, epi_end)
     # get_rope_normalized_property_params(data_dir, epi_start, epi_end)
     
-    epi_idx = 0
+    # epi_idx = 0
     # get_eef_pos(data_dir, epi_idx)
-    get_steps(data_dir, epi_idx)
+    # get_steps(data_dir, epi_idx)
     
-    # epi_start = 0
-    # epi_end = 1000
-    # out_dir = f'/mnt/sda/data_stat/{data_name}'
-    # # get_rope_property_stat(data_dir, out_dir, epi_start, epi_end)
-    # get_rope_epi(data_dir, epi_start, epi_end)
+    epi_start = 900
+    epi_end = 1000
+    out_dir = f'/mnt/sda/data_stat/{data_name}'
+    # get_rope_property_stat(data_dir, out_dir, epi_start, epi_end)
+    get_rope_epi(data_dir, epi_start, epi_end)

@@ -1,21 +1,26 @@
 import numpy as np
 import cv2
+import argparse
 
 import pygame
 from box_sim import BoxSim
 
-"""
-Minimal example for pile simulation.
-"""
+parser = argparse.ArgumentParser()
+parser.add_argument("--com_x", type=int, default=0)
+parser.add_argument("--com_y", type=int, default=0)
+parser.add_argument("--friction", type=float, default=0.5)
+args = parser.parse_args()
 
 pygame.init()
-screen = pygame.display.set_mode((500, 500))
+screen_width, screen_height = 720, 720
+screen = pygame.display.set_mode((screen_width, screen_height))
 clock = pygame.time.Clock()
 
-sim = BoxSim()
+sim = BoxSim(screen_width, screen_height)
+sim.add_box()
 
 def convert_coordinates(point):
-    return point[0], 500 - point[1]
+    return point[0], screen_height - point[1]
 
 while(True):
 
