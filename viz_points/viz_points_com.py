@@ -79,14 +79,59 @@ def viz_com(data_dir, out_dir, epi_idx):
         
         # save image
         cv2.imwrite(os.path.join(out_dir, f"{i:03d}.png"), img)
+
+def viz_box(data_dir, out_dir, epi_idx):
+    out_dir = os.path.join(out_dir, f"{epi_idx:03d}")
+    os.makedirs(out_dir, exist_ok=True)
+    
+    data_dir = os.path.join(data_dir, f"episode_{epi_idx:03d}")
+    img_data_dir = os.path.join(data_dir, "images")
+    
+    box_com = np.load(os.path.join(data_dir, "box_com.npy"))
+    box_size = box_com[0]
+    
+    box_states = np.load(os.path.join(data_dir, "box_states.npy"))
+    num_frames = len(list(glob.glob(os.path.join(img_data_dir, "*.png"))))
+    assert num_frames == len(box_states)
+    
+    # extract points from the four corners of the box
+    box_points_in_box = np.array([
+        [-box_size[0] / 2, box_size[1] / 2],
+        [box_size[0] / 2, box_size[1] / 2],
+        [box_size[0] / 2, -box_size[1] / 2],
+        [-box_size[0] / 2, -box_size[1] / 2],
+    ])
+    
+    for i in range(num_frames):
+        img_path = os.path.join(img_data_dir, f"{i:03d}.png")
+        img = cv2.imread(img_path)
+        
+        # draw box points
+        box_state = box_states[i]
+        box_pos = convert_coordinates(box_state[:2])
+        box_rad = box_state[2]
+        print(f"box position {box_pos}, theta: {box_rad}")
+        img = draw_points(img, box_pos.reshape((1,2)))
+        
+        # rotate the box points
+        for j in range(box_points_in_box.shape[0]):
+            point = box_points_in_box[j]
+            point_rotated_x = point[0] * np.cos(box_rad) + point[1] * np.sin(box_rad)
+            point_rotated_y = -point[0] * np.sin(box_rad) + point[1] * np.cos(box_rad)
+            point_rotated = np.array([point_rotated_x, point_rotated_y])
+            point_world = box_pos + point_rotated
+            img = draw_points(img, point_world.reshape((1,2)))
+            # save image
+            cv2.imwrite(os.path.join(out_dir, f"{i:03d}.png"), img)
         
         
 if __name__ == "__main__":
     data_dir = "/mnt/sda/data/box"
-    out_dir = "/mnt/sda/viz_eef/box_com"
+    out_dir = "/mnt/sda/viz_eef/box_corner"
     epi_idx = 0
     # viz_point_com(data_dir, out_dir, epi_idx)
-    viz_com(data_dir, out_dir, epi_idx)
+    # viz_com(data_dir, out_dir, epi_idx)
+    viz_box(data_dir, out_dir, epi_idx)
         
         
     
