@@ -8,12 +8,11 @@ def merge_video(image_path, video_path):
     f_names = os.listdir(image_path)
     image_names = []
     for f_name in f_names:
-        if '*.png' in f_name:
+        # print(f_name)
+        if f_name.endswith('.jpg'):
             image_names.append(f_name)
-
+    
     image_names.sort(key=lambda x: int(x.split('_')[0]))
-        
-    # print(image_names)
 
     fourcc = cv2.VideoWriter_fourcc('M', 'P', '4', 'V')
     fps = 10
@@ -31,36 +30,33 @@ def merge_video(image_path, video_path):
     video_writer.release()
 
 if __name__ == '__main__':
-    # epi_start = 10
-    # epi_num = 20
-    # # l = np.random.choice(100, epi_num, replace=False)
-    # # print(l)
-    # for n in range(epi_start, epi_num):
+    epi_start = 6
+    epi_num = 7
+    # l = np.random.choice(100, epi_num, replace=False)
+    # print(l)
+    for n in range(epi_start, epi_num):
+        i = n
+        j = 0
+        epi_path = f"/mnt/sda/data/rope/episode_{i}/camera_{j}"
+        image_path = f"/mnt/sda/data/rope/episode_{i}/camera_{j}"
+        video_dir = f"/mnt/sda/videos/rope" 
+        video_path = f"/mnt/sda/videos/rope/video_{i}.mp4" 
+        os.makedirs(video_dir, exist_ok=True)
+        merge_video(image_path, video_path)
+    
+    # for n in range(1):
     #     i = n
-    #     # i = l[n]
-    #     #j = np.random.randint(0, 4)
-    #     j = 0
-    #     epi_path = f"/mnt/sda/data/rope/episode_{i}/camera_{j}"
-    #     image_path = f"/mnt/sda/data/rope/episode_{i}/camera_{j}"
-    #     video_dir = f"/mnt/sda/videos/rope" 
-    #     video_path = f"/mnt/sda/videos/rope/video_{i}.mp4" 
+    #     name = "cp6_gt5e-4"
+    #     image_path = f"/mnt/sda/data/rope_globalstiff/rope/{name}/camera_0"
+    #     video_dir = f"/mnt/sda/videos/rope_globalstiff/1" 
+    #     video_path = os.path.join(video_dir, f"{name}.mp4") 
     #     os.makedirs(video_dir, exist_ok=True)
     #     merge_video(image_path, video_path)
     
-    # for n in [0, 1]:
-    #     i = n
-    #     j = 0
-    #     epi_path = f"/mnt/sda/data/rope_stiff/rope_8/rope/episode_{i}/camera_{j}"
-    #     image_path = f"/mnt/sda/data/rope_stiff/rope_8/rope/episode_{i}/camera_{j}"
-    #     video_dir = f"/mnt/sda/videos/rope_stiff" 
-    #     video_path = os.path.join(video_dir, f"rope_{i}.mp4") 
-    #     os.makedirs(video_dir, exist_ok=True)
-    #     merge_video(image_path, video_path)
-    
-    for i in range(4):
-        epi_path = f"/mnt/sda/data/box_com/episode_{i:03d}/images"
-        video_path = f"/mnt/sda/videos/box_com/video_{i:03d}.mp4"
-        os.makedirs(os.path.dirname(video_path), exist_ok=True)
-        merge_video(epi_path, video_path)
+    # for i in range(4):
+    #     epi_path = f"/mnt/sda/data/box_com/episode_{i:03d}/images"
+    #     video_path = f"/mnt/sda/videos/box_com/video_{i:03d}.mp4"
+    #     os.makedirs(os.path.dirname(video_path), exist_ok=True)
+    #     merge_video(epi_path, video_path)
     
     

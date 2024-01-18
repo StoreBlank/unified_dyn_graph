@@ -1,5 +1,5 @@
 dataset:
-  folder: "/mnt/sda/data/rope_stiffness" #'data_dense' #"/media/baoyu/sumsung/granular"
+  folder: "/mnt/sda/data" #'data_dense' #"/media/baoyu/sumsung/granular"
   n_worker: 5
   n_episode: 5
   n_timestep: 5
@@ -11,6 +11,6 @@ dataset:
   camera_view: 1 # 0, 1, 2, 3, 4
   gripper: False
   grasp: False
-  physics: "grid" # "random" or "grid"
+  physics: "random" # "random" or "grid"
   fps: True
   fps_number: 2000

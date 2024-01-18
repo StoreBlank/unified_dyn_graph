@@ -261,11 +261,28 @@ class FlexEnv(gym.Env):
             radius = 0.03
             
             if self.physics == "random":
-                length = 3.0 #rand_float(2.5, 3.0) #rand_float(2.5, 5.0)
+                length = rand_float(2.5, 3.0) #rand_float(2.5, 5.0)
                 thickness = 3.0 #rand_float(2.5, 4.0)
                 scale = np.array([length, thickness, thickness]) * 50 # length, extension, thickness
-                cluster_spacing = 10 #rand_float(2, 8) # change the stiffness of the rope
-                dynamicFriction = 0.3 #rand_float(0.1, 0.45)
+                dynamicFriction = 0.3 #rand_float(0.1, 0.5)
+                
+                # cluster_spacing = 8 #rand_float(2, 8) # change the stiffness of the rope
+                # global_stiffness = 1e-4
+                stiffness = np.random.rand() 
+                if stiffness < 0.5:
+                    global_stiffness = 1e-4
+                    # stiffness = (cluster_spacing - 2) / 4 * 0.5
+                    cluster_spacing = 2 + 8 * stiffness
+                else:
+                    # global_stiffness = rand_float(1e-4, 5e-4)
+                    # stiffness = 0.5 + 0.2 * (cluster_spacing - 6) / 2 + 0.3 * (global_stiffness - 1e-4) / 4e-4
+                    # cluster_spacing = 10 * stiffness - 3 * (global_stiffness - 1e-4) / 4e-4 + 1
+                    while True:
+                        cluster_spacing = rand_float(6, 8)
+                        global_stiffness = (stiffness - 0.5 - (cluster_spacing - 6)/10) / (0.3/4e-4) + 1e-4
+                        if 1e-4 < global_stiffness < 5e-4:
+                            break
+                
             elif self.physics == "grid":
                 length = rand_float(2.0, 3.0) #property_params['length']
                 thickness = 4.0 #property_params['thickness']
@@ -275,7 +292,7 @@ class FlexEnv(gym.Env):
             
             trans = [-0.0, 2., 2.0]
             
-            z_rotation = rand_float(0, 70) #rand_float(60, 70)
+            z_rotation = rand_float(10, 60) #rand_float(60, 70)
             y_rotation = 90. 
             rot_1 = Rotation.from_euler('xyz', [0, y_rotation, 0.], degrees=True)
             rotate_1 = rot_1.as_quat()
@@ -284,12 +301,13 @@ class FlexEnv(gym.Env):
             rotate = quaternion_multuply(rotate_1, rotate_2)
             
             cluster_radius = 0.
-            cluster_stiffness = 0.2
+            cluster_stiffness = 0.55
 
             link_radius = 0. 
             link_stiffness = 1.
 
-            global_stiffness = 0
+            # [1e-4, 5e-3]
+            
 
             surface_sampling = 0.
             volume_sampling = 4.
@@ -323,29 +341,31 @@ class FlexEnv(gym.Env):
                              'length': length,
                              'thickness': thickness,
                              'dynamic_friction': dynamicFriction,
-                             'cluster_spacing': cluster_spacing,}
+                             'cluster_spacing': cluster_spacing,
+                             "global_stiffness": global_stiffness,
+                             "stiffness": stiffness,}
         
-        elif obj == 'carrots':
+        elif obj == 'carrots': #TODO
             radius = 0.03
     
-            num_granular_ft_x = rand_int(2, 11)
-            num_granular_ft_y = rand_int(2, 4)
-            num_granular_ft_z = rand_int(2, 11)
+            num_granular_ft_x = 5 #rand_int(2, 11)
+            num_granular_ft_y = 3 #rand_int(2, 4)
+            num_granular_ft_z = 5 #rand_int(2, 11)
             num_granular_ft = [num_granular_ft_x, num_granular_ft_y, num_granular_ft_z] 
             num_granular = int(num_granular_ft_x * num_granular_ft_y * num_granular_ft_z)
             
-            granular_scale = rand_float(0.1, 0.2)
+            granular_scale = 0.1 #rand_float(0.1, 0.2)
             
-            pos_granular = [-1., 1., 0.]
-            granular_dis = rand_float(0.1, 0.3)
+            pos_granular = [-1., 0.5, 0.]
+            granular_dis = 0.1 #rand_float(0.1, 0.3)
 
             draw_mesh = 1
             
             shapeCollisionMargin = 0.01
             collisionDistance = 0.03
             
-            dynamic_friction = rand_float(0.2, 0.9)
-            granular_mass = rand_float(0.01, 0.1)
+            dynamic_friction = 0.3 #rand_float(0.2, 0.9)
+            granular_mass = 0.05 #rand_float(0.01, 0.1)
 
             scene_params = np.array([radius, *num_granular_ft, granular_scale, *pos_granular, granular_dis, 
                                     draw_mesh, shapeCollisionMargin, collisionDistance, dynamic_friction,
@@ -1136,7 +1156,7 @@ class FlexEnv(gym.Env):
         
         # random choose a start point which can not be overlapped with the object
         valid = False
-        for _ in range(100):
+        for _ in range(1000):
             startpoint_pos_origin = np.random.uniform(-self.wkspc_w, self.wkspc_w, size=(1, 2))
             startpoint_pos = startpoint_pos_origin.copy()
             startpoint_pos = startpoint_pos.reshape(-1)

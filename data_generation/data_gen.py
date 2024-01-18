@@ -131,31 +131,31 @@ def gen_data(info):
     env.close()
 
 ### multiprocessing
-# bases = [270]
-# # num_episode = 1000-270
-# # num_bases = num_episode // n_worker
-# # bases = [270 + 5*n for n in range(num_bases)]
-# print(f"num_bases: {len(bases)}")
-# print(bases)
+bases = [0]
+num_episode = 1000
+num_bases = num_episode // n_worker
+bases = [0 + 5*n for n in range(1, num_bases)]
+print(f"num_bases: {len(bases)}")
+print(bases)
 
-# for base in bases:
-#     print("base:", base)
-#     infos=[]
-#     for i in range(n_worker):
-#         info = {
-#             "epi": base+i*n_episode//n_worker,
-#             "debug": False,
-#             "thres_idx": base,
-#         }
-#         infos.append(info)
-#     pool = mp.Pool(processes=n_worker)
-#     pool.map(gen_data, infos)
+for base in bases:
+    print("base:", base)
+    infos=[]
+    for i in range(n_worker):
+        info = {
+            "epi": base+i*n_episode//n_worker,
+            "debug": False,
+            "thres_idx": base,
+        }
+        infos.append(info)
+    pool = mp.Pool(processes=n_worker)
+    pool.map(gen_data, infos)
 
 
-info = {
-    "epi": 0,
-    "debug": False,
-    "thres_idx": 0,
-}
-gen_data(info)
+# info = {
+#     "epi": 6,
+#     "debug": False,
+#     "thres_idx": 0,
+# }
+# gen_data(info)
 
