@@ -30,28 +30,27 @@ def merge_video(image_path, video_path):
     video_writer.release()
 
 if __name__ == '__main__':
-    epi_start = 6
-    epi_num = 7
-    # l = np.random.choice(100, epi_num, replace=False)
-    # print(l)
-    for n in range(epi_start, epi_num):
-        i = n
-        j = 0
-        epi_path = f"/mnt/sda/data/rope/episode_{i}/camera_{j}"
-        image_path = f"/mnt/sda/data/rope/episode_{i}/camera_{j}"
-        video_dir = f"/mnt/sda/videos/rope" 
-        video_path = f"/mnt/sda/videos/rope/video_{i}.mp4" 
-        os.makedirs(video_dir, exist_ok=True)
-        merge_video(image_path, video_path)
-    
-    # for n in range(1):
+    # epi_start = 2
+    # epi_num = 3
+    # # l = np.random.choice(100, epi_num, replace=False)
+    # # print(l)
+    # for n in range(epi_start, epi_num):
     #     i = n
-    #     name = "cp6_gt5e-4"
-    #     image_path = f"/mnt/sda/data/rope_globalstiff/rope/{name}/camera_0"
-    #     video_dir = f"/mnt/sda/videos/rope_globalstiff/1" 
-    #     video_path = os.path.join(video_dir, f"{name}.mp4") 
+    #     j = 0
+    #     image_path = f"/mnt/sda/data/granular_size/carrots/episode_{i}/camera_{j}"
+    #     video_dir = f"/mnt/sda/videos/granular_size" 
+    #     video_path = f"/mnt/sda/videos/granular_size/video_{i}.mp4" 
     #     os.makedirs(video_dir, exist_ok=True)
     #     merge_video(image_path, video_path)
+    
+    for n in range(1):
+        i = n
+        name = "0.2"
+        image_path = f"/mnt/sda/data/granular_size/carrots/{name}/camera_0"
+        video_dir = f"/mnt/sda/videos/granular_size/1" 
+        video_path = os.path.join(video_dir, f"{name}.mp4") 
+        os.makedirs(video_dir, exist_ok=True)
+        merge_video(image_path, video_path)
     
     # for i in range(4):
     #     epi_path = f"/mnt/sda/data/box_com/episode_{i:03d}/images"

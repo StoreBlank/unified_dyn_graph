@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import time
-from env.flex_env import FlexEnv
+from env.flex_env_granular import FlexEnv
 import json
 import multiprocessing as mp
 
@@ -9,7 +9,7 @@ from utils_env import load_yaml
 from utils_env import rand_float, rand_int, quatFromAxisAngle, find_min_distance
 
 # load config
-config = load_yaml("config/data_gen/gnn_dyn.yaml")
+config = load_yaml("config/data_gen/gnn_dyn_granular.yaml")
 data_dir = config['dataset']['folder']
 n_worker = config['dataset']['n_worker']
 n_episode = config['dataset']['n_episode']
@@ -75,7 +75,7 @@ def gen_data(info):
         for k in range(10):
             u = None
             u = env.sample_action()
-            # u = [center_x-1, -center_z, center_x+1, -center_z]
+            # u = [center_x-2, -center_z, center_x+1, -center_z]
             # u = actions[idx_timestep]
             if u is None:
                 stuck = True
@@ -151,9 +151,9 @@ for base in bases:
     pool = mp.Pool(processes=n_worker)
     pool.map(gen_data, infos)
 
-
+# epi = np.random.randint(0, 1000)
 # info = {
-#     "epi": 17,
+#     "epi": epi,
 #     "debug": True,
 #     "thres_idx": 0,
 # }
