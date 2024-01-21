@@ -125,10 +125,17 @@ def get_rope_epi(data_dir, epi_start, epi_end):
     avg_stiffness_idx = np.argmin(np.abs(stiffness_list - avg_stiffness))
     print(f'avg stiffness idx: {avg_stiffness_idx}')
 
+def get_cloth_property_params(data_dir, epi_start, epi_end):
+    for i in range(epi_start, epi_end):
+        epi_dir = os.path.join(data_dir, f'episode_{i}')
+        with open(os.path.join(epi_dir, 'property_params.json'), 'r') as f:
+            property_params = json.load(f)
+        print(f'Episode {i}, stiffness: {property_params["bend_stiffness"]}, friction: {property_params["dynamic_friction"]}')
+
 if __name__ == "__main__":
     
-    data_name = 'rope_2'
-    data_dir = f'/mnt/sda/data/{data_name}'
+    # data_name = 'rope_2'
+    # data_dir = f'/mnt/sda/data/{data_name}'
     
     # epi_start = 900
     # epi_end = 1000
@@ -139,8 +146,15 @@ if __name__ == "__main__":
     # get_eef_pos(data_dir, epi_idx)
     # get_steps(data_dir, epi_idx)
     
-    epi_start = 900
-    epi_end = 1000
-    out_dir = f'/mnt/sda/data_stat/{data_name}'
-    # get_rope_property_stat(data_dir, out_dir, epi_start, epi_end)
-    get_rope_epi(data_dir, epi_start, epi_end)
+    # epi_start = 900
+    # epi_end = 1000
+    # out_dir = f'/mnt/sda/data_stat/{data_name}'
+    # # get_rope_property_stat(data_dir, out_dir, epi_start, epi_end)
+    # get_rope_epi(data_dir, epi_start, epi_end)
+    
+    data_name = 'cloth'
+    data_dir = f'/mnt/sda/data/cloth_phys/{data_name}'
+    
+    epi_start = 0
+    epi_end = 30
+    get_cloth_property_params(data_dir, epi_start, epi_end)

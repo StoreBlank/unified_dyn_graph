@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import time
-from env.flex_env import FlexEnv
+from env.flex_env_cloth import FlexEnv
 import json
 import multiprocessing as mp
 
@@ -9,7 +9,7 @@ from utils_env import load_yaml
 from utils_env import rand_float, rand_int, quatFromAxisAngle, find_min_distance
 
 # load config
-config = load_yaml("config/data_gen/gnn_dyn.yaml")
+config = load_yaml("config/data_gen/gnn_dyn_cloth.yaml")
 data_dir = config['dataset']['folder']
 n_worker = config['dataset']['n_worker']
 n_episode = config['dataset']['n_episode']
@@ -28,6 +28,8 @@ def gen_data(info):
     debug = info["debug"]
     thres_idx = info["thres_idx"]
     
+    sf = info["sf"]
+    
     # create folder
     folder_dir = os.path.join(data_dir, obj)
     os.system('mkdir -p ' + folder_dir)
@@ -45,7 +47,8 @@ def gen_data(info):
         epi_dir = os.path.join(folder_dir, "episode_%d" % idx_episode)
         os.system("mkdir -p %s" % epi_dir)
         
-        particle_pos_list, eef_states_list, step_list, contact_list = env.reset(dir=epi_dir)
+        particle_pos_list, eef_states_list, step_list, contact_list = env.reset(dir=epi_dir, 
+                                                                                property_params=sf)
         
         # save property
         property_params = env.get_property()
@@ -62,6 +65,8 @@ def gen_data(info):
     actions = np.zeros((n_timestep, action_dim))
     
     
+    
+    
     # n_pushes
     color_threshold = 0.01 # granular objects
     img = env.render()
@@ -69,14 +74,25 @@ def gen_data(info):
     stuck = False
     for idx_timestep in range(n_timestep):
         center_x, center_y, center_z = env.get_obj_center()
+        corner_0, corner_1, corner_2, corner_3 = env.get_obj_corners()
+        # print('corner_0:', corner_0)
+        
+        us = [
+            [corner_0[0], -corner_0[2], corner_0[0] - 2.0, -corner_0[2] + 2.0],
+            [center_x, -corner_0[2] - 0.2, center_x, -corner_0[2] + 2.0 ]
+        ]
         
         color_diff = 0
         prev_particle_pos_list, prev_eef_states_list, prev_step_list, prev_contact_list = particle_pos_list.copy(), eef_states_list.copy(), step_list.copy(), contact_list.copy()
         for k in range(10):
             u = None
-            u = env.sample_action()
-            # u = [center_x-1, -center_z, center_x+1, -center_z]
-            # u = actions[idx_timestep]
+            if idx_timestep == 0:
+                u, boundary_points, boundary = env.sample_grasp_actions_corner(init=True)
+            else:
+                u, boundary_points, boundary = env.sample_grasp_actions_corner(boundary_points=boundary_points, boundary=boundary)
+            # u = [center_x, -corner_0[2], center_x, -corner_0[2] + 4.0 ]
+            # u = [corner_0[0], -corner_0[2], corner_0[0] - 2.0, -corner_0[2] + 2.0 ]
+            # u = us[idx_timestep % 2]
             if u is None:
                 stuck = True
                 print(f"Episode {idx_episode} timestep {idx_timestep}: No valid action found!")
@@ -131,31 +147,50 @@ def gen_data(info):
     env.close()
 
 ### multiprocessing
-bases = [0]
-num_episode = 1000
-num_bases = num_episode // n_worker
-bases = [0 + 5*n for n in range(num_bases)]
-print(f"num_bases: {len(bases)}")
-print(bases)
+# bases = [0]
+# num_episode = 1000
+# num_bases = num_episode // n_worker
+# bases = [0 + 5*n for n in range(num_bases)]
+# print(f"num_bases: {len(bases)}")
+# print(bases)
 
-for base in bases:
-    print("base:", base)
-    infos=[]
-    for i in range(n_worker):
-        info = {
-            "epi": base+i*n_episode//n_worker,
-            "debug": False,
-            "thres_idx": base,
-        }
-        infos.append(info)
-    pool = mp.Pool(processes=n_worker)
-    pool.map(gen_data, infos)
+# for base in bases:
+#     print("base:", base)
+#     infos=[]
+#     for i in range(n_worker):
+#         info = {
+#             "epi": base+i*n_episode//n_worker,
+#             "debug": False,
+#             "thres_idx": base,
+#         }
+#         infos.append(info)
+#     pool = mp.Pool(processes=n_worker)
+#     pool.map(gen_data, infos)
 
+# physics params
+# friction = [0.2, 0.4, 0.6, 0.8, 1.0]
+# stiffness = [0.01, 0.05, 0.1, 0.5, 1.0, 1.5]
+# sf = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+# print(sf)
 
-# info = {
-#     "epi": 17,
-#     "debug": True,
-#     "thres_idx": 0,
-# }
-# gen_data(info)
+# infos = []
+# for j in range(len(sf)):
+#     info = {
+#         "epi": j,
+#         "debug": False,
+#         "thres_idx": 0,
+#         "sf": sf[j],
+#     }
+#     infos.append(info)
+# pool = mp.Pool(processes=n_worker)
+# pool.map(gen_data, infos)
+
+epi = np.random.randint(0, 1000)
+info = {
+    "epi": epi,
+    "debug": True,
+    "thres_idx": 0,
+    "sf": 1.0
+}
+gen_data(info)
 

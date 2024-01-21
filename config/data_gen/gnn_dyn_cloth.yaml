@@ -1,0 +1,16 @@
+dataset:
+  folder: "/mnt/sda/data" #'data_dense' #"/media/baoyu/sumsung/granular"
+  n_worker: 5
+  n_episode: 5
+  n_timestep: 5
+  obj: "cloth" 
+  wkspc_w: 4.0
+  headless: False
+  robot_type: 'xarm6' 
+  cont_motion: False
+  camera_view: 1 # 0, 1, 2, 3, 4
+  gripper: True
+  grasp: True
+  physics: "random" # "random" or "grid"
+  fps: True
+  fps_number: 2000

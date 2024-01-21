@@ -80,7 +80,7 @@ def viz_eef(episode_idx, data_dir, out_dir, cam_view=0):
         eef_pos = eef_states[i][0:3]
         eef_ori = eef_states[i][6:10]
         eef_rot_mat = quaternion_to_rotation_matrix(eef_ori)
-        eef_final_pos = eef_pos + np.dot(eef_rot_mat, np.array([0., 0., 1.0])).reshape((1, 3))
+        eef_final_pos = eef_pos + np.dot(eef_rot_mat, np.array([0., 0., 0.])).reshape((1, 3))
         
         img = viz_points_single_frame(raw_img, eef_final_pos, cam_intr, cam_extr)
         cv2.imwrite(os.path.join(out_dir, f"{i}_color.jpg"), img)
@@ -90,34 +90,14 @@ def viz_eef(episode_idx, data_dir, out_dir, cam_view=0):
     merge_video(out_dir, video_path)
     print(f"Video saved to {video_path}.")
 
-def viz_com():
-    mesh_dir = '/home/baoyu/2023/dyn-res-pile-manip/PyFleX/data/rigid/cube_mesh.ply'
-    
-    mesh = o3d.io.read_triangle_mesh(mesh_dir)
-    mesh_surface = o3d.geometry.TriangleMesh.sample_points_poisson_disk(mesh, 1000)
-    mesh_surface.points = o3d.utility.Vector3dVector(np.asarray(mesh_surface.points) * 0.1)
-    # pcd = o3d.io.read_point_cloud(mesh_dir)
-    
-    ### box
-    # point = [1.0007548,  0.8705431, 0.99984574] # center
-    # point = [1.35843, 0.7781663, 0.54386675]
-    # point = [0.4164542, 0.7628534, 0.41931963]
-    
-    ### softbox
-    # point = [1.0135212, 0.7611266, 0.5034287]
-    point = [0.43059102, 0.7527378, 0.42992964]
 
-    point[1] -= 0.5
-    
-    o3d.visualization.draw_geometries([mesh_surface, o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5, origin=point), o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5, origin=[0,0,0])])
-    # o3d.visualization.draw_geometries([mesh_surface, o3d.geometry.TriangleMesh.create_coordinate_frame(size=5.0, origin=[0,0,0])])
     
 
 
         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_name', type=str, default='rigid_object_toy')
+    parser.add_argument('--data_name', type=str, default='cloth_phys/cloth')
     parser.add_argument('--epi_idx', type=int, default=0)
     parser.add_argument('--idx', type=int, default=3)
     args = parser.parse_args()
@@ -126,8 +106,8 @@ if __name__ == "__main__":
     data_name = args.data_name 
     epi_idx = args.epi_idx
     
-    img_path = f'/mnt/sda/data/{data_name}/episode_{epi_idx}/camera_0/{i}_color.jpg'
-    img = cv2.imread(img_path)
+    # img_path = f'/mnt/sda/data/{data_name}/episode_{epi_idx}/camera_0/{i}_color.jpg'
+    # img = cv2.imread(img_path)
     
     # points = np.array([
     #     [0., 0., 0.],
@@ -145,9 +125,8 @@ if __name__ == "__main__":
     # cv2.imwrite("point_viz.jpg", img)
     
     
-    # data_dir = f'/mnt/sda/data/{data_name}'
-    # out_dir = f'/mnt/sda/viz_eef/{data_name}'
-    # viz_eef(epi_idx, data_dir, out_dir)
-    
-    viz_com()
+    data_dir = f'/mnt/sda/data/{data_name}'
+    out_dir = f'/mnt/sda/viz_eef/{data_name}'
+    viz_eef(epi_idx, data_dir, out_dir)
+
     
