@@ -216,7 +216,7 @@ class FlexEnv(gym.Env):
             # dynamicFriction = 3.0 # (0.1, 1.0)
             
             # TODO: margnify the differences
-            sf = property_params #np.random.rand()
+            sf = np.random.rand()
             stiffness_factor = sf * 1.4 + 0.1
             stiffness = np.array([1.0, 1.0, 1.0]) * stiffness_factor 
             stiffness[0] = np.clip(stiffness[0], 1.0, 1.5)

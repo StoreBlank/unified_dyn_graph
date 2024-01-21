@@ -30,15 +30,15 @@ def merge_video(image_path, video_path):
     video_writer.release()
 
 if __name__ == '__main__':
-    epi_start = 0
-    epi_num = 11
+    epi_start = 45
+    epi_num = 46
     # l = np.random.choice(100, epi_num, replace=False)
     # print(l)
     for n in range(epi_start, epi_num):
         i = n
         j = 0
-        image_path = f"/mnt/sda/data/cloth_phys/cloth/episode_{i}/camera_{j}"
-        video_dir = f"/mnt/sda/videos/cloth_phys" 
+        image_path = f"/mnt/sda/data/cloth/episode_{i}/camera_{j}"
+        video_dir = f"/mnt/sda/videos/" 
         video_path =  os.path.join(video_dir, f"video_{i}.mp4")
         os.makedirs(video_dir, exist_ok=True)
         merge_video(image_path, video_path)

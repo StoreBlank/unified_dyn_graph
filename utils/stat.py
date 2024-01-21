@@ -180,7 +180,10 @@ if __name__ == "__main__":
     data_name = 'cloth'
     data_dir = f'/mnt/sda/data/{data_name}'
     
-    epi_start = 0
-    epi_end = 200
-    # get_cloth_property_params(data_dir, epi_start, epi_end)
-    get_cloth_epi(data_dir, epi_start, epi_end)
+    # epi_start = 0
+    # epi_end = 200
+    # # get_cloth_property_params(data_dir, epi_start, epi_end)
+    # get_cloth_epi(data_dir, epi_start, epi_end)
+    
+    epi_idx = 0
+    get_steps(data_dir, epi_idx)
