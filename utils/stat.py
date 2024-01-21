@@ -14,6 +14,9 @@ def get_eef_pos(data_dir, epi_idx):
     eef_pos = np.load(eef_pos_path)
     print(f"Episode {epi_idx} eef pos: {eef_pos.shape}")
 
+"""
+Rope
+"""
 def get_rope_property_params(data_dir, epi_start, epi_end):
     for i in range(epi_start, epi_end):
         epi_dir = os.path.join(data_dir, f'episode_{i}')
@@ -125,12 +128,34 @@ def get_rope_epi(data_dir, epi_start, epi_end):
     avg_stiffness_idx = np.argmin(np.abs(stiffness_list - avg_stiffness))
     print(f'avg stiffness idx: {avg_stiffness_idx}')
 
+"""
+Cloth
+"""
 def get_cloth_property_params(data_dir, epi_start, epi_end):
     for i in range(epi_start, epi_end):
         epi_dir = os.path.join(data_dir, f'episode_{i}')
         with open(os.path.join(epi_dir, 'property_params.json'), 'r') as f:
             property_params = json.load(f)
-        print(f'Episode {i}, stiffness: {property_params["bend_stiffness"]}, friction: {property_params["dynamic_friction"]}')
+        print(f'Episode {i}, sf: {property_params["sf"]} , stiffness: {property_params["bend_stiffness"]}, friction: {property_params["dynamic_friction"]}')
+
+def get_cloth_epi(data_dir, epi_start, epi_end):
+    sf_list = []
+    for i in range(epi_start, epi_end):
+        epi_dir = os.path.join(data_dir, f'episode_{i}')
+        with open(os.path.join(epi_dir, 'property_params.json'), 'r') as f:
+            property_params = json.load(f)
+        sf_list.append(property_params['sf'])
+    
+    # obtain the epi idx which has the min/max thickness/friction/stiffness
+    sf_min_idx, sf_max_idx = np.argmin(sf_list), np.argmax(sf_list)
+    print(f'sf min: {sf_min_idx} with sf: {sf_list[sf_min_idx]}')
+    print(f'sf max: {sf_max_idx} with sf: {sf_list[sf_max_idx]}')
+    
+    # obtain the epi idx which has average stiffness
+    sf_list = np.array(sf_list)
+    avg_sf = np.mean(sf_list)
+    avg_sf_idx = np.argmin(np.abs(sf_list - avg_sf))
+    print(f'avg sf idx: {avg_sf_idx} with sf: {sf_list[avg_sf_idx]}')
 
 if __name__ == "__main__":
     
@@ -153,8 +178,9 @@ if __name__ == "__main__":
     # get_rope_epi(data_dir, epi_start, epi_end)
     
     data_name = 'cloth'
-    data_dir = f'/mnt/sda/data/cloth_phys/{data_name}'
+    data_dir = f'/mnt/sda/data/{data_name}'
     
     epi_start = 0
-    epi_end = 30
-    get_cloth_property_params(data_dir, epi_start, epi_end)
+    epi_end = 200
+    # get_cloth_property_params(data_dir, epi_start, epi_end)
+    get_cloth_epi(data_dir, epi_start, epi_end)

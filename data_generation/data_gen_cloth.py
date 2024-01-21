@@ -41,7 +41,7 @@ def gen_data(info):
     print('episode start:', idx_episode)
     
     if debug:
-        particle_pos_list, eef_states_list, step_list, contact_list = env.reset() 
+        particle_pos_list, eef_states_list, step_list, contact_list = env.reset(property_params=sf) 
         property_params = env.get_property()
     else:
         epi_dir = os.path.join(folder_dir, "episode_%d" % idx_episode)
@@ -146,26 +146,27 @@ def gen_data(info):
             
     env.close()
 
-### multiprocessing
-# bases = [0]
-# num_episode = 1000
-# num_bases = num_episode // n_worker
-# bases = [0 + 5*n for n in range(num_bases)]
-# print(f"num_bases: {len(bases)}")
-# print(bases)
+## multiprocessing
+## bases = [0]
+num_episode = 200
+num_bases = num_episode // n_worker
+bases = [0 + n_worker*n for n in range(num_bases)]
+print(f"num_bases: {len(bases)}")
+print(bases)
 
-# for base in bases:
-#     print("base:", base)
-#     infos=[]
-#     for i in range(n_worker):
-#         info = {
-#             "epi": base+i*n_episode//n_worker,
-#             "debug": False,
-#             "thres_idx": base,
-#         }
-#         infos.append(info)
-#     pool = mp.Pool(processes=n_worker)
-#     pool.map(gen_data, infos)
+for base in bases:
+    print("base:", base)
+    infos=[]
+    for i in range(n_worker):
+        info = {
+            "epi": base+i*n_episode//n_worker,
+            "debug": False,
+            "thres_idx": base,
+            "sf": 1.0,
+        }
+        infos.append(info)
+    pool = mp.Pool(processes=n_worker)
+    pool.map(gen_data, infos)
 
 # physics params
 # friction = [0.2, 0.4, 0.6, 0.8, 1.0]
@@ -185,12 +186,12 @@ def gen_data(info):
 # pool = mp.Pool(processes=n_worker)
 # pool.map(gen_data, infos)
 
-epi = np.random.randint(0, 1000)
-info = {
-    "epi": epi,
-    "debug": True,
-    "thres_idx": 0,
-    "sf": 1.0
-}
-gen_data(info)
+# epi = np.random.randint(0, 1000)
+# info = {
+#     "epi": epi,
+#     "debug": True,
+#     "thres_idx": 0,
+#     "sf": 0.0
+# }
+# gen_data(info)
 

@@ -216,7 +216,7 @@ class FlexEnv(gym.Env):
             # dynamicFriction = 3.0 # (0.1, 1.0)
             
             # TODO: margnify the differences
-            sf = np.random.rand()
+            sf = property_params #np.random.rand()
             stiffness_factor = sf * 1.4 + 0.1
             stiffness = np.array([1.0, 1.0, 1.0]) * stiffness_factor 
             stiffness[0] = np.clip(stiffness[0], 1.0, 1.5)
@@ -334,7 +334,9 @@ class FlexEnv(gym.Env):
                     self.particle_pos_list.append(particles_pos)
                     # save eef pos
                     robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
-                    eef_states = robot_shape_states[-1] # actual eef position
+                    eef_states = np.zeros((2, 14))
+                    eef_states[0] = robot_shape_states[9] # left finger
+                    eef_states[1] = robot_shape_states[12] # right finger
                     self.eef_states_list.append(eef_states)
             self.count += 1
             
@@ -381,7 +383,9 @@ class FlexEnv(gym.Env):
                     self.particle_pos_list.append(particles_pos)
                     # save eef pos
                     robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
-                    eef_states = robot_shape_states[-1] # actual eef position
+                    eef_states = np.zeros((2, 14))
+                    eef_states[0] = robot_shape_states[9] # left finger
+                    eef_states[1] = robot_shape_states[12] # right finger
                     self.eef_states_list.append(eef_states)
             self.count += 1
             self.step_list.append(self.count)
@@ -518,7 +522,7 @@ class FlexEnv(gym.Env):
                 robot_obj_dist = np.min(cdist(end_effector_pos[:2].reshape(1, 2), obj_pos))
                 
                 if dir != None:
-                    if robot_obj_dist < 0.2 and i % 30 == 0: #contact
+                    if robot_obj_dist < 0.2 and i % 10 == 0: #contact
                         for j in range(len(self.camPos_list)):
                             pyflex.set_camPos(self.camPos_list[j])
                             pyflex.set_camAngle(self.camAngle_list[j])
@@ -539,12 +543,14 @@ class FlexEnv(gym.Env):
                                 self.particle_pos_list.append(particles_pos)
                                 # save eef pos
                                 robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
-                                eef_states = robot_shape_states[-1] # actual eef position
+                                eef_states = np.zeros((2, 14))
+                                eef_states[0] = robot_shape_states[9] # left finger
+                                eef_states[1] = robot_shape_states[12] # right finger
                                 self.eef_states_list.append(eef_states)  
                         self.count += 1
                         self.contact_list.append(self.count)
                         
-                    elif i % 60 == 0:
+                    elif i % 30 == 0:
                         for j in range(len(self.camPos_list)):
                             pyflex.set_camPos(self.camPos_list[j])
                             pyflex.set_camAngle(self.camAngle_list[j])
@@ -565,7 +571,9 @@ class FlexEnv(gym.Env):
                                 self.particle_pos_list.append(particles_pos)
                                 # save eef pos
                                 robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
-                                eef_states = robot_shape_states[-1] # actual eef position
+                                eef_states = np.zeros((2, 14))
+                                eef_states[0] = robot_shape_states[9] # left finger
+                                eef_states[1] = robot_shape_states[12] # right finger
                                 self.eef_states_list.append(eef_states)
                         self.count += 1
                     
@@ -617,7 +625,9 @@ class FlexEnv(gym.Env):
                     self.particle_pos_list.append(particles_pos)
                     # save eef pos
                     robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
-                    eef_states = robot_shape_states[-1] # actual eef position
+                    eef_states = np.zeros((2, 14))
+                    eef_states[0] = robot_shape_states[9] # left finger
+                    eef_states[1] = robot_shape_states[12] # right finger
                     self.eef_states_list.append(eef_states)
             self.count += 1
             self.step_list.append(self.count)
@@ -689,32 +699,41 @@ class FlexEnv(gym.Env):
         
         
         # random pick a point as start point
-        pick_idx = np.random.choice(len(boundary_points))
-        startpoint_pos = positions[boundary_points[pick_idx], [0, 2]]
-        endpoint_pos = startpoint_pos.copy()
-        # choose end points which is outside the obj
-        move_distance = rand_float(0.5, 1.0)
-        # if startpoint_pos[0] >= x_max:
-        #     endpoint_pos[0] += move_distance
-        # elif startpoint_pos[0] <= x_min:
-        #     endpoint_pos[0] -= move_distance
-        # elif startpoint_pos[1] >= z_max:
-        #     endpoint_pos[1] += move_distance
-        # elif startpoint_pos[1] <= z_min:
-        #     endpoint_pos[1] -= move_distance
+        valid = False
+        for _ in range(1000):
+            pick_idx = np.random.choice(len(boundary_points))
+            startpoint_pos = positions[boundary_points[pick_idx], [0, 2]]
+            endpoint_pos = startpoint_pos.copy()
+            # choose end points which is outside the obj
+            move_distance = rand_float(1.0, 1.5)
+            # if startpoint_pos[0] >= x_max:
+            #     endpoint_pos[0] += move_distance
+            # elif startpoint_pos[0] <= x_min:
+            #     endpoint_pos[0] -= move_distance
+            # elif startpoint_pos[1] >= z_max:
+            #     endpoint_pos[1] += move_distance
+            # elif startpoint_pos[1] <= z_min:
+            #     endpoint_pos[1] -= move_distance
+            
+            if boundary[pick_idx] == 1:
+                endpoint_pos[0] += move_distance 
+            elif boundary[pick_idx] == 2:
+                endpoint_pos[0] -= move_distance
+            elif boundary[pick_idx] == 3:
+                endpoint_pos[1] += move_distance
+            elif boundary[pick_idx] == 4:
+                endpoint_pos[1] -= move_distance
+            
+            if np.abs(endpoint_pos[0]) < 3.5 and np.abs(endpoint_pos[1]) < 2.5:
+                valid = True
+                break
         
-        if boundary[pick_idx] == 1:
-            endpoint_pos[0] += move_distance
-        elif boundary[pick_idx] == 2:
-            endpoint_pos[0] -= move_distance
-        elif boundary[pick_idx] == 3:
-            endpoint_pos[1] += move_distance
-        elif boundary[pick_idx] == 4:
-            endpoint_pos[1] -= move_distance
         
+        if valid:
+            action = np.concatenate([startpoint_pos.reshape(-1), endpoint_pos.reshape(-1)], axis=0)
+        else:
+            action = None
         
-        
-        action = np.concatenate([startpoint_pos.reshape(-1), endpoint_pos.reshape(-1)], axis=0)
         return action, boundary_points, boundary
         
     

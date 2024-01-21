@@ -66,23 +66,31 @@ def viz_eef(episode_idx, data_dir, out_dir, cam_view=0):
     n_frames = len(list(glob.glob(os.path.join(data_dir, f"episode_{episode_idx}/camera_0/*_color.jpg"))))
     print(f"Episode {episode_idx} has {n_frames} frames.")
     eef_pos_path = os.path.join(data_dir, f"episode_{episode_idx}/eef_states.npy")
-    eef_states = np.load(eef_pos_path)
+    eef_states = np.load(eef_pos_path) # (n_frames, 2, 14)
+    # print(eef_states.shape)
+    assert eef_states.shape == (n_frames, 2, 14)
     
     cam_intr_path = os.path.join(data_dir, "camera_intrinsic_params.npy")
     cam_extr_path = os.path.join(data_dir, "camera_extrinsic_matrix.npy")
     cam_intrs, cam_extrs = np.load(cam_intr_path), np.load(cam_extr_path)
     cam_intr, cam_extr = cam_intrs[cam_view], cam_extrs[cam_view]
     
+    eef_point_pos = np.array([
+        [0., -0.2, 0.5],
+        [0., 0.2, 0.5]
+    ])
+    
     for i in range(n_frames):
         raw_img_path = os.path.join(data_dir, f"episode_{episode_idx}/camera_{cam_view}/{i}_color.jpg")
         raw_img = cv2.imread(raw_img_path)
 
-        eef_pos = eef_states[i][0:3]
-        eef_ori = eef_states[i][6:10]
-        eef_rot_mat = quaternion_to_rotation_matrix(eef_ori)
-        eef_final_pos = eef_pos + np.dot(eef_rot_mat, np.array([0., 0., 0.])).reshape((1, 3))
-        
-        img = viz_points_single_frame(raw_img, eef_final_pos, cam_intr, cam_extr)
+        for j in range(2):
+            eef_pos = eef_states[i][j][0:3]
+            eef_ori = eef_states[i][j][6:10]
+            eef_rot_mat = quaternion_to_rotation_matrix(eef_ori)
+            eef_final_pos = eef_pos + np.dot(eef_rot_mat, eef_point_pos[j]).reshape((1, 3))
+            
+            img = viz_points_single_frame(raw_img, eef_final_pos, cam_intr, cam_extr)
         cv2.imwrite(os.path.join(out_dir, f"{i}_color.jpg"), img)
     
     # make video
@@ -91,13 +99,10 @@ def viz_eef(episode_idx, data_dir, out_dir, cam_view=0):
     print(f"Video saved to {video_path}.")
 
 
-    
-
-
         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_name', type=str, default='cloth_phys/cloth')
+    parser.add_argument('--data_name', type=str, default='cloth')
     parser.add_argument('--epi_idx', type=int, default=0)
     parser.add_argument('--idx', type=int, default=3)
     args = parser.parse_args()
