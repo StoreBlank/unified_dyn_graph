@@ -5,7 +5,6 @@ import sys
 import json
 import multiprocessing as mp
 
-# sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from env.flex_env import FlexEnv
 
 from utils_env import load_yaml
@@ -77,8 +76,9 @@ def gen_data(info):
         prev_particle_pos_list, prev_eef_states_list, prev_step_list, prev_contact_list = particle_pos_list.copy(), eef_states_list.copy(), step_list.copy(), contact_list.copy()
         for k in range(10):
             u = None
-            u = env.sample_action()
+            # u = env.sample_action()
             # u = [center_x-1, -center_z, center_x+1, -center_z]
+            u = [center_x, -center_z-1, center_x, -center_z+1]
             # u = actions[idx_timestep]
             if u is None:
                 stuck = True
