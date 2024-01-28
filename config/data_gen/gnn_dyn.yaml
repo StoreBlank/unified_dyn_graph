@@ -5,7 +5,7 @@ dataset:
   n_timestep: 5
   obj: "rope" 
   wkspc_w: 4.0
-  headless: True
+  headless: False
   robot_type: 'xarm6' 
   cont_motion: False
   camera_view: 1 # 0, 1, 2, 3, 4

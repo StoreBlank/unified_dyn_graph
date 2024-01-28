@@ -13,6 +13,9 @@ import pybullet as p
 import pybullet_data
 from bs4 import BeautifulSoup
 from transformations import quaternion_from_matrix, quaternion_matrix
+
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from env.robot_env import FlexRobotHelper
 
 pyflex.loadURDF = FlexRobotHelper.loadURDF

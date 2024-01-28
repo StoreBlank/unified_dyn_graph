@@ -191,7 +191,7 @@ class FlexEnv(gym.Env):
     ### TODO: write the scene as a class
     def init_scene(self, obj, property_params):
         
-        if obj == 'carrots': #TODO
+        if obj == 'carrots': 
             radius = 0.03
 
             granular_scale = rand_float(0.1, 0.3)
@@ -207,20 +207,14 @@ class FlexEnv(gym.Env):
             num_granular_ft_x = (x_max - x_min - granular_scale) / (granular_dis + granular_scale) + 1
             num_granular_ft_z = (z_max - z_min - granular_scale) / (granular_dis + granular_scale) + 1            
             
-            # if granular_scale < 0.2:
-            #     num_granular_ft_x = rand_int(5, 15)
-            #     num_granular_ft_z = rand_int(5, 15)
-            #     granular_dis = rand_float(0.02, 0.04)
-            # else:
-            #     num_granular_ft_x = rand_int(4, 8)
-            #     num_granular_ft_z = rand_int(4, 8)
-            #     granular_dis = rand_float(0.04, 0.06)
+            # shape
+            shape_type = 0 # 0: irreular shape; 1: regular shape
+            shape_min_dist = 5. # 5. for irregular shape; 8 for regulra shape
+            shape_max_dist = 10.
                 
             num_granular_ft_y = 1 #rand_int(2, 4)
             num_granular_ft = [num_granular_ft_x, num_granular_ft_y, num_granular_ft_z] 
             num_granular = int(num_granular_ft_x * num_granular_ft_y * num_granular_ft_z)
-            
-            
             
             pos_granular = [-1., 1., -1.]
             # granular_dis = 0.05 #rand_float(0.1, 0.3)
@@ -230,12 +224,12 @@ class FlexEnv(gym.Env):
             shapeCollisionMargin = 0.01
             collisionDistance = 0.03
             
-            dynamic_friction = 0.7 #rand_float(0.2, 0.9)
+            dynamic_friction = 1.0 #rand_float(0.2, 0.9)
             granular_mass = 0.05 #rand_float(0.01, 0.1)
 
             scene_params = np.array([radius, *num_granular_ft, granular_scale, *pos_granular, granular_dis, 
                                     draw_mesh, shapeCollisionMargin, collisionDistance, dynamic_friction,
-                                    granular_mass])
+                                    granular_mass, shape_type, shape_min_dist, shape_max_dist])
 
             temp = np.array([0])
             pyflex.set_scene(35, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0)
@@ -296,7 +290,8 @@ class FlexEnv(gym.Env):
                              'blob_r': blob_r,
                              'num_granule': num_coffee,
                              'dynamic_friction': dynamicFriction,
-                             'mass': mass}
+                             'mass': mass,
+                             'shape_type': shape_type,}
 
         
         else:

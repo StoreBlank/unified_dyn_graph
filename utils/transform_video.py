@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 import PIL.Image as Image
 import json
+import argparse
 
 def merge_video(image_path, video_path):
     f_names = os.listdir(image_path)
@@ -30,18 +31,30 @@ def merge_video(image_path, video_path):
     video_writer.release()
 
 if __name__ == '__main__':
-    epi_start = 45
-    epi_num = 46
-    # l = np.random.choice(100, epi_num, replace=False)
-    # print(l)
-    for n in range(epi_start, epi_num):
-        i = n
-        j = 0
-        image_path = f"/mnt/sda/data/cloth/episode_{i}/camera_{j}"
-        video_dir = f"/mnt/sda/videos/" 
-        video_path =  os.path.join(video_dir, f"video_{i}.mp4")
-        os.makedirs(video_dir, exist_ok=True)
-        merge_video(image_path, video_path)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--epi", type=int, default=0)
+    args = parser.parse_args()
+    
+    # epi_start = 45
+    # epi_num = 46
+    # # l = np.random.choice(100, epi_num, replace=False)
+    # # print(l)
+    # for n in range(epi_start, epi_num):
+    #     i = n
+    #     j = 0
+    #     image_path = f"/mnt/sda/data/cloth/episode_{i}/camera_{j}"
+    #     video_dir = f"/mnt/sda/videos/" 
+    #     video_path =  os.path.join(video_dir, f"video_{i}.mp4")
+    #     os.makedirs(video_dir, exist_ok=True)
+    #     merge_video(image_path, video_path)
+    
+    data_name = "granular/carrots_flat"
+    epi_idx = args.epi
+    image_path = f"/mnt/sda/data/{data_name}/episode_{epi_idx}/camera_0"
+    video_dir = f"/mnt/sda/videos/{data_name}" 
+    video_path =  os.path.join(video_dir, f"video_{epi_idx}.mp4")
+    os.makedirs(video_dir, exist_ok=True)
+    merge_video(image_path, video_path)
     
     # for n in range(1):
     #     i = n

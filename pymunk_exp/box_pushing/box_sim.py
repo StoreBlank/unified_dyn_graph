@@ -18,7 +18,7 @@ import cv2
 import PIL
 
 class BoxSim(pyglet.window.Window):
-    def __init__(self, width, height, UPDATE_IMAGE=False):
+    def __init__(self, width, height, box_width, box_height, UPDATE_IMAGE=False):
         pyglet.window.Window.__init__(self, vsync=False)
         
         self.UPDATE_IMAGE = UPDATE_IMAGE    
@@ -33,8 +33,8 @@ class BoxSim(pyglet.window.Window):
         
         # cracker bos: (50x158x210) mm
         # sugar box: (28x89x175) mm
-        self.box_width = 175
-        self.box_height = 89
+        self.box_width = box_width #175
+        self.box_height = box_height #89
         
         self.pusher_body = None
         self.velocity = np.array([0., 0.])

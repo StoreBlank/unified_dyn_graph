@@ -32,7 +32,9 @@ def main(args, info):
     
     # set env
     screen_width, screen_height = 720, 720
-    sim = BoxSim(screen_width, screen_height)
+    box_width = rand_float(150, 300)
+    box_height = rand_float(50, 200)
+    sim = BoxSim(screen_width, screen_height, box_width, box_height)
 
     # center of mass and friction
     box_size = sim.get_obj_size()
@@ -52,17 +54,17 @@ def main(args, info):
     # print("box init pos: ", box_pos)
     pusher_choice = np.random.choice([0, 1, 2, 3])
     if pusher_choice == 0: # top to bottom
-        pusher_x = box_center[0] #rand_float(box_center[0] - box_size[0] / 2, box_center[0] + box_size[0] / 2) 
+        pusher_x = rand_float(box_center[0] - box_size[0] / 2, box_center[0] + box_size[0] / 2) 
         pusher_y = box_center[1] + box_size[1] / 2 + rand_float(100, 200)
     elif pusher_choice == 1: # bottom to top
-        pusher_x = box_center[0] #rand_float(box_center[0] - box_size[0] / 2, box_center[0] + box_size[0] / 2)
+        pusher_x = rand_float(box_center[0] - box_size[0] / 2, box_center[0] + box_size[0] / 2)
         pusher_y = box_center[1] - box_size[1] / 2 - rand_float(100, 200)
     elif pusher_choice == 2: # left to right
         pusher_x = box_center[0] - box_size[0] / 2 - rand_float(100, 200)
-        pusher_y = box_center[1] #rand_float(box_center[1] - box_size[1] / 2, box_center[1] + box_size[1] / 2)
+        pusher_y = rand_float(box_center[1] - box_size[1] / 2, box_center[1] + box_size[1] / 2)
     elif pusher_choice == 3: # right to left
         pusher_x = box_center[0] + box_size[0] / 2 + rand_float(100, 200)
-        pusher_y = box_center[1] #rand_float(box_center[1] - box_size[1] / 2, box_center[1] + box_size[1] / 2)
+        pusher_y = rand_float(box_center[1] - box_size[1] / 2, box_center[1] + box_size[1] / 2)
 
     pusher_pos = (pusher_x, pusher_y)
     n_iter_rest = 100
@@ -131,7 +133,7 @@ if __name__ == "__main__":
     parser.add_argument("--friction", type=float, default=0.5)
     args = parser.parse_args()
 
-    out_root = "/mnt/sda/data/box_center"
+    out_root = "/mnt/sda/data/box_shape"
     for epi_idx in range(1000):
         info = {
         "epi_idx": epi_idx,

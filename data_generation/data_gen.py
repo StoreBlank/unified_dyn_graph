@@ -1,9 +1,12 @@
 import os
 import numpy as np
 import time
-from env.flex_env import FlexEnv
+import sys
 import json
 import multiprocessing as mp
+
+# sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from env.flex_env import FlexEnv
 
 from utils_env import load_yaml
 from utils_env import rand_float, rand_int, quatFromAxisAngle, find_min_distance
@@ -131,31 +134,31 @@ def gen_data(info):
     env.close()
 
 ### multiprocessing
-bases = [0]
-num_episode = 1000
-num_bases = num_episode // n_worker
-bases = [0 + 5*n for n in range(num_bases)]
-print(f"num_bases: {len(bases)}")
-print(bases)
+# bases = [0]
+# num_episode = 1000
+# num_bases = num_episode // n_worker
+# bases = [0 + 5*n for n in range(num_bases)]
+# print(f"num_bases: {len(bases)}")
+# print(bases)
 
-for base in bases:
-    print("base:", base)
-    infos=[]
-    for i in range(n_worker):
-        info = {
-            "epi": base+i*n_episode//n_worker,
-            "debug": False,
-            "thres_idx": base,
-        }
-        infos.append(info)
-    pool = mp.Pool(processes=n_worker)
-    pool.map(gen_data, infos)
+# for base in bases:
+#     print("base:", base)
+#     infos=[]
+#     for i in range(n_worker):
+#         info = {
+#             "epi": base+i*n_episode//n_worker,
+#             "debug": False,
+#             "thres_idx": base,
+#         }
+#         infos.append(info)
+#     pool = mp.Pool(processes=n_worker)
+#     pool.map(gen_data, infos)
 
 
-# info = {
-#     "epi": 17,
-#     "debug": True,
-#     "thres_idx": 0,
-# }
-# gen_data(info)
+info = {
+    "epi": 0,
+    "debug": True,
+    "thres_idx": 0,
+}
+gen_data(info)
 

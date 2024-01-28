@@ -132,9 +132,9 @@ def gen_data(info):
 
 ### multiprocessing
 bases = [0]
-num_episode = 1000
+num_episode = 500
 num_bases = num_episode // n_worker
-bases = [0 + 5*n for n in range(num_bases)]
+bases = [0 + n_worker*n for n in range(num_bases)]
 print(f"num_bases: {len(bases)}")
 print(bases)
 
