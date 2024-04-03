@@ -267,7 +267,7 @@ class FlexEnv(gym.Env):
                 length = rand_float(2.5, 3.0) #rand_float(2.5, 5.0)
                 thickness = 3.0 #rand_float(2.5, 4.0)
                 scale = np.array([length, thickness, thickness]) * 50 # length, extension, thickness
-                # dynamicFriction = rand_float(0.1, 1.0)
+                dynamicFriction = rand_float(0.1, 1.0)
                 
                 # cluster_spacing = 6 #rand_float(2, 8) # change the stiffness of the rope
                 # global_stiffness = 0 #1e-4

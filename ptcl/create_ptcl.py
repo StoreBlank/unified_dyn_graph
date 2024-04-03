@@ -7,7 +7,7 @@ import os
 from dgl.geometry import farthest_point_sampler
 import open3d as o3d
 
-from utils import depth2fgpcd, depth2fgpcd_top, opengl2cam
+from ptcl.utils import depth2fgpcd, depth2fgpcd_top, opengl2cam
 
 env = 'carrots'
 views = [1, 2, 3, 4]

@@ -11,7 +11,7 @@ from utils_env import load_yaml
 from utils_env import rand_float, rand_int, quatFromAxisAngle, find_min_distance
 
 # load config
-config = load_yaml("config/data_gen/gnn_dyn.yaml")
+config = load_yaml("config/data_gen/flex_model.yaml")
 data_dir = config['dataset']['folder']
 n_worker = config['dataset']['n_worker']
 n_episode = config['dataset']['n_episode']
@@ -77,9 +77,6 @@ def gen_data(info):
         for k in range(10):
             u = None
             u = env.sample_action()
-            # u = [center_x-1, -center_z, center_x+1, -center_z]
-            # u = [center_x, -center_z-1, center_x, -center_z+1]
-            # u = actions[idx_timestep]
             if u is None:
                 stuck = True
                 print(f"Episode {idx_episode} timestep {idx_timestep}: No valid action found!")
@@ -134,10 +131,10 @@ def gen_data(info):
     env.close()
 
 ### multiprocessing
-# bases = [0]
-num_episode = 1000-280
-num_bases = num_episode // n_worker
-bases = [280 + n_worker*n for n in range(num_bases)]
+bases = [0]
+# num_episode = 1000
+# num_bases = num_episode // n_worker
+# bases = [0 + 5*n for n in range(num_bases)]
 print(f"num_bases: {len(bases)}")
 print(bases)
 

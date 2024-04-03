@@ -5,7 +5,7 @@ import sys
 import json
 import multiprocessing as mp
 
-from env.flex_env import FlexEnv
+from env.flex_env_mpp import FlexEnv
 
 from utils_env import load_yaml
 from utils_env import rand_float, rand_int, quatFromAxisAngle, find_min_distance

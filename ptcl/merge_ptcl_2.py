@@ -8,7 +8,7 @@ import copy
 from dgl.geometry import farthest_point_sampler
 import open3d as o3d
 
-from utils import fps, depth2fgpcd, pcd2pix, fps_np, downsample_pcd
+from ptcl.utils import fps, depth2fgpcd, pcd2pix, fps_np, downsample_pcd
 
 env = 'carrots'
 folder_path = 'ptcl_data_2'
