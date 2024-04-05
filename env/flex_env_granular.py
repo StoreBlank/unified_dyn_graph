@@ -221,10 +221,10 @@ class FlexEnv(gym.Env):
 
             draw_mesh = 1
             
-            shapeCollisionMargin = 0.01
+            shapeCollisionMargin = 0.01 
             collisionDistance = 0.03
             
-            dynamic_friction = 1.0 #rand_float(0.2, 0.9)
+            dynamic_friction = rand_float(0.1, 1.0) #1.0
             granular_mass = 0.05 #rand_float(0.01, 0.1)
 
             scene_params = np.array([radius, *num_granular_ft, granular_scale, *pos_granular, granular_dis, 

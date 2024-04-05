@@ -342,16 +342,16 @@ class FlexEnv(gym.Env):
         elif obj == 'carrots': #TODO
             radius = 0.03
     
-            num_granular_ft_x = 5 #rand_int(2, 11)
-            num_granular_ft_y = 3 #rand_int(2, 4)
-            num_granular_ft_z = 5 #rand_int(2, 11)
+            num_granular_ft_x = rand_int(2, 11)
+            num_granular_ft_y = rand_int(2, 4)
+            num_granular_ft_z = rand_int(2, 11)
             num_granular_ft = [num_granular_ft_x, num_granular_ft_y, num_granular_ft_z] 
             num_granular = int(num_granular_ft_x * num_granular_ft_y * num_granular_ft_z)
             
-            granular_scale = 0.1 #rand_float(0.1, 0.2)
+            granular_scale = rand_float(0.1, 0.2)
             
             pos_granular = [-1., 0.5, 0.]
-            granular_dis = 0.1 #rand_float(0.1, 0.3)
+            granular_dis = rand_float(0.1, 0.3)
 
             draw_mesh = 1
             
@@ -881,6 +881,7 @@ class FlexEnv(gym.Env):
                 # print('jointPoses:', jointPoses)
                 self.reset_robot(jointPoses)
                 pyflex.step()
+                # import pdb; pdb.set_trace()
                 
                 ## gripper control
                 if self.gripper and self.grasp and i_p >= 1:
