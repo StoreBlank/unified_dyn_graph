@@ -3,6 +3,9 @@ import numpy as np
 import json
 import argparse
 import matplotlib.pyplot as plt
+import seaborn as sns
+
+from transform_video import merge_video
 
 def get_steps(data_dir, epi_idx):
     steps_path = os.path.join(data_dir, f"episode_{epi_idx}/steps.npy")
@@ -121,6 +124,48 @@ def get_rope_epi(data_dir, epi_start, epi_end):
     avg_stiffness_idx = np.argmin(np.abs(stiffness_list - avg_stiffness))
     print(f'avg stiffness idx: {avg_stiffness_idx} with stiffness: {stiffness_list[avg_stiffness_idx]}')
 
+def get_rope_mpp_epi(data_dir, epi_start, epi_end, plot=False):
+    stiffness_list, friction_list = [], [] 
+    for i in range(epi_start, epi_end):
+        epi_dir = os.path.join(data_dir, f'episode_{i}')
+        with open(os.path.join(epi_dir, 'property_params.json'), 'r') as f:
+            property_params = json.load(f)
+        stiffness_list.append(property_params['stiffness'])
+        friction_list.append(property_params['dynamic_friction'])
+    
+    stiffness_list, friction_list = np.array(stiffness_list), np.array(friction_list)
+    if plot:
+        # draw a heatmap
+        data_stat_path = '/mnt/sda/adaptigraph/data_stat'
+        os.makedirs(data_stat_path, exist_ok=True)
+        
+        ### plot
+        ## add more layers onto the plot
+        # g = sns.jointplot(x=stiffness_list, y=friction_list)
+        # g.plot_joint(sns.kdeplot, color="r", zorder=0, levels=6)
+        # g.plot_marginals(sns.rugplot, color="r", height=-.15, clip_on=False)
+        
+        ## hist plot
+        sns.jointplot(x=stiffness_list, y=friction_list, kind='hex')
+        
+        plt.size = (40, 40)
+        plt.xlabel('stiffness')
+        plt.ylabel('friction')
+        plt.savefig(os.path.join(data_stat_path, 'rope_stiffness_friction.png'))
+    
+    # obtain the epi idx which has the friction > 0.8 and stiffness < 0.1
+    # idx = np.where((friction_list > 0.6) & (friction_list < 0.7) & (stiffness_list < 0.1))[0]
+    idx = np.where((friction_list > 0.17) & (friction_list < 0.18) & (stiffness_list < 0.1))[0]
+    print(idx)
+    
+    for i in idx[:5]:
+        print(f'episode {i}, stiffness: {stiffness_list[i]}, friction: {friction_list[i]}')
+        epi_dir = os.path.join(data_dir, f'episode_{i}')
+        video_dir = f'/mnt/sda/adaptigraph/data_viz/rope'
+        video_path = os.path.join(video_dir, f'episode_{i}.mp4')
+        os.makedirs(video_dir, exist_ok=True)
+        merge_video(os.path.join(epi_dir, 'camera_0'), video_path)
+    
 """
 Cloth
 """
@@ -208,31 +253,58 @@ def get_granular_epi(data_dir, epi_start, epi_end):
         scale_idx = np.argmin(np.abs(scale_list - scale))
         print(f'scale {scale} idx: {scale_idx} with scale: {scale_list[scale_idx]}')
         
+def get_granular_mpp_epi(data_dir, epi_start, epi_end, plot=False):
+    scale_list, friction_list = [], [] 
+    for i in range(epi_start, epi_end):
+        epi_dir = os.path.join(data_dir, f'episode_{i}')
+        with open(os.path.join(epi_dir, 'property_params.json'), 'r') as f:
+            property_params = json.load(f)
+        scale_list.append(property_params['granular_scale'])
+        friction_list.append(property_params['dynamic_friction'])
+    
+    scale_list, friction_list = np.array(scale_list), np.array(friction_list)
+    if plot:
+        # draw a heatmap
+        data_stat_path = '/mnt/sda/adaptigraph/data_stat'
+        os.makedirs(data_stat_path, exist_ok=True)
+        
+        ### plot
+        ## add more layers onto the plot
+        # g = sns.jointplot(x=scale_list, y=friction_list)
+        # g.plot_joint(sns.kdeplot, color="r", zorder=0, levels=6)
+        # g.plot_marginals(sns.rugplot, color="r", height=-.15, clip_on=False)
+        
+        ## hist plot
+        sns.jointplot(x=scale_list, y=friction_list, kind='hex')
+        
+        plt.size = (40, 40)
+        plt.xlabel('scale')
+        plt.ylabel('friction')
+        plt.savefig(os.path.join(data_stat_path, 'granular_scale_friction.png'))
+    
+    # obtain the epi idx which has the friction > 0.8 and scale < 0.1
+    idx = np.where((friction_list > 0.9) & (friction_list < 1.0) & (scale_list < 0.2))[0]
+    print(idx)
+    
+    for i in idx[:5]:
+        print(f'episode {i}, scale: {scale_list[i]}, friction: {friction_list[i]}')
+        epi_dir = os.path.join(data_dir, f'episode_{i}')
+        video_dir = f'/mnt/sda/adaptigraph/data_viz/granular'
+        video_path = os.path.join(video_dir, f'episode_{i}.mp4')
+        os.makedirs(video_dir, exist_ok=True)
+        merge_video(os.path.join(epi_dir, 'camera_0'), video_path)
+
 
 if __name__ == "__main__":
     
-    data_name = 'rope'
-    data_dir = f'/mnt/sda/data/{data_name}'
-    
     epi_start = 0
     epi_end = 1000
-    out_dir = f'/mnt/sda/data_stat/{data_name}'
-    # get_rope_property_stat(data_dir, out_dir, epi_start, epi_end)
-    get_rope_epi(data_dir, epi_start, epi_end)
     
-    # data_name = 'granular/carrots'
-    # data_dir = f'/mnt/sda/data/{data_name}'
-    # out_dir = f'/mnt/sda/data_stat/{data_name}'
+    data_name = 'rope_0402'
+    data_dir = f'/mnt/sda/data/{data_name}'
+    get_rope_mpp_epi(data_dir, epi_start, epi_end)
     
-    # epi_start = 450
-    # epi_end = 500
-    # # get_cloth_property_params(data_dir, epi_start, epi_end)
-    # get_cloth_epi(data_dir, epi_start, epi_end)
-    # get_cloth_property_stat(data_dir, out_dir, epi_start, epi_end)
-    
-    # epi_idx = 0
-    # get_steps(data_dir, epi_idx)
-    
-    # epi_start = 0
-    # epi_end = 500
-    # get_granular_epi(data_dir, epi_start, epi_end)
+    # data_dir = f'/mnt/sda/data/granular/carrots'
+    # get_granular_mpp_epi(data_dir, epi_start, epi_end, plot=True)
+        
+        

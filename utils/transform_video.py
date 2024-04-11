@@ -5,7 +5,7 @@ import PIL.Image as Image
 import json
 import argparse
 
-def merge_video(image_path, video_path):
+def merge_video(image_path, video_path, fps=20):
     f_names = os.listdir(image_path)
     image_names = []
     for f_name in f_names:
@@ -16,7 +16,6 @@ def merge_video(image_path, video_path):
     image_names.sort(key=lambda x: int(x.split('_')[0]))
 
     fourcc = cv2.VideoWriter_fourcc('M', 'P', '4', 'V')
-    fps = 5
 
     img = Image.open(os.path.join(image_path, image_names[0]))
 

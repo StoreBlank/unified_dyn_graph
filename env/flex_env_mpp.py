@@ -26,6 +26,7 @@ pyflex.getRobotShapeStates = FlexRobotHelper.getRobotShapeStates
 from utils_env import load_cloth
 from utils_env import rand_float, rand_int, quatFromAxisAngle, find_min_distance
 from utils_env import fps_with_idx, quaternion_multuply
+from utils_env import is_inside_polygon
 
 class FlexEnv(gym.Env):
     def __init__(self, config=None) -> None:
@@ -262,17 +263,19 @@ class FlexEnv(gym.Env):
         elif obj == 'rope':
             
             radius = 0.03
+     
+            length = rand_float(2.5, 3.0) #rand_float(2.5, 5.0)
+            thickness = 3.0 #rand_float(2.5, 4.0)
+            scale = np.array([length, thickness, thickness]) * 50 # length, extension, thickness
             
-            if self.physics == "random":
-                length = rand_float(2.5, 3.0) #rand_float(2.5, 5.0)
-                thickness = 3.0 #rand_float(2.5, 4.0)
-                scale = np.array([length, thickness, thickness]) * 50 # length, extension, thickness
-                dynamicFriction = rand_float(0.1, 1.0)
+            # stiffness and dynamic friction polygon
+            while True:
+                # (friction, stiffness) polygon
+                polygon = [(0.1, 0), (0.1, 1), (0.5, 1), (0.7, 0.6), (0.7, 0)]
                 
-                # cluster_spacing = 6 #rand_float(2, 8) # change the stiffness of the rope
-                # global_stiffness = 0 #1e-4
+                # randomly choose dynamic friction and stiffness
+                dynamicFriction = rand_float(0.1, 0.7) # >0.7, high stiffness penetration issue
                 stiffness = np.random.rand()
-                
                 if stiffness < 0.5:
                     global_stiffness = stiffness * 1e-4 / 0.5
                     cluster_spacing = 2 + 8 * stiffness
@@ -280,12 +283,10 @@ class FlexEnv(gym.Env):
                     global_stiffness = (stiffness - 0.5) * 4e-4 + 1e-4
                     cluster_spacing = 6 + 4 * (stiffness - 0.5)
                 
-            elif self.physics == "grid":
-                length = rand_float(2.0, 3.0) #property_params['length']
-                thickness = 4.0 #property_params['thickness']
-                scale = np.array([length, thickness, thickness]) * 50 # length, extension, thickness
-                cluster_spacing = rand_float(property_params[0], property_params[1])
-                dynamicFriction = 0.3 #property_params['dynamic_friction']
+                # determine if the random point is inside the polygon
+                random_point = (dynamicFriction, stiffness)
+                if is_inside_polygon(polygon, random_point):
+                    break
             
             trans = [-0.0, 2., 2.0]
             
