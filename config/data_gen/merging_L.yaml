@@ -1,0 +1,16 @@
+env:
+  save_img: True
+  enable_vis: False
+  task_name: merging_L
+  dir: null
+  window_size: 600
+  pusher_size: [45, 3.5]
+  obj_num: 2
+  unit_size: 28
+  leg_shape: [1,1]
+  foot_shape: [3,1]
+
+dataset:
+  folder: ../data/merging_L
+  n_worker: 5
+  n_timestep: 3

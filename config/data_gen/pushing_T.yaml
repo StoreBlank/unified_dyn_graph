@@ -1,0 +1,16 @@
+# wandb: False
+env:
+  save_img: True
+  enable_vis: False
+  task_name: pushing_T
+  dir: null
+  window_size: 600
+  pusher_size: [45, 3.5]
+  obj_num: 1
+  stem_size: [30, 90]
+  bar_size: [120, 30]
+
+dataset:
+  folder: ../data/pushing_T
+  n_worker: 5
+  n_timestep: 3

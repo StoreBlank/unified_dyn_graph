@@ -75,7 +75,7 @@ class FlexEnv(gym.Env):
 
         # define property space
         self.property = None
-        self.physics = config['dataset']['physics']
+        # self.physics = config['dataset']['physics']
         
         # others
         self.count = 0
@@ -263,33 +263,33 @@ class FlexEnv(gym.Env):
             
             radius = 0.03
             
-            if self.physics == "random":
-                length = rand_float(2.5, 3.0) #rand_float(2.5, 5.0)
-                thickness = 3.0 #rand_float(2.5, 4.0)
-                scale = np.array([length, thickness, thickness]) * 50 # length, extension, thickness
-                # dynamicFriction = rand_float(0.1, 1.0)
-                
-                # cluster_spacing = 6 #rand_float(2, 8) # change the stiffness of the rope
-                # global_stiffness = 0 #1e-4
-                stiffness = np.random.rand()
-                
-                if stiffness < 0.5:
-                    global_stiffness = stiffness * 1e-4 / 0.5
-                    cluster_spacing = 2 + 8 * stiffness
-                else:
-                    global_stiffness = (stiffness - 0.5) * 4e-4 + 1e-4
-                    cluster_spacing = 6 + 4 * (stiffness - 0.5)
-                
-            elif self.physics == "grid":
-                length = rand_float(2.0, 3.0) #property_params['length']
-                thickness = 4.0 #property_params['thickness']
-                scale = np.array([length, thickness, thickness]) * 50 # length, extension, thickness
-                cluster_spacing = rand_float(property_params[0], property_params[1])
-                dynamicFriction = 0.3 #property_params['dynamic_friction']
+            thickness = 2.0 #rand_float(2.5, 4.0) # about 6mm
+            # dynamicFriction = rand_float(0.1, 1.0)
             
-            trans = [-0.0, 2., 2.0]
+            # cluster_spacing = 6 #rand_float(2, 8) # change the stiffness of the rope
+            # global_stiffness = 0 #1e-4
+            stiffness = 0
+            if isinstance(property_params, np.ndarray):
+                stiffness = int(property_params[0])
+
+            if stiffness < 0.5:
+                global_stiffness = stiffness * 1e-4 / 0.5
+                cluster_spacing = 2 + 8 * stiffness
+            else:
+                global_stiffness = (stiffness - 0.5) * 4e-4 + 1e-4
+                cluster_spacing = 6 + 4 * (stiffness - 0.5)
+
+            length = rand_float(2.5, 2.7) #property_params['length'] # scale 1.5
+            # length = rand_float(1.2, 1.4) # 20cm
+            scale = np.array([length, thickness, thickness]) * 50 # length, extension, thickness
+            # cluster_spacing = rand_float(property_params[0], property_params[1])
+            dynamicFriction = 0.3
+            # dynamicFriction = 0.05 #property_params['dynamic_friction']
             
-            z_rotation = rand_float(10, 60) #rand_float(60, 70)
+            trans = [-0.0, 2.0 , 2.0]
+            
+            # z_rotation = 0 #rand_float(60, 70)
+            z_rotation = rand_float(10, 70)
             y_rotation = 90. 
             rot_1 = Rotation.from_euler('xyz', [0, y_rotation, 0.], degrees=True)
             rotate_1 = rot_1.as_quat()
@@ -711,7 +711,8 @@ class FlexEnv(gym.Env):
         else:
             robot_base_pos = [-wkspace_width-0.6, 0., wkspace_height+0.3]
             robot_base_orn = [0, 0, 0, 1]
-            self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'assets/xarm/xarm6_with_gripper.urdf', robot_base_pos, robot_base_orn, globalScaling=10.0) 
+            urdf_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'assets/xarm/xarm6_with_gripper.urdf')
+            self.robotId = pyflex.loadURDF(self.flex_robot_helper, urdf_file, robot_base_pos, robot_base_orn, globalScaling=10.0) 
             self.rest_joints = np.zeros(8)
         
         pyflex.set_shape_states(self.robot_to_shape_states(pyflex.getRobotShapeStates(self.flex_robot_helper)))
@@ -992,7 +993,7 @@ class FlexEnv(gym.Env):
                                 self.eef_states_list.append(eef_states)  
                         self.count += 1
                         self.contact_list.append(self.count)
-                        
+
                     elif i % 60 == 0:
                         for j in range(len(self.camPos_list)):
                             pyflex.set_camPos(self.camPos_list[j])
@@ -1129,7 +1130,8 @@ class FlexEnv(gym.Env):
         
         action = np.concatenate([startpoint_pos.reshape(-1), endpoint_pos.reshape(-1)], axis=0)
         return action
-    
+
+    # TODO: for rope, add more data on the end point
     def sample_deform_actions(self):
         positions = self.get_positions().reshape(-1, 4)
         positions[:, 2] *= -1 # align with the coordinates

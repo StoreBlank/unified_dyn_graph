@@ -1,4 +1,8 @@
 import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
 import numpy as np
 import time
 from env.flex_env import FlexEnv
@@ -62,7 +66,7 @@ def gen_data(info):
     actions = np.zeros((n_timestep, action_dim))
     
     # n_pushes
-    color_threshold = 0.01 # granular objects
+    color_threshold = 0 # granular objects
     img = env.render()
     last_img = img.copy()
     stuck = False

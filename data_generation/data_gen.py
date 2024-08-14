@@ -1,7 +1,10 @@
 import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
 import numpy as np
 import time
-import sys
 import json
 import multiprocessing as mp
 
@@ -135,9 +138,9 @@ def gen_data(info):
 
 ### multiprocessing
 # bases = [0]
-num_episode = 1000-280
+num_episode = 1000
 num_bases = num_episode // n_worker
-bases = [280 + n_worker*n for n in range(num_bases)]
+bases = [0 + n_worker*n for n in range(num_bases)]
 print(f"num_bases: {len(bases)}")
 print(bases)
 

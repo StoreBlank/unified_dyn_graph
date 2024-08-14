@@ -190,22 +190,29 @@ class FlexEnv(gym.Env):
     
     ### TODO: write the scene as a class
     def init_scene(self, obj, property_params):
-        
-        if obj == 'carrots': 
-            radius = 0.03
 
-            granular_scale = rand_float(0.1, 0.3)
-            
+        if obj == 'carrots': 
+            radius = 0.02
+
+            # granular_scale = rand_float(0.25, 0.35)
+            # granular_scale = rand_float(0.1, 0.3)
+            granular_scale = rand_float(0.1, 0.15)
+
             area = rand_float(1 ** 2, 3 ** 2) # rand_float(1, 3)
             xz_ratio = rand_float(0.8, 1.2)
+            # area = 1
+            # xz_ratio = 1
             x_max = area ** 0.5 * 0.5 * xz_ratio ** 0.5
             x_min = -x_max
             z_max = area ** 0.5 * 0.5 * xz_ratio ** -0.5
             z_min = -z_max
-            
-            granular_dis = rand_float(0.1 * granular_scale, 0.2 * granular_scale)
+
+            granular_dis = rand_float(0.1 * granular_scale, 0.12 * granular_scale)
+            # granular_dis = 0.1 * granular_scale
             num_granular_ft_x = (x_max - x_min - granular_scale) / (granular_dis + granular_scale) + 1
-            num_granular_ft_z = (z_max - z_min - granular_scale) / (granular_dis + granular_scale) + 1            
+            num_granular_ft_z = (z_max - z_min - granular_scale) / (granular_dis + granular_scale) + 1
+            # num_granular_ft_x = 1
+            # num_granular_ft_z = 1
             
             # shape
             shape_type = 0 # 0: irreular shape; 1: regular shape
@@ -232,6 +239,7 @@ class FlexEnv(gym.Env):
                                     granular_mass, shape_type, shape_min_dist, shape_max_dist])
 
             temp = np.array([0])
+            # 90
             pyflex.set_scene(35, scene_params, temp.astype(np.float64), temp, temp, temp, temp, 0)
             
             property_param = {
@@ -770,13 +778,15 @@ class FlexEnv(gym.Env):
         pos_x, pos_z = positions[:, 0], positions[:, 2]
         center_x, center_z = np.median(pos_x), np.median(pos_z)
         chosen_points = []
-        for idx, (x, z) in enumerate(zip(pos_x, pos_z)):
-            if np.sqrt((x-center_x)**2 + (z-center_z)**2) < 2.0:
-                chosen_points.append(idx)
-        # print(f'chosen points {len(chosen_points)} out of {num_points}.')
-        if len(chosen_points) == 0:
-            print('no chosen points')
-            chosen_points = np.arange(num_points)
+        # for idx, (x, z) in enumerate(zip(pos_x, pos_z)):
+        #     if np.sqrt((x-center_x)**2 + (z-center_z)**2) < 2.0:
+        #         chosen_points.append(idx)
+        # # print(f'chosen points {len(chosen_points)} out of {num_points}.')
+        # if len(chosen_points) == 0:
+        #     print('no chosen points')
+        #     chosen_points = np.arange(num_points)
+        # full chosen
+        chosen_points = np.arange(num_points)
         
         # random choose a start point which can not be overlapped with the object
         valid = False
@@ -819,6 +829,12 @@ class FlexEnv(gym.Env):
     
     def get_faces(self):
         return pyflex.get_faces()
+    
+    def get_granular_centers(self):
+        return pyflex.get_granular_centers()
+    
+    def get_granular_num_particles(self):
+        return pyflex.get_granular_num_particles()
 
     def get_camera_intrinsics(self):
         projMat = pyflex.get_projMatrix().reshape(4, 4).T 
